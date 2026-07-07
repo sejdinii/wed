@@ -85,12 +85,17 @@ export function formatMediumDate(iso: string, locale: Locale): string {
   return `${date.getDate()} ${month} ${date.getFullYear()}`;
 }
 
-/** "Саб, 25 мај 2026" — search fields (capitalized short weekday + medium date). */
+/**
+ * "Sat, 25 May 2024" / "Саб, 25 мај 2026" — search fields.
+ * Day-first with a 3-letter month in every locale (per the approved design),
+ * capitalized short weekday.
+ */
 export function formatDowMediumDate(iso: string, locale: Locale): string {
   const date = parseISODate(iso);
   const raw = (WEEKDAYS_LONG[locale][mondayIndex(date)] ?? '').replace(/^e /, '').slice(0, 3);
   const dow = raw.charAt(0).toUpperCase() + raw.slice(1);
-  return `${dow}, ${formatMediumDate(iso, locale)}`;
+  const month = (MONTHS[locale][date.getMonth()] ?? '').slice(0, 3);
+  return `${dow}, ${date.getDate()} ${month} ${date.getFullYear()}`;
 }
 
 /** "12 сеп" — compact chips and lists. */

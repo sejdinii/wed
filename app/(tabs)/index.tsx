@@ -74,7 +74,7 @@ export default function HomeScreen() {
       </AppText>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
         <Ionicons name={icon} size={18} color={iconColor} />
-        <AppText variant="bodyStrong" style={{ flex: 1, fontSize: 15.5 }} numberOfLines={1}>
+        <AppText variant="bodyStrong" style={{ flex: 1, fontSize: 15.5, color: colors.text }} numberOfLines={1}>
           {value}
         </AppText>
         <Ionicons name="chevron-down" size={16} color={colors.text} />
@@ -162,7 +162,7 @@ export default function HomeScreen() {
             {searchField(
               t('home.dateLabel'),
               'calendar-outline',
-              colors.primary,
+              colors.text,
               dateISO ? formatDowMediumDate(dateISO, locale) : t('availability.pickDate'),
               () => setDateSheetOpen(true),
             )}
