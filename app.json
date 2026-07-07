@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Kapar",
+    "slug": "kapar",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "kapar",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "mk.kapar.app"
+    },
+    "android": {
+      "package": "mk.kapar.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1E4D36"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1E4D36",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "dark": {
+            "backgroundColor": "#0F1512"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-localization"
+    ]
+  }
+}
