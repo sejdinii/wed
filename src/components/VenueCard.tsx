@@ -67,11 +67,6 @@ export function VenueCard({ venue, variant = 'list' }: VenueCardProps) {
           colors={['transparent', 'rgba(0,0,0,0.45)']}
           style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 84 }}
         />
-        {venue.featured ? (
-          <View style={{ position: 'absolute', top: spacing(3), left: spacing(3) }}>
-            <Badge label={t('explore.featured')} tone="accent" />
-          </View>
-        ) : null}
         <PressableScale
           onPress={() => {
             haptic.light();

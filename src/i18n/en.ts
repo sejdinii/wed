@@ -44,6 +44,7 @@ export const en: Dict = {
   'venue.kaparBody': 'Lock the date with a kapar (reservation deposit) through Kapar. The balance is paid directly to the venue on their terms — no hidden fees.',
   'venue.kaparPercentNote': 'of the estimated total · minimum {amount}',
   'venue.protectionTitle': 'Kapar Protection',
+  'venue.protectionSummary': 'Your kapar is protected until the venue confirms',
   'venue.protect1': 'Your kapar is held safely by Kapar until the venue confirms your reservation.',
   'venue.protect2': 'The venue confirms within 24 hours — otherwise you get a full refund.',
   'venue.protect3': 'If the venue cancels, you get a 100% refund, immediately.',

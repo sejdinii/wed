@@ -43,6 +43,7 @@ export const sq: Dict = {
   'venue.kaparBody': 'Data sigurohet me kapar përmes Kapar. Pjesa tjetër paguhet direkt në sallë, sipas kushteve të tyre — pa komisione të fshehura.',
   'venue.kaparPercentNote': 'nga totali i vlerësuar · minimumi {amount}',
   'venue.protectionTitle': 'Mbrojtja e kaparit',
+  'venue.protectionSummary': 'Kapari është i mbrojtur derisa salla të konfirmojë',
   'venue.protect1': 'Kapari ruhet i sigurt te Kapar derisa salla ta konfirmojë rezervimin.',
   'venue.protect2': 'Salla konfirmon brenda 24 orëve — përndryshe rimbursim i plotë.',
   'venue.protect3': 'Nëse salla anulon, merr 100% rimbursim, menjëherë.',

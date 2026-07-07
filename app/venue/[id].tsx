@@ -11,6 +11,7 @@ import { Card } from '@/design/components/Card';
 import { Chip } from '@/design/components/Chip';
 import { Divider } from '@/design/components/Divider';
 import { EmptyState } from '@/design/components/EmptyState';
+import { ExpandableSection } from '@/design/components/ExpandableSection';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
@@ -21,12 +22,12 @@ import { radius, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMkd, formatMkdBare } from '@/lib/money';
 import { formatShortDate, nextFreeSaturdays, todayISO } from '@/lib/dates';
-import { minKaparMkd } from '@/domain/kapar';
+import { minKaparMkd, sortedRefundTiers } from '@/domain/kapar';
 import type { AmenityKey, Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { useFavorites } from '@/stores/favorites';
 import { useBookingDraft } from '@/stores/bookingDraft';
-import { useI18n } from '@/i18n';
+import { useI18n, type Translate } from '@/i18n';
 
 const AMENITY_ICONS: Record<AmenityKey, React.ComponentProps<typeof Ionicons>['name']> = {
   parking: 'car-outline',
@@ -43,11 +44,28 @@ const AMENITY_ICONS: Record<AmenityKey, React.ComponentProps<typeof Ionicons>['n
   cityView: 'business-outline',
 };
 
+/** "100% поврат на капарот · Повеќе од 180 дена претходно" — the collapsed teaser. */
+function refundSummary(venue: Venue, t: Translate): string {
+  const first = sortedRefundTiers(venue.kaparPolicy)[0];
+  if (!first) return '';
+  const label =
+    first.refundPercent >= 100
+      ? t('refund.fullRefund')
+      : first.refundPercent > 0
+        ? t('refund.partialRefund', { percent: first.refundPercent })
+        : t('refund.noRefund');
+  return first.minDaysBeforeEvent > 0
+    ? `${label} · ${t('refund.moreThanDays', { days: first.minDaysBeforeEvent })}`
+    : label;
+}
+
 /**
- * Venue detail. Structure follows the conversion argument:
- * dream (photos) → proof (rating, verified) → practicalities (menus, amenities)
- * → the kapar terms in full daylight → one sticky CTA anchored on the KAPAR
- * amount, not the scary total. Transparency before commitment.
+ * Venue detail — one purpose: decide whether to book.
+ *
+ * Visible: what drives the decision (photos, social proof, capacity, per-guest
+ * menus, the kapar). Everything verification-grade (protection details, refund
+ * ladder, full description, amenities) collapses into summary rows — Airbnb's
+ * "More details" pattern, inlined so the sticky kapar bar never leaves the thumb.
  */
 export default function VenueDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -114,36 +132,10 @@ export default function VenueDetailScreen() {
   const kapar = venue.kaparPolicy;
   const saturdays = nextFreeSaturdays(todayISO(), 3, (iso) => venue.bookedDates.includes(iso));
   const bottomBarHeight = 76 + insets.bottom;
-
-  const FloatingButton = ({
-    icon,
-    onPress,
-    active,
-    label,
-  }: {
-    icon: React.ComponentProps<typeof Ionicons>['name'];
-    onPress: () => void;
-    active?: boolean;
-    label: string;
-  }) => (
-    <PressableScale
-      onPress={onPress}
-      scaleTo={0.85}
-      hapticFeedback="select"
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Ionicons name={icon} size={20} color={active ? '#FF6B6B' : '#FFFFFF'} />
-    </PressableScale>
-  );
+  const amenityTeaser = [
+    ...venue.amenities.slice(0, 2).map((a) => t(`amenity.${a}`)),
+    ...(venue.amenities.length > 2 ? [`+${venue.amenities.length - 2}`] : []),
+  ].join(' · ');
 
   return (
     <Screen edges={[]}>
@@ -168,10 +160,6 @@ export default function VenueDetailScreen() {
               <AppText variant="bodySm" color="secondary">
                 {t('venue.reviews', { count: venue.reviewCount })}
               </AppText>
-              <View style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: colors.textTertiary }} />
-              <AppText variant="bodySm" color="secondary">
-                {t('venue.respondsIn', { hours: venue.responseTimeHours })}
-              </AppText>
             </View>
             <View style={{ flexDirection: 'row', gap: spacing(2), marginTop: spacing(1) }}>
               <Chip
@@ -186,8 +174,8 @@ export default function VenueDetailScreen() {
             </View>
           </View>
 
-          {/* Kapar terms — in full daylight, never fine print */}
-          <Card padding={4} style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent, gap: spacing(3) }}>
+          {/* Kapar — the decision anchor, in full daylight */}
+          <Card padding={4} style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent, gap: spacing(2) }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
               <Ionicons name="wallet" size={18} color={colors.onAccentSoft} />
               <AppText variant="subheading" style={{ color: colors.onAccentSoft }}>
@@ -204,23 +192,10 @@ export default function VenueDetailScreen() {
                 {t('venue.kaparPercentNote', { amount: formatMkd(kapar.minAmountMkd, locale) })}
               </AppText>
             ) : null}
-            <AppText variant="body" style={{ color: colors.onAccentSoft }}>
+            <AppText variant="bodySm" style={{ color: colors.onAccentSoft }}>
               {t('venue.kaparBody')}
             </AppText>
           </Card>
-
-          {/* Kapar Protection */}
-          <View style={{ gap: spacing(3) }}>
-            <AppText variant="heading">{t('venue.protectionTitle')}</AppText>
-            {([1, 2, 3] as const).map((n) => (
-              <View key={n} style={{ flexDirection: 'row', gap: spacing(3), alignItems: 'flex-start' }}>
-                <Ionicons name="shield-checkmark" size={18} color={colors.success} style={{ marginTop: 2 }} />
-                <AppText variant="body" color="secondary" style={{ flex: 1 }}>
-                  {t(`venue.protect${n}`)}
-                </AppText>
-              </View>
-            ))}
-          </View>
 
           {/* Next free Saturdays — date-first shortcut into checkout */}
           {saturdays.length > 0 ? (
@@ -239,7 +214,7 @@ export default function VenueDetailScreen() {
             </View>
           ) : null}
 
-          {/* Menus & per-guest pricing */}
+          {/* Menus & per-guest pricing — core decision info, stays visible */}
           <View style={{ gap: spacing(3) }}>
             <AppText variant="heading">{t('venue.menus')}</AppText>
             {venue.menuTiers.map((tier) => (
@@ -257,44 +232,49 @@ export default function VenueDetailScreen() {
             ))}
           </View>
 
-          {/* Cancellation ladder */}
-          <View style={{ gap: spacing(3) }}>
-            <AppText variant="heading">{t('venue.refundTitle')}</AppText>
-            <Card padding={4}>
+          {/* Everything verification-grade: progressive disclosure */}
+          <View>
+            <Divider />
+            <ExpandableSection title={t('venue.protectionTitle')} summary={t('venue.protectionSummary')}>
+              <View style={{ gap: spacing(3) }}>
+                {([1, 2, 3] as const).map((n) => (
+                  <View key={n} style={{ flexDirection: 'row', gap: spacing(3), alignItems: 'flex-start' }}>
+                    <Ionicons name="shield-checkmark" size={18} color={colors.success} style={{ marginTop: 2 }} />
+                    <AppText variant="body" color="secondary" style={{ flex: 1 }}>
+                      {t(`venue.protect${n}`)}
+                    </AppText>
+                  </View>
+                ))}
+              </View>
+            </ExpandableSection>
+            <Divider />
+            <ExpandableSection title={t('venue.refundTitle')} summary={refundSummary(venue, t)}>
               <RefundTimeline policy={venue.kaparPolicy} />
-            </Card>
+            </ExpandableSection>
+            <Divider />
+            <ExpandableSection title={t('venue.about')}>
+              <AppText variant="body" color="secondary">
+                {venue.description[locale]}
+              </AppText>
+            </ExpandableSection>
+            <Divider />
+            <ExpandableSection title={t('venue.amenities')} summary={amenityTeaser}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                {venue.amenities.map((amenity) => (
+                  <View
+                    key={amenity}
+                    style={{ width: '50%', flexDirection: 'row', alignItems: 'center', gap: spacing(2), paddingVertical: spacing(1.5) }}
+                  >
+                    <Ionicons name={AMENITY_ICONS[amenity]} size={17} color={colors.textSecondary} />
+                    <AppText variant="bodySm" color="secondary" style={{ flex: 1 }}>
+                      {t(`amenity.${amenity}`)}
+                    </AppText>
+                  </View>
+                ))}
+              </View>
+            </ExpandableSection>
+            <Divider />
           </View>
-
-          {/* About */}
-          <View style={{ gap: spacing(3) }}>
-            <AppText variant="heading">{t('venue.about')}</AppText>
-            <AppText variant="body" color="secondary">
-              {venue.description[locale]}
-            </AppText>
-          </View>
-
-          {/* Amenities */}
-          <View style={{ gap: spacing(3) }}>
-            <AppText variant="heading">{t('venue.amenities')}</AppText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {venue.amenities.map((amenity) => (
-                <View
-                  key={amenity}
-                  style={{ width: '50%', flexDirection: 'row', alignItems: 'center', gap: spacing(2), paddingVertical: spacing(1.5) }}
-                >
-                  <Ionicons name={AMENITY_ICONS[amenity]} size={17} color={colors.textSecondary} />
-                  <AppText variant="bodySm" color="secondary" style={{ flex: 1 }}>
-                    {t(`amenity.${amenity}`)}
-                  </AppText>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          <Divider />
-          <AppText variant="bodySm" color="tertiary" align="center">
-            {t('venue.reviews', { count: venue.reviewCount })} · {venue.rating.toFixed(1)} ★
-          </AppText>
         </View>
       </ScrollView>
 
@@ -309,16 +289,44 @@ export default function VenueDetailScreen() {
           justifyContent: 'space-between',
         }}
       >
-        <FloatingButton icon="chevron-back" onPress={() => router.back()} label={t('common.back')} />
-        <FloatingButton
-          icon={isFavorite ? 'heart' : 'heart-outline'}
-          active={isFavorite}
+        <PressableScale
+          onPress={() => router.back()}
+          scaleTo={0.85}
+          hapticFeedback="select"
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+        </PressableScale>
+        <PressableScale
           onPress={() => {
             haptic.light();
             toggleFavorite(venue.id);
           }}
-          label={t('tabs.saved')}
-        />
+          scaleTo={0.85}
+          hapticFeedback={null}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isFavorite }}
+          accessibilityLabel={t('tabs.saved')}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? '#FF6B6B' : '#FFFFFF'} />
+        </PressableScale>
       </View>
 
       {/* Sticky kapar bar — the CTA anchors on the deposit, not the total */}
