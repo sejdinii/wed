@@ -273,7 +273,8 @@ export const sq: Dict = {
   'verify.body': 'Dërguam një kod 6-shifror në {phone}',
   'verify.resend': 'Dërgo përsëri',
 
-  'home.headline': 'Gjeje sallën perfekte të dasmës',
+  'home.headline1': 'Gjeje sallën perfekte',
+  'home.headline2': 'të dasmës',
   'home.sub': 'Rezervo lehtë, paguaj kapar dhe siguroje datën.',
   'home.dateLabel': 'Data',
   'home.guestsLabel': 'Mysafirë',

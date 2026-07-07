@@ -275,7 +275,8 @@ export const mk = {
   'verify.body': 'Пративме 6-цифрен код на {phone}',
   'verify.resend': 'Прати повторно',
 
-  'home.headline': 'Најди ја совршената свадбена сала',
+  'home.headline1': 'Најди ја совршената',
+  'home.headline2': 'свадбена сала',
   'home.sub': 'Резервирај лесно, плати капар и обезбеди го датумот.',
   'home.dateLabel': 'Датум',
   'home.guestsLabel': 'Гости',

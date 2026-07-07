@@ -44,7 +44,7 @@ export interface Theme {
 }
 
 const lightColors: ThemeColors = {
-  background: brand.haze,
+  background: brand.paper,
   surface: brand.paper,
   surfaceElevated: '#F1EFF8',
   text: brand.ink,

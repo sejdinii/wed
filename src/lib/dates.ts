@@ -85,6 +85,13 @@ export function formatMediumDate(iso: string, locale: Locale): string {
   return `${date.getDate()} ${month} ${date.getFullYear()}`;
 }
 
+/** "саб, 25 мај 2026" — search fields (short weekday + medium date). */
+export function formatDowMediumDate(iso: string, locale: Locale): string {
+  const date = parseISODate(iso);
+  const dow = (WEEKDAYS_LONG[locale][mondayIndex(date)] ?? '').slice(0, 3);
+  return `${dow}, ${formatMediumDate(iso, locale)}`;
+}
+
 /** "12 сеп" — compact chips and lists. */
 export function formatShortDate(iso: string, locale: Locale): string {
   const date = parseISODate(iso);

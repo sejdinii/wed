@@ -273,7 +273,8 @@ export const en: Dict = {
   'verify.body': 'We sent a 6-digit code to {phone}',
   'verify.resend': 'Resend code',
 
-  'home.headline': 'Find your perfect wedding venue',
+  'home.headline1': 'Find your perfect',
+  'home.headline2': 'wedding venue',
   'home.sub': 'Book easily, pay kapar, and secure your date.',
   'home.dateLabel': 'Date',
   'home.guestsLabel': 'Guests',

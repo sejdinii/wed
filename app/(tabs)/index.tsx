@@ -14,7 +14,7 @@ import { MonthPager } from '@/components/MonthPager';
 import { VenueCard } from '@/components/VenueCard';
 import { useTheme } from '@/design/theme';
 import { radius, shadow, spacing } from '@/design/tokens';
-import { formatMediumDate, todayISO } from '@/lib/dates';
+import { formatDowMediumDate, nextFreeSaturdays, todayISO } from '@/lib/dates';
 import { venueApi } from '@/data/api';
 import type { Venue } from '@/domain/types';
 import { usePreferences } from '@/stores/preferences';
@@ -32,7 +32,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const [venues, setVenues] = useState<Venue[] | null>(null);
-  const [dateISO, setDateISO] = useState<string | null>(null);
+  // Pre-filled with the next Saturday — the default wedding day here.
+  const [dateISO, setDateISO] = useState<string | null>(() => nextFreeSaturdays(todayISO(), 1, () => false)[0] ?? null);
   const [guests, setGuests] = useState(300);
   const [dateSheetOpen, setDateSheetOpen] = useState(false);
   const [guestSheetOpen, setGuestSheetOpen] = useState(false);
@@ -120,10 +121,15 @@ export default function HomeScreen() {
           </PressableScale>
         </View>
 
-        {/* Headline */}
+        {/* Headline: ink first line, violet second line + heart */}
         <View style={{ paddingHorizontal: spacing(4), paddingTop: spacing(4), gap: spacing(2) }}>
-          <AppText variant="display" style={{ fontSize: 30, lineHeight: 36 }}>
-            {t('home.headline')} <Ionicons name="heart-outline" size={24} color={colors.primary} />
+          <AppText variant="display" style={{ fontSize: 30, lineHeight: 37 }}>
+            {t('home.headline1')}
+            {'\n'}
+            <AppText variant="display" color="brand" style={{ fontSize: 30, lineHeight: 37 }}>
+              {t('home.headline2')}
+            </AppText>{' '}
+            <Ionicons name="heart-outline" size={25} color={colors.primary} />
           </AppText>
           <AppText variant="body" color="secondary">
             {t('home.sub')}
@@ -150,7 +156,7 @@ export default function HomeScreen() {
             {searchField(
               t('home.dateLabel'),
               'calendar-outline',
-              dateISO ? formatMediumDate(dateISO, locale) : t('availability.pickDate'),
+              dateISO ? formatDowMediumDate(dateISO, locale) : t('availability.pickDate'),
               () => setDateSheetOpen(true),
             )}
             <View style={{ width: 1, backgroundColor: colors.border }} />
@@ -183,8 +189,9 @@ export default function HomeScreen() {
         </View>
         {venues === null ? (
           <View style={{ flexDirection: 'row', gap: spacing(3), paddingHorizontal: spacing(4) }}>
-            <Skeleton width={230} height={240} radius={radius.lg} />
-            <Skeleton width={230} height={240} radius={radius.lg} />
+            <Skeleton width={168} height={280} radius={radius.lg} />
+            <Skeleton width={168} height={280} radius={radius.lg} />
+            <Skeleton width={80} height={280} radius={radius.lg} />
           </View>
         ) : (
           <FlatList

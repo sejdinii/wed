@@ -115,11 +115,12 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
   const router = useRouter();
 
   const open = () => router.push(`/venue/${venue.id}`);
+  const hallName = venue.halls[0]?.name[locale] ?? t(`venueTypeShort.${venue.venueType}`);
   const chips = (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(1.5) }}>
       <InfoChip label={priceLevel(venue)} />
       <InfoChip icon="people-outline" label={`${venue.capacityMax}`} />
-      <InfoChip icon="business-outline" label={t(`venueTypeShort.${venue.venueType}`)} />
+      <InfoChip icon="business-outline" label={hallName} />
     </View>
   );
 
@@ -131,13 +132,13 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
         accessibilityRole="button"
         accessibilityLabel={venue.name}
         style={[
-          { width: 230, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+          { width: 168, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
           mode === 'light' ? shadow.card : null,
         ]}
       >
         <View>
           <BrandedImage uri={venue.photos[0]}
-            style={{ width: '100%', aspectRatio: 5 / 4 }}
+            style={{ width: '100%', aspectRatio: 1 }}
             contentFit="cover"
             transition={200}
           />
