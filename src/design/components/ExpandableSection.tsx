@@ -1,15 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { Animated, LayoutAnimation, Platform, Pressable, UIManager, View } from 'react-native';
+import { Animated, LayoutAnimation, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from './AppText';
 import { useTheme } from '@/design/theme';
 import { duration, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export interface ExpandableSectionProps {
   title: string;
