@@ -15,17 +15,18 @@ import { Stepper } from '@/design/components/Stepper';
 import { MonthPager } from '@/components/MonthPager';
 import { VenueCard } from '@/components/VenueCard';
 import { useTheme } from '@/design/theme';
-import { radius, spacing } from '@/design/tokens';
+import { radius, shadow, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
-import { formatShortDate, todayISO } from '@/lib/dates';
+import { formatMediumDate, todayISO } from '@/lib/dates';
 import { cheapestPerGuest, minKaparMkd } from '@/domain/kapar';
+import { formatMkd } from '@/lib/money';
 import type { CityKey, Venue, VenueType } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { useI18n } from '@/i18n';
 
 const TYPES: VenueType[] = ['garden', 'lake', 'ballroom', 'terrace', 'panoramic', 'restaurant'];
 type PriceBand = 'b1' | 'b2' | 'b3' | null;
-type KaparBand = 25000 | 40000 | null;
+type KaparBand = 18500 | 40000 | null;
 
 interface Filters {
   dateISO: string | null;
@@ -41,8 +42,8 @@ function applyFilters(venues: Venue[], f: Filters): Venue[] {
     if (f.guests > 0 && v.capacityMax < f.guests) return false;
     if (f.type && v.venueType !== f.type) return false;
     const price = cheapestPerGuest(v);
-    if (f.priceBand === 'b1' && price > 1200) return false;
-    if (f.priceBand === 'b2' && (price <= 1200 || price > 1800)) return false;
+    if (f.priceBand === 'b1' && price > 1250) return false;
+    if (f.priceBand === 'b2' && (price <= 1250 || price > 1800)) return false;
     if (f.priceBand === 'b3' && price <= 1800) return false;
     if (f.maxKapar && minKaparMkd(v) > f.maxKapar) return false;
     return true;
@@ -50,22 +51,22 @@ function applyFilters(venues: Venue[], f: Filters): Venue[] {
 }
 
 /**
- * Results — split cards under a compact search header + filter pill row.
- * The full filter sheet edits a working copy and applies atomically, with a
- * live result count on the apply button.
+ * Search results (v3) — back + title + Filter button, a context row
+ * (location · date · guests), "N venues found" with the sort label, split
+ * cards, and a floating Map View pill.
  */
 export default function ResultsScreen() {
-  const params = useLocalSearchParams<{ city?: CityKey; type?: VenueType }>();
+  const params = useLocalSearchParams<{ city?: CityKey; type?: VenueType; date?: string; guests?: string }>();
   const city = typeof params.city === 'string' ? (params.city as CityKey) : null;
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const { locale, t } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [venues, setVenues] = useState<Venue[] | null>(null);
   const [filters, setFilters] = useState<Filters>({
-    dateISO: null,
-    guests: 0,
+    dateISO: typeof params.date === 'string' ? params.date : null,
+    guests: typeof params.guests === 'string' ? Number(params.guests) || 0 : 0,
     type: typeof params.type === 'string' ? (params.type as VenueType) : null,
     priceBand: null,
     maxKapar: null,
@@ -86,102 +87,121 @@ export default function ResultsScreen() {
 
   const visible = venues ? applyFilters(venues, filters) : null;
   const draftCount = venues ? applyFilters(venues, draft).length : 0;
-  const hasFilters = filters.dateISO !== null || filters.guests > 0 || filters.type !== null || filters.priceBand !== null || filters.maxKapar !== null;
+  const hasFilters =
+    filters.dateISO !== null || filters.guests > 0 || filters.type !== null || filters.priceBand !== null || filters.maxKapar !== null;
 
   const openSheet = () => {
     setDraft(filters);
     setSheetOpen(true);
   };
 
-  const headerLabel = [
-    city ? t(`city.${city}`) : t('results.all'),
-    filters.dateISO ? formatShortDate(filters.dateISO, locale) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-
   return (
     <Screen>
-      {/* Compact search header */}
-      <PressableScale
-        onPress={() => router.push('/search')}
-        scaleTo={0.98}
-        hapticFeedback="select"
-        accessibilityRole="button"
-        accessibilityLabel={headerLabel}
+      {/* Header: back · title · Filter */}
+      <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: spacing(2.5),
-          marginHorizontal: spacing(4),
-          marginTop: spacing(3),
-          height: 46,
-          borderRadius: radius.pill,
-          borderWidth: 1.5,
-          borderColor: colors.border,
           paddingHorizontal: spacing(4),
-          backgroundColor: colors.surface,
+          paddingVertical: spacing(3),
+          gap: spacing(3),
         }}
       >
-        <Ionicons name="arrow-back" size={18} color={colors.text} onPress={() => router.back()} />
-        <AppText variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
-          {headerLabel}
+        <PressableScale onPress={() => router.back()} hapticFeedback="select" accessibilityRole="button" accessibilityLabel={t('common.back')}>
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </PressableScale>
+        <AppText variant="heading" style={{ flex: 1, textAlign: 'center' }}>
+          {t('results.title')}
         </AppText>
-        <Ionicons name="options-outline" size={19} color={colors.text} onPress={openSheet} />
-      </PressableScale>
-
-      {/* Filter pills */}
-      <View style={{ height: 54 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing(4), gap: spacing(2), alignItems: 'center' }}>
-          <Chip
-            label={filters.dateISO ? formatShortDate(filters.dateISO, locale) : t('results.date')}
-            selected={filters.dateISO !== null}
-            onPress={openSheet}
-            icon={<Ionicons name="calendar-outline" size={14} color={filters.dateISO ? colors.onPrimary : colors.text} />}
-          />
-          <Chip
-            label={filters.guests > 0 ? `${filters.guests} ${t('common.guests')}` : t('results.guests')}
-            selected={filters.guests > 0}
-            onPress={openSheet}
-          />
-          <Chip
-            label={filters.type ? t(`venueTypeShort.${filters.type}`) : t('results.type')}
-            selected={filters.type !== null}
-            onPress={openSheet}
-          />
-          {hasFilters ? (
-            <Chip
-              label={t('filters.clearAll')}
-              onPress={() => {
-                haptic.select();
-                setFilters({ dateISO: null, guests: 0, type: null, priceBand: null, maxKapar: null });
-              }}
-            />
-          ) : null}
-        </ScrollView>
+        <PressableScale
+          onPress={openSheet}
+          hapticFeedback="select"
+          accessibilityRole="button"
+          accessibilityLabel={t('filters.title')}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing(1.5),
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: radius.md,
+            paddingHorizontal: spacing(3),
+            paddingVertical: spacing(2),
+            backgroundColor: colors.surface,
+          }}
+        >
+          <AppText variant="label">{t('filters.title')}</AppText>
+          <Ionicons name="options-outline" size={15} color={colors.text} />
+        </PressableScale>
       </View>
 
-      {visible !== null ? (
-        <AppText variant="bodySm" color="secondary" style={{ marginHorizontal: spacing(4), marginBottom: spacing(2) }}>
-          {filters.dateISO
-            ? t('results.freeOn', { count: visible.length, date: formatShortDate(filters.dateISO, locale) })
-            : city
-              ? t('results.inCity', { city: t(`city.${city}`) })
-              : t('results.all')}
-        </AppText>
-      ) : null}
+      {/* Context row */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: spacing(2),
+          paddingHorizontal: spacing(4),
+          paddingBottom: spacing(3),
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        }}
+      >
+        <Ionicons name="location-outline" size={14} color={colors.primary} />
+        <AppText variant="bodySmStrong">{city ? `${t(`city.${city}`)}, ${t('home.country')}` : t('home.country')}</AppText>
+        {filters.dateISO ? (
+          <>
+            <AppText variant="bodySm" color="tertiary">·</AppText>
+            <Ionicons name="calendar-outline" size={14} color={colors.primary} />
+            <AppText variant="bodySmStrong">{formatMediumDate(filters.dateISO, locale)}</AppText>
+          </>
+        ) : null}
+        {filters.guests > 0 ? (
+          <>
+            <AppText variant="bodySm" color="tertiary">·</AppText>
+            <Ionicons name="people-outline" size={14} color={colors.primary} />
+            <AppText variant="bodySmStrong">
+              {filters.guests} {t('common.guests')}
+            </AppText>
+          </>
+        ) : null}
+      </View>
+
+      {/* Count + sort */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: spacing(4),
+          paddingVertical: spacing(3),
+        }}
+      >
+        <AppText variant="bodyStrong">{visible !== null ? t('results.found', { count: visible.length }) : ' '}</AppText>
+        {/* Sort is fixed to Recommended in v0.3 — options come with reviews/distance data. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1) }}>
+          <AppText variant="bodySm" color="secondary">
+            {t('results.sortBy')}
+          </AppText>
+          <AppText variant="bodySmStrong" color="brand">
+            {t('results.recommended')}
+          </AppText>
+          <Ionicons name="chevron-down" size={13} color={colors.primary} />
+        </View>
+      </View>
 
       <FlatList
         data={visible ?? []}
         keyExtractor={(v) => v.id}
-        contentContainerStyle={{ paddingHorizontal: spacing(4), paddingBottom: spacing(8), gap: spacing(3) }}
+        contentContainerStyle={{ paddingHorizontal: spacing(4), paddingBottom: spacing(20), gap: spacing(3) }}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => <VenueCard venue={item} variant="split" />}
+        renderItem={({ item }) => <VenueCard venue={item} variant="split" showAvailable={filters.dateISO !== null} />}
         ListEmptyComponent={
           visible === null ? (
             <View style={{ gap: spacing(3) }}>
               {[0, 1, 2].map((i) => (
-                <Skeleton key={i} height={130} radius={radius.lg} />
+                <Skeleton key={i} height={150} radius={radius.lg} />
               ))}
             </View>
           ) : (
@@ -191,14 +211,42 @@ export default function ResultsScreen() {
               body={t('results.emptyBody')}
               actionLabel={hasFilters ? t('filters.clearAll') : undefined}
               onAction={
-                hasFilters
-                  ? () => setFilters({ dateISO: null, guests: 0, type: null, priceBand: null, maxKapar: null })
-                  : undefined
+                hasFilters ? () => setFilters({ dateISO: null, guests: 0, type: null, priceBand: null, maxKapar: null }) : undefined
               }
             />
           )
         }
       />
+
+      {/* Floating Map View pill — PLACEHOLDER until the map screen lands. */}
+      <PressableScale
+        onPress={() => haptic.select()}
+        hapticFeedback={null}
+        accessibilityRole="button"
+        accessibilityLabel={t('results.mapView')}
+        style={[
+          {
+            position: 'absolute',
+            bottom: insets.bottom + spacing(4),
+            alignSelf: 'center',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing(2),
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: radius.pill,
+            paddingHorizontal: spacing(5),
+            paddingVertical: spacing(3),
+          },
+          mode === 'light' ? shadow.raised : null,
+        ]}
+      >
+        <Ionicons name="map-outline" size={17} color={colors.primary} />
+        <AppText variant="bodyStrong" color="brand">
+          {t('results.mapView')}
+        </AppText>
+      </PressableScale>
 
       {/* Filters sheet */}
       <Modal visible={sheetOpen} animationType="slide" onRequestClose={() => setSheetOpen(false)}>
@@ -227,7 +275,7 @@ export default function ResultsScreen() {
                 locale={locale}
                 selectedISO={draft.dateISO}
                 minISO={todayISO()}
-                isBlocked={() => false}
+                stateFor={() => 'available'}
                 onSelect={(iso) => setDraft((d) => ({ ...d, dateISO: d.dateISO === iso ? null : iso }))}
               />
             </View>
@@ -288,10 +336,10 @@ export default function ResultsScreen() {
               <AppText variant="heading">{t('filters.kapar')}</AppText>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) }}>
                 <Chip label={t('filters.any')} selected={draft.maxKapar === null} onPress={() => setDraft((d) => ({ ...d, maxKapar: null }))} />
-                {([25000, 40000] as const).map((cap) => (
+                {([18500, 40000] as const).map((cap) => (
                   <Chip
                     key={cap}
-                    label={t('filters.kaparUpTo', { amount: `${cap / 1000}.000 ден.` })}
+                    label={t('filters.kaparUpTo', { amount: formatMkd(cap, locale) })}
                     selected={draft.maxKapar === cap}
                     onPress={() => setDraft((d) => ({ ...d, maxKapar: d.maxKapar === cap ? null : cap }))}
                   />

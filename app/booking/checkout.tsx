@@ -11,7 +11,7 @@ import { Screen } from '@/design/components/Screen';
 import { useTheme } from '@/design/theme';
 import { radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
-import { formatMkd } from '@/lib/money';
+import { formatMkd, formatMkdBare } from '@/lib/money';
 import { formatLongDate } from '@/lib/dates';
 import { estimateTotalMkd, kaparAmountMkd, makeConfirmationCode } from '@/domain/kapar';
 import type { Booking, Venue } from '@/domain/types';
@@ -347,6 +347,48 @@ export default function CheckoutScreen() {
         {step === 2 && venue ? (
           <View style={{ gap: spacing(4) }}>
             <AppText variant="title">{t('checkout.eventTitle')}</AppText>
+            {/* Menu selection (moved here from availability in v3) */}
+            <View style={{ gap: spacing(2.5) }}>
+              <AppText variant="subheading">{t('checkout.menuLabel')}</AppText>
+              {venue.menuTiers.map((tier) => {
+                const selected = tier.id === draft.menuTierId;
+                return (
+                  <PressableScale
+                    key={tier.id}
+                    onPress={() => draft.setMenuTier(tier.id)}
+                    scaleTo={0.99}
+                    hapticFeedback="select"
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: spacing(2.5),
+                      borderWidth: selected ? 2 : 1,
+                      borderColor: selected ? colors.primary : colors.border,
+                      backgroundColor: selected ? colors.mint : colors.surface,
+                      borderRadius: radius.md,
+                      padding: spacing(3),
+                    }}
+                  >
+                    <Ionicons
+                      name={selected ? 'radio-button-on' : 'radio-button-off'}
+                      size={18}
+                      color={selected ? colors.primary : colors.textTertiary}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <AppText variant="bodyStrong">{tier.name[locale]}</AppText>
+                      <AppText variant="bodySm" color="secondary" numberOfLines={1}>
+                        {tier.description[locale]}
+                      </AppText>
+                    </View>
+                    <AppText variant="bodySmStrong" color="brand">
+                      {t('venue.menuPerGuest', { amount: formatMkdBare(tier.pricePerGuestMkd, locale) })}
+                    </AppText>
+                  </PressableScale>
+                );
+              })}
+            </View>
             <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing(3.5), gap: spacing(2) }}>
               <AppText variant="subheading">{venue.name}</AppText>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>

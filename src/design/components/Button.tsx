@@ -21,9 +21,9 @@ export interface ButtonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const HEIGHT: Record<ButtonSize, number> = { sm: 36, md: 44, lg: 50 };
+const HEIGHT: Record<ButtonSize, number> = { sm: 38, md: 46, lg: 54 };
 
-/** Pill CTA — green for booking actions, dark for messaging (Viator pattern). */
+/** Rounded-rectangle CTA — solid violet for primary actions (v3 design). */
 export function Button({
   title,
   onPress,
@@ -59,7 +59,7 @@ export function Button({
       style={[
         {
           height: HEIGHT[size],
-          borderRadius: radius.pill,
+          borderRadius: radius.md,
           backgroundColor: bg,
           borderWidth: borderColor ? 1.5 : 0,
           borderColor,

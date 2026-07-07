@@ -13,6 +13,9 @@ interface PreferencesState {
   locale: Locale | null;
   themePreference: ThemePreference;
   recentCities: CityKey[];
+  /** MOCK auth — set after the (simulated) OTP; real phone auth lands with the backend. */
+  phoneVerified: boolean;
+  phoneNumber: string;
   notifConfirm: boolean;
   notifMessages: boolean;
   notifRefund: boolean;
@@ -20,6 +23,7 @@ interface PreferencesState {
   setThemePreference: (pref: ThemePreference) => void;
   pushRecentCity: (city: CityKey) => void;
   setNotif: (key: 'notifConfirm' | 'notifMessages' | 'notifRefund', value: boolean) => void;
+  setPhoneVerified: (phoneNumber: string) => void;
 }
 
 export const usePreferences = create<PreferencesState>()(
@@ -28,6 +32,8 @@ export const usePreferences = create<PreferencesState>()(
       locale: null,
       themePreference: 'system',
       recentCities: [],
+      phoneVerified: false,
+      phoneNumber: '',
       notifConfirm: true,
       notifMessages: true,
       notifRefund: true,
@@ -38,6 +44,7 @@ export const usePreferences = create<PreferencesState>()(
           recentCities: [city, ...state.recentCities.filter((c) => c !== city)].slice(0, 4),
         })),
       setNotif: (key, value) => set({ [key]: value }),
+      setPhoneVerified: (phoneNumber) => set({ phoneVerified: true, phoneNumber }),
     }),
     {
       name: 'kapar.preferences.v2',

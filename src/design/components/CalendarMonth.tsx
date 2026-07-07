@@ -8,6 +8,8 @@ import { haptic } from '@/lib/haptics';
 import { WEEKDAYS_SHORT, mondayIndex, toISODate } from '@/lib/dates';
 import type { Locale } from '@/i18n';
 
+export type DayState = 'available' | 'limited' | 'booked';
+
 export interface CalendarMonthProps {
   /** Any date inside the month to render. */
   month: Date;
@@ -15,17 +17,20 @@ export interface CalendarMonthProps {
   selectedISO: string | null;
   /** Dates strictly before this are not selectable. */
   minISO: string;
-  isBlocked: (iso: string) => boolean;
+  /**
+   * Per-day availability driving the colored dot:
+   * green = available, amber = limited, red = booked (not selectable).
+   */
+  stateFor: (iso: string) => DayState;
   onSelect: (iso: string) => void;
 }
 
 /**
- * Date-first is the core interaction of the whole product ("is my date free?"),
- * so the calendar is custom-built rather than a generic dependency:
- * Monday-first weeks, blocked dates struck through (Airbnb pattern — reads as
- * "taken", not "disabled"), and a gold dot marking Saturdays — the wedding day.
+ * Availability calendar with per-day state dots (green/amber/red) and a
+ * solid violet circle for the selected day, per the v3 design.
+ * Monday-first weeks; past days render muted with no dot.
  */
-export function CalendarMonth({ month, locale, selectedISO, minISO, isBlocked, onSelect }: CalendarMonthProps) {
+export function CalendarMonth({ month, locale, selectedISO, minISO, stateFor, onSelect }: CalendarMonthProps) {
   const { colors } = useTheme();
 
   const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -41,6 +46,12 @@ export function CalendarMonth({ month, locale, selectedISO, minISO, isBlocked, o
 
   const weeks: Array<typeof cells> = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
+  const dotColor: Record<DayState, string> = {
+    available: colors.success,
+    limited: colors.amber,
+    booked: colors.danger,
+  };
 
   return (
     <View>
@@ -60,10 +71,9 @@ export function CalendarMonth({ month, locale, selectedISO, minISO, isBlocked, o
             if (!cell) return <View key={cellIndex} style={{ flex: 1, aspectRatio: 1 }} />;
 
             const isPast = cell.iso < minISO;
-            const blocked = isBlocked(cell.iso);
-            const selectable = !isPast && !blocked;
+            const state = stateFor(cell.iso);
+            const selectable = !isPast && state !== 'booked';
             const selected = cell.iso === selectedISO;
-            const saturday = new Date(month.getFullYear(), month.getMonth(), cell.day).getDay() === 6;
 
             return (
               <Pressable
@@ -91,28 +101,21 @@ export function CalendarMonth({ month, locale, selectedISO, minISO, isBlocked, o
                   <AppText
                     variant={selected ? 'bodyStrong' : 'body'}
                     style={{
-                      color: selected
-                        ? colors.onPrimary
-                        : isPast
-                          ? colors.textTertiary
-                          : blocked
-                            ? colors.textTertiary
-                            : colors.text,
-                      textDecorationLine: blocked && !isPast ? 'line-through' : 'none',
+                      color: selected ? colors.onPrimary : isPast ? colors.textTertiary : colors.text,
                       opacity: isPast ? 0.4 : 1,
                     }}
                   >
                     {cell.day}
                   </AppText>
-                  {saturday && selectable && !selected ? (
+                  {!isPast ? (
                     <View
                       style={{
                         position: 'absolute',
-                        bottom: 4,
-                        width: 4,
-                        height: 4,
-                        borderRadius: 2,
-                        backgroundColor: colors.gold,
+                        bottom: 3,
+                        width: 5,
+                        height: 5,
+                        borderRadius: 2.5,
+                        backgroundColor: selected ? colors.onPrimary : dotColor[state],
                       }}
                     />
                   ) : null}

@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from '@/design/components/AppText';
-import { CalendarMonth } from '@/design/components/CalendarMonth';
+import { CalendarMonth, type DayState } from '@/design/components/CalendarMonth';
 import { PressableScale } from '@/design/components/PressableScale';
 import { useTheme } from '@/design/theme';
 import { spacing } from '@/design/tokens';
@@ -14,12 +14,12 @@ export interface MonthPagerProps {
   locale: Locale;
   selectedISO: string | null;
   minISO: string;
-  isBlocked: (iso: string) => boolean;
+  stateFor: (iso: string) => DayState;
   onSelect: (iso: string) => void;
 }
 
 /** Calendar with month navigation. Owns the visible-month state. */
-export function MonthPager({ locale, selectedISO, minISO, isBlocked, onSelect }: MonthPagerProps) {
+export function MonthPager({ locale, selectedISO, minISO, stateFor, onSelect }: MonthPagerProps) {
   const { colors } = useTheme();
   const [month, setMonth] = useState<Date>(() => {
     const base = selectedISO ? parseISODate(selectedISO) : parseISODate(minISO);
@@ -66,7 +66,7 @@ export function MonthPager({ locale, selectedISO, minISO, isBlocked, onSelect }:
         locale={locale}
         selectedISO={selectedISO}
         minISO={minISO}
-        isBlocked={isBlocked}
+        stateFor={stateFor}
         onSelect={onSelect}
       />
     </View>

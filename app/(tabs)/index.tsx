@@ -1,39 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
-import { Image } from 'expo-image';
+import { FlatList, Modal, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/design/components/AppText';
+import { Button } from '@/design/components/Button';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
+import { Stepper } from '@/design/components/Stepper';
+import { MonthPager } from '@/components/MonthPager';
 import { VenueCard } from '@/components/VenueCard';
 import { useTheme } from '@/design/theme';
 import { radius, shadow, spacing } from '@/design/tokens';
+import { formatMediumDate, todayISO } from '@/lib/dates';
 import { venueApi } from '@/data/api';
-import { TRENDING_CITIES } from '@/data/cities';
-import type { Venue, VenueType } from '@/domain/types';
+import type { Venue } from '@/domain/types';
+import { usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
-const TYPE_ORDER: VenueType[] = ['garden', 'lake', 'ballroom', 'panoramic', 'terrace', 'restaurant'];
-
 /**
- * Home — search pill on top, numbered trending cities, then one horizontal
- * carousel per venue category. Pure discovery; every tap leads toward a venue.
+ * Home (v3) — location header with a notification bell, the big headline,
+ * a date+guests search card with one violet CTA, then Popular Venues
+ * (carousel cards) and Top Rated (compact rows).
  */
 export default function HomeScreen() {
   const { colors, mode } = useTheme();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [venues, setVenues] = useState<Venue[] | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const load = async () => {
-    const result = await venueApi.listVenues();
-    setVenues(result);
-  };
+  const [dateISO, setDateISO] = useState<string | null>(null);
+  const [guests, setGuests] = useState(300);
+  const [dateSheetOpen, setDateSheetOpen] = useState(false);
+  const [guestSheetOpen, setGuestSheetOpen] = useState(false);
+  const recentCities = usePreferences((s) => s.recentCities);
+  const city = recentCities[0] ?? 'skopje';
 
   useEffect(() => {
     let cancelled = false;
@@ -46,164 +50,210 @@ export default function HomeScreen() {
     };
   }, []);
 
-  const sections = TYPE_ORDER.map((type) => ({
-    type,
-    venues: (venues ?? []).filter((v) => v.venueType === type),
-  })).filter((s) => s.venues.length > 0);
+  const popular = venues?.filter((v) => v.featured) ?? [];
+  const topRated = venues ? [...venues].sort((a, b) => b.rating - a.rating).slice(0, 4) : [];
+
+  const searchField = (label: string, icon: React.ComponentProps<typeof Ionicons>['name'], value: string, onPress: () => void) => (
+    <PressableScale
+      onPress={onPress}
+      scaleTo={0.98}
+      hapticFeedback="select"
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={{ flex: 1, gap: spacing(1) }}
+    >
+      <AppText variant="label" color="secondary">
+        {label}
+      </AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
+        <Ionicons name={icon} size={16} color={colors.primary} />
+        <AppText variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
+          {value}
+        </AppText>
+        <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
+      </View>
+    </PressableScale>
+  );
+
+  const sheetBase = {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    padding: spacing(4),
+    paddingBottom: insets.bottom + spacing(5),
+    gap: spacing(4),
+  } as const;
 
   return (
     <Screen>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing(8) }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={async () => {
-              setRefreshing(true);
-              await load();
-              setRefreshing(false);
-            }}
-            tintColor={colors.textSecondary}
-          />
-        }
-      >
-        {/* Search pill */}
-        <PressableScale
-          onPress={() => router.push('/search')}
-          scaleTo={0.98}
-          hapticFeedback="select"
-          accessibilityRole="button"
-          accessibilityLabel={t('home.searchPlaceholder')}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: spacing(8) }}>
+        {/* Location header + bell */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing(4), paddingTop: spacing(3), gap: spacing(2) }}>
+          <PressableScale
+            onPress={() => router.push('/search')}
+            hapticFeedback="select"
+            accessibilityRole="button"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), flex: 1 }}
+          >
+            <Ionicons name="location" size={17} color={colors.primary} />
+            <AppText variant="bodyStrong">
+              {t(`city.${city}`)}, {t('home.country')}
+            </AppText>
+            <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
+          </PressableScale>
+          {/* PLACEHOLDER — notification center lands with push in v0.3. */}
+          <PressableScale onPress={() => {}} hapticFeedback="select" accessibilityRole="button" accessibilityLabel="🔔">
+            <View>
+              <Ionicons name="notifications-outline" size={22} color={colors.text} />
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 1,
+                  right: 1,
+                  width: 7,
+                  height: 7,
+                  borderRadius: 4,
+                  backgroundColor: colors.primary,
+                }}
+              />
+            </View>
+          </PressableScale>
+        </View>
+
+        {/* Headline */}
+        <View style={{ paddingHorizontal: spacing(4), paddingTop: spacing(4), gap: spacing(2) }}>
+          <AppText variant="display" style={{ fontSize: 30, lineHeight: 36 }}>
+            {t('home.headline')} <Ionicons name="heart-outline" size={24} color={colors.primary} />
+          </AppText>
+          <AppText variant="body" color="secondary">
+            {t('home.sub')}
+          </AppText>
+        </View>
+
+        {/* Search card */}
+        <View
           style={[
             {
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing(2.5),
               marginHorizontal: spacing(4),
-              marginTop: spacing(3),
-              height: 50,
-              borderRadius: radius.pill,
-              borderWidth: 1.5,
-              borderColor: colors.border,
+              marginTop: spacing(4),
               backgroundColor: colors.surface,
-              paddingHorizontal: spacing(4),
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing(4),
+              gap: spacing(4),
             },
             mode === 'light' ? shadow.card : null,
           ]}
         >
-          <Ionicons name="search" size={19} color={colors.textSecondary} />
-          <AppText variant="body" color="secondary">
-            {t('home.searchPlaceholder')}
-          </AppText>
-        </PressableScale>
+          <View style={{ flexDirection: 'row', gap: spacing(4) }}>
+            {searchField(
+              t('home.dateLabel'),
+              'calendar-outline',
+              dateISO ? formatMediumDate(dateISO, locale) : t('availability.pickDate'),
+              () => setDateSheetOpen(true),
+            )}
+            <View style={{ width: 1, backgroundColor: colors.border }} />
+            {searchField(t('home.guestsLabel'), 'person-outline', `${guests} ${t('common.guests')}`, () => setGuestSheetOpen(true))}
+          </View>
+          <Button
+            title={t('home.searchCta')}
+            onPress={() =>
+              router.push({
+                pathname: '/results',
+                params: { city, ...(dateISO ? { date: dateISO } : {}), guests: String(guests) },
+              })
+            }
+            iconLeft={<Ionicons name="search" size={16} color={colors.onPrimary} />}
+            fullWidth
+          />
+        </View>
 
-        {/* Trending cities */}
-        <AppText variant="heading" style={{ marginHorizontal: spacing(4), marginTop: spacing(6), marginBottom: spacing(3) }}>
-          {t('home.topCities')}
-        </AppText>
+        {/* Popular Venues */}
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: spacing(4), marginTop: spacing(6), marginBottom: spacing(3) }}>
+          <AppText variant="heading">{t('home.popular')}</AppText>
+          <PressableScale onPress={() => router.push('/results')} hapticFeedback="select" accessibilityRole="button">
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <AppText variant="label" color="brand">
+                {t('common.seeAll')}
+              </AppText>
+              <Ionicons name="chevron-forward" size={13} color={colors.primary} />
+            </View>
+          </PressableScale>
+        </View>
         {venues === null ? (
-          <View style={{ flexDirection: 'row', gap: spacing(2.5), paddingHorizontal: spacing(4) }}>
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} width={96} height={90} radius={radius.md} />
-            ))}
+          <View style={{ flexDirection: 'row', gap: spacing(3), paddingHorizontal: spacing(4) }}>
+            <Skeleton width={230} height={240} radius={radius.lg} />
+            <Skeleton width={230} height={240} radius={radius.lg} />
           </View>
         ) : (
           <FlatList
-            data={TRENDING_CITIES}
+            data={popular}
             horizontal
             showsHorizontalScrollIndicator={false}
-            keyExtractor={(c) => c}
-            contentContainerStyle={{ paddingHorizontal: spacing(4), gap: spacing(2.5) }}
-            renderItem={({ item, index }) => {
-              const cityVenue = venues.find((v) => v.city === item);
-              return (
-                <PressableScale
-                  onPress={() => router.push({ pathname: '/results', params: { city: item } })}
-                  scaleTo={0.96}
-                  hapticFeedback="select"
-                  accessibilityRole="button"
-                  accessibilityLabel={t(`city.${item}`)}
-                  style={{ width: 96 }}
-                >
-                  <View style={{ borderRadius: radius.md, overflow: 'hidden', height: 68 }}>
-                    <Image
-                      source={{ uri: cityVenue?.photos[0] }}
-                      style={{ width: '100%', height: '100%' }}
-                      contentFit="cover"
-                      transition={200}
-                      accessibilityIgnoresInvertColors
-                    />
-                    <View
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: spacing(2),
-                        backgroundColor: colors.urgency,
-                        paddingHorizontal: spacing(1.5),
-                        paddingVertical: 3,
-                        borderBottomLeftRadius: 4,
-                        borderBottomRightRadius: 4,
-                      }}
-                    >
-                      <AppText variant="caption" style={{ color: '#FFFFFF' }}>
-                        #{index + 1}
-                      </AppText>
-                    </View>
-                  </View>
-                  <AppText variant="bodySmStrong" style={{ marginTop: spacing(1) }}>
-                    {t(`city.${item}`)}
-                  </AppText>
-                </PressableScale>
-              );
-            }}
+            keyExtractor={(v) => v.id}
+            contentContainerStyle={{ paddingHorizontal: spacing(4), gap: spacing(3) }}
+            renderItem={({ item }) => <VenueCard venue={item} variant="carousel" />}
           />
         )}
 
-        {/* Category carousels */}
-        {venues === null ? (
-          <View style={{ paddingHorizontal: spacing(4), marginTop: spacing(6), gap: spacing(3) }}>
-            <Skeleton width="45%" height={20} />
-            <View style={{ flexDirection: 'row', gap: spacing(3) }}>
-              <Skeleton width={210} height={200} radius={radius.lg} />
-              <Skeleton width={210} height={200} radius={radius.lg} />
+        {/* Top Rated */}
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: spacing(4), marginTop: spacing(6), marginBottom: spacing(3) }}>
+          <AppText variant="heading">{t('home.topRated')}</AppText>
+          <PressableScale onPress={() => router.push('/results')} hapticFeedback="select" accessibilityRole="button">
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <AppText variant="label" color="brand">
+                {t('common.seeAll')}
+              </AppText>
+              <Ionicons name="chevron-forward" size={13} color={colors.primary} />
             </View>
-          </View>
-        ) : (
-          sections.map((section) => (
-            <View key={section.type} style={{ marginTop: spacing(6) }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  marginHorizontal: spacing(4),
-                  marginBottom: spacing(3),
-                }}
-              >
-                <AppText variant="heading">{t(`venueType.${section.type}`)}</AppText>
-                <PressableScale
-                  onPress={() => router.push({ pathname: '/results', params: { type: section.type } })}
-                  hapticFeedback="select"
-                  accessibilityRole="button"
-                >
-                  <AppText variant="label" color="brand">
-                    {t('common.seeAll')}
-                  </AppText>
-                </PressableScale>
-              </View>
-              <FlatList
-                data={section.venues}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(v) => v.id}
-                contentContainerStyle={{ paddingHorizontal: spacing(4), gap: spacing(3) }}
-                renderItem={({ item }) => <VenueCard venue={item} variant="carousel" />}
-              />
-            </View>
-          ))
-        )}
+          </PressableScale>
+        </View>
+        <View style={{ paddingHorizontal: spacing(4), gap: spacing(2.5) }}>
+          {venues === null
+            ? [0, 1, 2].map((i) => <Skeleton key={i} height={84} radius={radius.lg} />)
+            : topRated.map((venue) => <VenueCard key={venue.id} venue={venue} variant="row" />)}
+        </View>
       </ScrollView>
+
+      {/* Date sheet */}
+      <Modal visible={dateSheetOpen} transparent animationType="slide" onRequestClose={() => setDateSheetOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+          <Pressable style={{ flex: 1 }} onPress={() => setDateSheetOpen(false)} accessibilityRole="button" />
+          <View style={sheetBase}>
+            <View style={{ alignItems: 'center' }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong }} />
+            </View>
+            <MonthPager
+              locale={locale}
+              selectedISO={dateISO}
+              minISO={todayISO()}
+              stateFor={() => 'available'}
+              onSelect={(iso) => {
+                setDateISO(iso);
+                setDateSheetOpen(false);
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Guests sheet */}
+      <Modal visible={guestSheetOpen} transparent animationType="slide" onRequestClose={() => setGuestSheetOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+          <Pressable style={{ flex: 1 }} onPress={() => setGuestSheetOpen(false)} accessibilityRole="button" />
+          <View style={sheetBase}>
+            <View style={{ alignItems: 'center' }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong }} />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <AppText variant="heading">{t('filters.guestCount')}</AppText>
+              <Stepper value={guests} min={50} max={600} step={50} onChange={setGuests} accessibilityLabel={t('filters.guestCount')} />
+            </View>
+            <Button title={t('common.done')} onPress={() => setGuestSheetOpen(false)} variant="dark" size="md" fullWidth />
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }

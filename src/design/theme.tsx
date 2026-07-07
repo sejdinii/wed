@@ -14,6 +14,7 @@ export interface ThemeColors {
   textInverse: string;
   primary: string;
   onPrimary: string;
+  /** Lavender reassurance wash (kapar cards, info banners). */
   mint: string;
   onMint: string;
   chip: string;
@@ -22,6 +23,7 @@ export interface ThemeColors {
   urgencySoft: string;
   amber: string;
   amberSoft: string;
+  /** Kapar amounts — violet in the v3 identity. */
   gold: string;
   goldSoft: string;
   border: string;
@@ -42,67 +44,67 @@ export interface Theme {
 }
 
 const lightColors: ThemeColors = {
-  background: brand.paper,
+  background: brand.haze,
   surface: brand.paper,
-  surfaceElevated: '#F3F6F3',
+  surfaceElevated: '#F1EFF8',
   text: brand.ink,
-  textSecondary: '#5D6A61',
-  textTertiary: '#8C978F',
+  textSecondary: '#5A5670',
+  textTertiary: '#8D89A3',
   textInverse: '#FFFFFF',
-  primary: brand.green,
+  primary: brand.violet,
   onPrimary: '#FFFFFF',
-  mint: brand.mint,
-  onMint: brand.mintInk,
+  mint: brand.lavender,
+  onMint: brand.violetDeep,
   chip: brand.chip,
   onChip: '#FFFFFF',
   urgency: brand.red,
   urgencySoft: brand.redSoft,
   amber: brand.amber,
   amberSoft: brand.amberSoft,
-  gold: brand.gold,
-  goldSoft: brand.goldSoft,
-  border: '#E3E8E3',
-  borderStrong: '#C9D1CA',
+  gold: brand.violet,
+  goldSoft: brand.lavender,
+  border: '#E7E4F0',
+  borderStrong: '#CDC8DE',
   success: brand.green,
-  successSoft: brand.mint,
+  successSoft: brand.greenSoft,
   danger: brand.red,
   dangerSoft: brand.redSoft,
-  overlay: 'rgba(19, 26, 22, 0.55)',
-  skeleton: '#ECF0EC',
+  overlay: 'rgba(30, 27, 46, 0.55)',
+  skeleton: '#ECE9F4',
   tabBar: brand.paper,
-  tabBarBorder: '#E9EDE9',
+  tabBarBorder: '#ECE9F4',
 };
 
 const darkColors: ThemeColors = {
-  background: '#0F1411',
-  surface: '#151B17',
-  surfaceElevated: '#1C231E',
-  text: '#EBEFEA',
-  textSecondary: '#A2AEA5',
-  textTertiary: '#6E7A71',
+  background: '#141221',
+  surface: '#1B1830',
+  surfaceElevated: '#232040',
+  text: '#EDEBF5',
+  textSecondary: '#A8A4BE',
+  textTertiary: '#726E8A',
   textInverse: brand.ink,
-  primary: brand.greenBright,
-  onPrimary: '#0C130F',
-  mint: '#173226',
-  onMint: '#7FC5A2',
-  chip: '#E9EDE9',
+  primary: brand.violetBright,
+  onPrimary: '#14102A',
+  mint: '#292344',
+  onMint: '#C4B5FD',
+  chip: '#EDEBF5',
   onChip: brand.ink,
-  urgency: '#E0705F',
-  urgencySoft: '#38201B',
-  amber: '#D8A94E',
-  amberSoft: '#322810',
-  gold: '#D0AA61',
-  goldSoft: '#2E2615',
-  border: '#252D26',
-  borderStrong: '#39423A',
-  success: brand.greenBright,
-  successSoft: '#173226',
-  danger: '#E0705F',
-  dangerSoft: '#38201B',
+  urgency: '#F07373',
+  urgencySoft: '#3A2030',
+  amber: '#E8A54C',
+  amberSoft: '#342A16',
+  gold: brand.violetBright,
+  goldSoft: '#292344',
+  border: '#2B2748',
+  borderStrong: '#413C66',
+  success: '#4ADE80',
+  successSoft: '#17301F',
+  danger: '#F07373',
+  dangerSoft: '#3A2030',
   overlay: 'rgba(0, 0, 0, 0.6)',
-  skeleton: '#212822',
-  tabBar: '#121813',
-  tabBarBorder: '#1F2620',
+  skeleton: '#252142',
+  tabBar: '#171428',
+  tabBarBorder: '#232040',
 };
 
 export const lightTheme: Theme = { mode: 'light', colors: lightColors };

@@ -5,38 +5,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { AppText } from '@/design/components/AppText';
-import { Badge } from '@/design/components/Badge';
+import { Divider } from '@/design/components/Divider';
 import { PressableScale } from '@/design/components/PressableScale';
 import { useTheme } from '@/design/theme';
 import { radius, shadow, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
-import { formatMkdBare } from '@/lib/money';
-import { addDaysISO, nextFreeSaturdays, todayISO } from '@/lib/dates';
-import { cheapestPerGuest } from '@/domain/kapar';
+import { formatMkd } from '@/lib/money';
+import { minEstimateMkd, priceLevel } from '@/domain/kapar';
 import type { Venue } from '@/domain/types';
 import { useFavorites } from '@/stores/favorites';
 import { useI18n } from '@/i18n';
 
-/** Red scarcity pill — only when the calendar is genuinely tight (≤3 free Saturdays in 90 days). */
-function urgencyCount(venue: Venue): number | null {
-  const horizon = addDaysISO(todayISO(), 90);
-  const free = nextFreeSaturdays(todayISO(), 4, (iso) => iso > horizon || venue.bookedDates.includes(iso));
-  return free.length <= 3 ? free.length : null;
-}
-
-function Stars({ rating }: { rating: number }) {
+function HeartButton({ venueId, onImage = false }: { venueId: string; onImage?: boolean }) {
   const { colors } = useTheme();
-  const full = Math.round(rating);
-  return (
-    <View style={{ flexDirection: 'row', gap: 1 }}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Ionicons key={i} name={i <= full ? 'star' : 'star-outline'} size={11} color={colors.primary} />
-      ))}
-    </View>
-  );
-}
-
-function HeartButton({ venueId }: { venueId: string }) {
   const isFavorite = useFavorites((s) => s.venueIds.includes(venueId));
   const toggle = useFavorites((s) => s.toggle);
   return (
@@ -50,131 +31,275 @@ function HeartButton({ venueId }: { venueId: string }) {
       accessibilityRole="button"
       accessibilityState={{ selected: isFavorite }}
       accessibilityLabel="♥"
+      style={
+        onImage
+          ? {
+              position: 'absolute',
+              top: spacing(2),
+              right: spacing(2),
+              width: 30,
+              height: 30,
+              borderRadius: 15,
+              backgroundColor: 'rgba(255,255,255,0.92)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }
+          : { padding: 2 }
+      }
+    >
+      <Ionicons
+        name={isFavorite ? 'heart' : 'heart-outline'}
+        size={onImage ? 16 : 20}
+        color={isFavorite ? colors.urgency : onImage ? '#1E1B2E' : colors.text}
+      />
+    </PressableScale>
+  );
+}
+
+function RatingChip({ venue, onImage = false }: { venue: Venue; onImage?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View
       style={{
-        position: 'absolute',
-        top: spacing(2),
-        right: spacing(2),
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: '#FFFFFF',
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: 3,
+        backgroundColor: onImage ? 'rgba(255,255,255,0.94)' : colors.mint,
+        borderRadius: radius.pill,
+        paddingHorizontal: spacing(2),
+        paddingVertical: 3,
+        alignSelf: 'flex-start',
       }}
     >
-      <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={17} color={isFavorite ? '#CC4433' : '#131A16'} />
-    </PressableScale>
+      <Ionicons name="star" size={11} color={onImage ? '#5B21B6' : colors.primary} />
+      <AppText variant="caption" style={{ color: onImage ? '#1E1B2E' : colors.onMint }}>
+        {venue.rating.toFixed(1)} ({venue.reviewCount})
+      </AppText>
+    </View>
+  );
+}
+
+function InfoChip({ icon, label }: { icon?: React.ComponentProps<typeof Ionicons>['name']; label: string }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: colors.surfaceElevated,
+        borderRadius: radius.sm,
+        paddingHorizontal: spacing(1.5),
+        paddingVertical: 3,
+      }}
+    >
+      {icon ? <Ionicons name={icon} size={11} color={colors.textSecondary} /> : null}
+      <AppText variant="caption" color="secondary">
+        {label}
+      </AppText>
+    </View>
   );
 }
 
 export interface VenueCardProps {
   venue: Venue;
-  /** 'carousel': fixed-width vertical card (home). 'split': image-left row card (results). */
-  variant?: 'carousel' | 'split';
+  /** 'carousel' (home Popular), 'split' (results), 'row' (home Top Rated). */
+  variant?: 'carousel' | 'split' | 'row';
+  /** Show the green "Available" state (results with a date filter). */
+  showAvailable?: boolean;
 }
 
-export function VenueCard({ venue, variant = 'split' }: VenueCardProps) {
+export function VenueCard({ venue, variant = 'split', showAvailable = false }: VenueCardProps) {
   const { colors, mode } = useTheme();
   const { locale, t } = useI18n();
   const router = useRouter();
 
-  const urgency = urgencyCount(venue);
-  const priceLine = (
-    <AppText variant="bodySm" color="secondary">
-      {t('common.from')}{' '}
-      <AppText variant="price" style={{ fontSize: 14 }}>
-        {formatMkdBare(cheapestPerGuest(venue), locale)} ден.
-      </AppText>{' '}
-      {t('common.perGuest')}
-    </AppText>
+  const open = () => router.push(`/venue/${venue.id}`);
+  const chips = (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(1.5) }}>
+      <InfoChip label={priceLevel(venue)} />
+      <InfoChip icon="people-outline" label={`${venue.capacityMax}`} />
+      <InfoChip icon="business-outline" label={t(`venueTypeShort.${venue.venueType}`)} />
+    </View>
   );
 
   if (variant === 'carousel') {
     return (
       <PressableScale
-        onPress={() => router.push(`/venue/${venue.id}`)}
+        onPress={open}
         scaleTo={0.98}
         accessibilityRole="button"
         accessibilityLabel={venue.name}
-        style={{ width: 210 }}
+        style={[
+          { width: 230, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+          mode === 'light' ? shadow.card : null,
+        ]}
       >
-        <View style={{ borderRadius: radius.lg, overflow: 'hidden' }}>
+        <View>
           <Image
             source={{ uri: venue.photos[0] }}
-            style={{ width: '100%', aspectRatio: 4 / 3 }}
+            style={{ width: '100%', aspectRatio: 5 / 4 }}
             contentFit="cover"
             transition={200}
             accessibilityIgnoresInvertColors
           />
-          {urgency !== null ? (
-            <View style={{ position: 'absolute', top: spacing(2), left: spacing(2) }}>
-              <Badge label={t('home.fewSaturdays', { count: urgency })} tone="urgency" style={{ backgroundColor: '#FFFFFF' }} />
-            </View>
-          ) : null}
-          <HeartButton venueId={venue.id} />
+          <HeartButton venueId={venue.id} onImage />
+          <View style={{ position: 'absolute', bottom: spacing(2), left: spacing(2) }}>
+            <RatingChip venue={venue} onImage />
+          </View>
         </View>
-        <View style={{ paddingTop: spacing(2), gap: 2 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
-            <Stars rating={venue.rating} />
+        <View style={{ padding: spacing(3), gap: spacing(1.5) }}>
+          <AppText variant="subheading" numberOfLines={1}>
+            {venue.name}
+          </AppText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+            <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
             <AppText variant="bodySm" color="secondary">
-              {venue.rating.toFixed(1)} ({venue.reviewCount})
+              {t(`city.${venue.city}`)}
             </AppText>
           </View>
-          <AppText variant="bodySmStrong" numberOfLines={2}>
-            {venue.name}, {t(`city.${venue.city}`)}
+          {chips}
+          <AppText variant="bodySmStrong" color="brand">
+            {t('common.from')} {formatMkd(minEstimateMkd(venue), locale)}
           </AppText>
-          <AppText variant="bodySm" color="secondary">
-            {t('venue.capacityLine', { min: venue.capacityMin, max: venue.capacityMax })}
-          </AppText>
-          {priceLine}
         </View>
       </PressableScale>
     );
   }
 
+  if (variant === 'row') {
+    return (
+      <PressableScale
+        onPress={open}
+        scaleTo={0.98}
+        accessibilityRole="button"
+        accessibilityLabel={venue.name}
+        style={[
+          {
+            flexDirection: 'row',
+            gap: spacing(3),
+            backgroundColor: colors.surface,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: spacing(2.5),
+            alignItems: 'center',
+          },
+          mode === 'light' ? shadow.card : null,
+        ]}
+      >
+        <Image
+          source={{ uri: venue.photos[0] }}
+          style={{ width: 64, height: 64, borderRadius: radius.md }}
+          contentFit="cover"
+          transition={200}
+          accessibilityIgnoresInvertColors
+        />
+        <View style={{ flex: 1, gap: spacing(1) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
+            <AppText variant="subheading" numberOfLines={1} style={{ flexShrink: 1 }}>
+              {venue.name}
+            </AppText>
+            <RatingChip venue={venue} />
+          </View>
+          <AppText variant="bodySm" color="secondary">
+            {t(`city.${venue.city}`)}
+          </AppText>
+          {chips}
+        </View>
+        <HeartButton venueId={venue.id} />
+      </PressableScale>
+    );
+  }
+
+  // 'split' — results card
   return (
     <PressableScale
-      onPress={() => router.push(`/venue/${venue.id}`)}
+      onPress={open}
       scaleTo={0.98}
       accessibilityRole="button"
       accessibilityLabel={venue.name}
       style={[
         {
           flexDirection: 'row',
+          gap: spacing(3),
           backgroundColor: colors.surface,
           borderRadius: radius.lg,
           borderWidth: 1,
           borderColor: colors.border,
-          overflow: 'hidden',
+          padding: spacing(2.5),
         },
         mode === 'light' ? shadow.card : null,
       ]}
     >
-      <View style={{ width: 128 }}>
+      <View>
         <Image
           source={{ uri: venue.photos[0] }}
-          style={{ width: '100%', height: '100%', minHeight: 128 }}
+          style={{ width: 118, height: 132, borderRadius: radius.md }}
           contentFit="cover"
           transition={200}
           accessibilityIgnoresInvertColors
         />
-        <HeartButton venueId={venue.id} />
+        {venue.featured ? (
+          <View
+            style={{
+              position: 'absolute',
+              top: spacing(1.5),
+              left: spacing(1.5),
+              backgroundColor: colors.primary,
+              borderRadius: radius.sm,
+              paddingHorizontal: spacing(2),
+              paddingVertical: 3,
+            }}
+          >
+            <AppText variant="caption" style={{ color: colors.onPrimary }}>
+              {t('common.popularBadge')}
+            </AppText>
+          </View>
+        ) : null}
       </View>
-      <View style={{ flex: 1, padding: spacing(3), gap: 2 }}>
-        {urgency !== null ? <Badge label={t('home.fewSaturdays', { count: urgency })} tone="urgency" /> : null}
-        <AppText variant="bodyStrong" numberOfLines={2}>
-          {venue.name}
-        </AppText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
-          <Stars rating={venue.rating} />
+      <View style={{ flex: 1, gap: spacing(1.5) }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing(2) }}>
+          <AppText variant="subheading" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {venue.name}
+          </AppText>
+          <HeartButton venueId={venue.id} />
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Ionicons name="star" size={13} color={colors.primary} />
+          <AppText variant="bodySmStrong" color="brand">
+            {venue.rating.toFixed(1)}
+          </AppText>
           <AppText variant="bodySm" color="secondary">
             ({venue.reviewCount})
           </AppText>
         </View>
-        <AppText variant="bodySm" color="secondary" numberOfLines={1}>
-          {t('venue.capacityLine', { min: venue.capacityMin, max: venue.capacityMax })} · {t(`city.${venue.city}`)}
-        </AppText>
-        <View style={{ alignItems: 'flex-end', marginTop: 'auto' }}>{priceLine}</View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
+          <Ionicons name="business-outline" size={13} color={colors.textSecondary} />
+          <AppText variant="bodySm" color="secondary">
+            {t(`venueTypeShort.${venue.venueType}`)}
+          </AppText>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
+          <Ionicons name="people-outline" size={13} color={colors.textSecondary} />
+          <AppText variant="bodySm" color="secondary">
+            {t('venue.capacityLine', { min: venue.capacityMin, max: venue.capacityMax })}
+          </AppText>
+        </View>
+        <Divider />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <AppText variant="bodySm" color="secondary">
+            {t('common.from')}{' '}
+            <AppText variant="price" style={{ fontSize: 15 }}>
+              {formatMkd(minEstimateMkd(venue), locale)}
+            </AppText>
+          </AppText>
+          {showAvailable ? (
+            <AppText variant="bodySmStrong" color="success">
+              {t('results.available')}
+            </AppText>
+          ) : null}
+        </View>
       </View>
     </PressableScale>
   );

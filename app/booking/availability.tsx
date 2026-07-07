@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,33 +9,32 @@ import { Button } from '@/design/components/Button';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
-import { Stepper } from '@/design/components/Stepper';
 import { MonthPager } from '@/components/MonthPager';
 import { useTheme } from '@/design/theme';
-import { radius, spacing } from '@/design/tokens';
-import { formatMkd, formatMkdBare } from '@/lib/money';
-import { addDaysISO, formatMediumDate, todayISO } from '@/lib/dates';
-import { estimateTotalMkd, kaparAmountMkd, sortedRefundTiers } from '@/domain/kapar';
+import { radius, shadow, spacing } from '@/design/tokens';
+import { haptic } from '@/lib/haptics';
+import { formatMkd } from '@/lib/money';
+import { formatLongDate, todayISO } from '@/lib/dates';
+import { estimateTotalMkd, kaparAmountMkd, venueDayState } from '@/domain/kapar';
 import type { Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { useBookingDraft } from '@/stores/bookingDraft';
 import { useI18n } from '@/i18n';
 
 /**
- * Check availability — date and guest pills up top, then the menus as
- * selectable option cards. The selected card expands with the refund note,
- * the live estimate and the kapar due now (gold). One green "Select" pill.
+ * Availability (v3) — the calendar with green/amber/red day dots and legend,
+ * the Selected Date card, a full-width guests stepper, and the lavender
+ * kapar card explaining exactly what the deposit does. Menu selection moved
+ * to checkout so this screen stays date + guests + kapar.
  */
 export default function AvailabilityScreen() {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const { locale, t } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const draft = useBookingDraft();
   const [venue, setVenue] = useState<Venue | null>(null);
-  const [dateSheetOpen, setDateSheetOpen] = useState(false);
-  const [guestSheetOpen, setGuestSheetOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,51 +50,64 @@ export default function AvailabilityScreen() {
 
   if (!draft.venueId) return <Redirect href="/(tabs)" />;
 
-  const PillDropdown = ({
-    icon,
-    label,
-    onPress,
-    active,
-  }: {
-    icon: React.ComponentProps<typeof Ionicons>['name'];
-    label: string;
-    onPress: () => void;
-    active: boolean;
-  }) => (
-    <PressableScale
-      onPress={onPress}
-      scaleTo={0.98}
-      hapticFeedback="select"
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={{
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing(2),
-        borderWidth: 1.5,
-        borderColor: active ? colors.text : colors.borderStrong,
-        borderRadius: radius.md,
-        paddingHorizontal: spacing(3),
-        height: 46,
-      }}
-    >
-      <Ionicons name={icon} size={16} color={colors.text} />
-      <AppText variant="bodySmStrong" style={{ flex: 1 }} numberOfLines={1}>
+  // Kapar preview on the cheapest menu; the exact figure firms up in checkout.
+  const kapar =
+    venue && draft.menuTierId
+      ? kaparAmountMkd(venue.kaparPolicy, estimateTotalMkd(venue, draft.menuTierId, draft.guestCount))
+      : 0;
+
+  const cardStyle = [
+    {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing(4),
+    },
+    mode === 'light' ? shadow.card : null,
+  ] as const;
+
+  const Legend = ({ color, label }: { color: string; label: string }) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+      <AppText variant="caption" color="secondary">
         {label}
       </AppText>
-      <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
-    </PressableScale>
+    </View>
   );
 
-  const sheetBase = {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    padding: spacing(4),
-    paddingBottom: insets.bottom + spacing(5),
-    gap: spacing(4),
-  } as const;
+  const StepButton = ({ type }: { type: 'inc' | 'dec' }) => {
+    if (!venue) return null;
+    const step = 10;
+    const next = type === 'inc' ? draft.guestCount + step : draft.guestCount - step;
+    const enabled = next >= venue.capacityMin && next <= venue.capacityMax;
+    return (
+      <PressableScale
+        onPress={() => {
+          haptic.select();
+          draft.setGuestCount(next);
+        }}
+        disabled={!enabled}
+        hapticFeedback={null}
+        scaleTo={0.9}
+        accessibilityRole="button"
+        accessibilityLabel={type === 'inc' ? '+' : '−'}
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: radius.md,
+          borderWidth: 1.5,
+          borderColor: colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: enabled ? 1 : 0.35,
+          backgroundColor: colors.surface,
+        }}
+      >
+        <Ionicons name={type === 'inc' ? 'add' : 'remove'} size={20} color={colors.text} />
+      </PressableScale>
+    );
+  };
 
   return (
     <Screen>
@@ -111,7 +123,7 @@ export default function AvailabilityScreen() {
         }}
       >
         <PressableScale onPress={() => router.back()} hapticFeedback="select" accessibilityRole="button" accessibilityLabel={t('common.back')}>
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
+          <Ionicons name="arrow-back" size={22} color={colors.primary} />
         </PressableScale>
         <AppText variant="heading" style={{ flex: 1, textAlign: 'center' }}>
           {t('availability.title')}
@@ -121,193 +133,142 @@ export default function AvailabilityScreen() {
 
       {venue === null ? (
         <View style={{ padding: spacing(4), gap: spacing(3) }}>
-          <Skeleton height={46} radius={radius.md} />
-          <Skeleton height={180} radius={radius.lg} />
+          <Skeleton height={340} radius={radius.lg} />
+          <Skeleton height={90} radius={radius.lg} />
         </View>
       ) : (
         <>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing(4), gap: spacing(4), paddingBottom: spacing(30) }}>
-            {/* Date + guests pills */}
-            <View style={{ flexDirection: 'row', gap: spacing(2.5) }}>
-              <PillDropdown
-                icon="calendar-outline"
-                label={draft.dateISO ? formatMediumDate(draft.dateISO, locale) : t('availability.pickDate')}
-                onPress={() => setDateSheetOpen(true)}
-                active={draft.dateISO !== null}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: spacing(4), gap: spacing(4), paddingBottom: spacing(34) }}
+          >
+            {/* Calendar with state dots + legend */}
+            <View style={cardStyle}>
+              <MonthPager
+                locale={locale}
+                selectedISO={draft.dateISO}
+                minISO={todayISO()}
+                stateFor={(iso) => venueDayState(venue, iso)}
+                onSelect={draft.setDate}
               />
-              <PillDropdown
-                icon="people-outline"
-                label={`${draft.guestCount} ${t('common.guests')}`}
-                onPress={() => setGuestSheetOpen(true)}
-                active
-              />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing(3), flexWrap: 'wrap', gap: spacing(2) }}>
+                <Legend color={colors.success} label={t('availability.legendAvailable')} />
+                <Legend color={colors.amber} label={t('availability.legendLimited')} />
+                <Legend color={colors.danger} label={t('availability.legendBooked')} />
+                <Legend color={colors.primary} label={t('availability.legendSelected')} />
+              </View>
             </View>
 
-            <AppText variant="subheading">{t('availability.menusAvailable', { count: venue.menuTiers.length })}</AppText>
-
-            {/* Menu option cards */}
-            {venue.menuTiers.map((tier) => {
-              const selected = tier.id === draft.menuTierId;
-              const estimate = estimateTotalMkd(venue, tier.id, draft.guestCount);
-              const kapar = kaparAmountMkd(venue.kaparPolicy, estimate);
-              const fullTier = sortedRefundTiers(venue.kaparPolicy)[0];
-              const refundDeadline =
-                draft.dateISO && fullTier && fullTier.refundPercent >= 100
-                  ? addDaysISO(draft.dateISO, -fullTier.minDaysBeforeEvent)
-                  : null;
-
-              return (
-                <PressableScale
-                  key={tier.id}
-                  onPress={() => draft.setMenuTier(tier.id)}
-                  scaleTo={0.99}
-                  hapticFeedback="select"
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  style={{
-                    borderWidth: selected ? 2 : 1,
-                    borderColor: selected ? colors.text : colors.border,
-                    borderRadius: radius.lg,
-                    padding: spacing(3.5),
-                    gap: spacing(2),
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <AppText variant="subheading">{tier.name[locale]}</AppText>
-                    <Ionicons
-                      name={selected ? 'radio-button-on' : 'radio-button-off'}
-                      size={20}
-                      color={selected ? colors.primary : colors.textTertiary}
-                    />
-                  </View>
-                  <AppText variant="bodySm" color="secondary">
-                    {tier.description[locale]}
-                  </AppText>
+            {/* Selected date card */}
+            {draft.dateISO ? (
+              <View style={[...cardStyle, { gap: spacing(3) }]}>
+                <AppText variant="subheading">{t('availability.selectedDate')}</AppText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(3) }}>
                   <View
                     style={{
-                      alignSelf: 'flex-start',
-                      backgroundColor: selected ? colors.chip : colors.surfaceElevated,
-                      borderRadius: radius.pill,
-                      paddingHorizontal: spacing(3),
-                      paddingVertical: spacing(1.5),
+                      width: 44,
+                      height: 44,
+                      borderRadius: radius.md,
+                      backgroundColor: colors.mint,
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    <AppText variant="bodySmStrong" style={{ color: selected ? colors.onChip : colors.text }}>
-                      {t('venue.menuPerGuest', { amount: formatMkdBare(tier.pricePerGuestMkd, locale) })}
-                    </AppText>
+                    <Ionicons name="calendar-outline" size={19} color={colors.primary} />
                   </View>
+                  <AppText variant="bodyStrong" style={{ flex: 1 }}>
+                    {formatLongDate(draft.dateISO, locale)}
+                  </AppText>
+                  <AppText variant="bodySmStrong" color="success">
+                    {t('results.available')}
+                  </AppText>
+                </View>
+              </View>
+            ) : null}
 
-                  {selected ? (
-                    <>
-                      {refundDeadline ? (
-                        <View style={{ backgroundColor: colors.mint, borderRadius: radius.sm, padding: spacing(2.5) }}>
-                          <AppText variant="bodySmStrong" style={{ color: colors.onMint }}>
-                            ✓ {t('availability.refundUntil', { date: formatMediumDate(refundDeadline, locale) })}
-                          </AppText>
-                        </View>
-                      ) : null}
-                      <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                        <AppText variant="bodySm" color="secondary">
-                          {t('availability.calc', { guests: draft.guestCount, price: formatMkdBare(tier.pricePerGuestMkd, locale) })}
-                        </AppText>
-                        <AppText variant="bodyStrong">{t('availability.estimate', { amount: formatMkd(estimate, locale) })}</AppText>
-                        <AppText variant="subheading" color="gold">
-                          {t('availability.kaparNow', { amount: formatMkd(kapar, locale) })}
-                        </AppText>
-                      </View>
-                    </>
-                  ) : null}
-                </PressableScale>
-              );
-            })}
+            {/* Guests */}
+            <View style={{ gap: spacing(2) }}>
+              <AppText variant="subheading">{t('home.guestsLabel')}</AppText>
+              <View
+                style={[
+                  ...cardStyle,
+                  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing(3) },
+                ]}
+              >
+                <StepButton type="dec" />
+                <AppText variant="heading">
+                  {draft.guestCount} {t('common.guests')}
+                </AppText>
+                <StepButton type="inc" />
+              </View>
+              <AppText variant="bodySm" color="secondary" align="center">
+                {t('availability.accommodates', { min: venue.capacityMin, max: venue.capacityMax })}
+              </AppText>
+            </View>
+
+            {/* Kapar card */}
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: spacing(3),
+                backgroundColor: colors.mint,
+                borderRadius: radius.lg,
+                padding: spacing(4),
+                alignItems: 'flex-start',
+              }}
+            >
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: colors.surface,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText variant="bodyStrong" style={{ color: colors.onMint }}>
+                  {t('availability.kaparTitle')}
+                </AppText>
+                <AppText variant="bodySm" style={{ color: colors.onMint }}>
+                  {t('availability.kaparRequired')}
+                </AppText>
+                <AppText variant="bodySm" style={{ color: colors.onMint, marginTop: spacing(1) }}>
+                  {t('availability.kaparHeld')}
+                </AppText>
+              </View>
+              <AppText variant="title" color="brand">
+                {formatMkd(kapar, locale)}
+              </AppText>
+            </View>
           </ScrollView>
 
+          {/* Continue + secure footer */}
           <View
             style={{
               position: 'absolute',
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: colors.surface,
+              backgroundColor: colors.background,
               borderTopWidth: 1,
               borderTopColor: colors.border,
               padding: spacing(4),
-              paddingBottom: insets.bottom + spacing(3),
+              paddingBottom: insets.bottom + spacing(2),
+              gap: spacing(2),
             }}
           >
-            <Button
-              title={t('availability.select')}
-              onPress={() => router.push('/booking/checkout')}
-              disabled={!draft.dateISO || !draft.menuTierId}
-              fullWidth
-            />
+            <Button title={t('common.continue')} onPress={() => router.push('/booking/checkout')} disabled={!draft.dateISO} fullWidth />
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing(1.5) }}>
+              <Ionicons name="lock-closed-outline" size={13} color={colors.textSecondary} />
+              <AppText variant="bodySm" color="secondary">
+                {t('availability.securePayment')} · {t('availability.dataProtected')}
+              </AppText>
+            </View>
           </View>
-
-          {/* Date sheet */}
-          <Modal visible={dateSheetOpen} transparent animationType="slide" onRequestClose={() => setDateSheetOpen(false)}>
-            <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-              <Pressable style={{ flex: 1 }} onPress={() => setDateSheetOpen(false)} accessibilityRole="button" />
-              <View style={sheetBase}>
-                <View style={{ alignItems: 'center' }}>
-                  <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong }} />
-                </View>
-                <MonthPager
-                  locale={locale}
-                  selectedISO={draft.dateISO}
-                  minISO={todayISO()}
-                  isBlocked={(iso) => venue.bookedDates.includes(iso)}
-                  onSelect={(iso) => {
-                    draft.setDate(iso);
-                    setDateSheetOpen(false);
-                  }}
-                />
-                <View style={{ flexDirection: 'row', gap: spacing(4), justifyContent: 'center' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.gold }} />
-                    <AppText variant="caption" color="tertiary">
-                      {t('availability.legendSaturday')}
-                    </AppText>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
-                    <AppText variant="caption" color="tertiary" style={{ textDecorationLine: 'line-through' }}>
-                      12
-                    </AppText>
-                    <AppText variant="caption" color="tertiary">
-                      {t('availability.legendBooked')}
-                    </AppText>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </Modal>
-
-          {/* Guests sheet */}
-          <Modal visible={guestSheetOpen} transparent animationType="slide" onRequestClose={() => setGuestSheetOpen(false)}>
-            <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-              <Pressable style={{ flex: 1 }} onPress={() => setGuestSheetOpen(false)} accessibilityRole="button" />
-              <View style={sheetBase}>
-                <View style={{ alignItems: 'center' }}>
-                  <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong }} />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View>
-                    <AppText variant="heading">{t('filters.guestCount')}</AppText>
-                    <AppText variant="bodySm" color="tertiary">
-                      {t('venue.capacityLine', { min: venue.capacityMin, max: venue.capacityMax })}
-                    </AppText>
-                  </View>
-                  <Stepper
-                    value={draft.guestCount}
-                    min={venue.capacityMin}
-                    max={venue.capacityMax}
-                    onChange={draft.setGuestCount}
-                    accessibilityLabel={t('filters.guestCount')}
-                  />
-                </View>
-                <Button title={t('common.done')} onPress={() => setGuestSheetOpen(false)} variant="dark" size="md" fullWidth />
-              </View>
-            </View>
-          </Modal>
         </>
       )}
     </Screen>

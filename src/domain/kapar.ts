@@ -1,5 +1,5 @@
 import type { Booking, BookingStatus, KaparPolicy, MenuTier, Venue } from './types';
-import { daysBetween } from '@/lib/dates';
+import { addDaysISO, daysBetween } from '@/lib/dates';
 
 /**
  * Kapar business rules — pure functions, no I/O, fully unit-testable.
@@ -9,6 +9,32 @@ import { daysBetween } from '@/lib/dates';
 
 export function cheapestPerGuest(venue: Venue): number {
   return Math.min(...venue.menuTiers.map((t) => t.pricePerGuestMkd));
+}
+
+/** Minimum realistic event total — powers "From €X" on cards. */
+export function minEstimateMkd(venue: Venue): number {
+  return cheapestPerGuest(venue) * venue.capacityMin;
+}
+
+/** €€–€€€€ price level derived from the cheapest per-guest menu. */
+export function priceLevel(venue: Venue): string {
+  const price = cheapestPerGuest(venue);
+  if (price < 1250) return '€€';
+  if (price < 1550) return '€€€';
+  return '€€€€';
+}
+
+/**
+ * Calendar day state: booked = taken outright; limited = adjacent to a
+ * booked day (venues juggle setup/teardown around back-to-back weddings);
+ * otherwise available.
+ */
+export function venueDayState(venue: Venue, iso: string): 'available' | 'limited' | 'booked' {
+  if (venue.bookedDates.includes(iso)) return 'booked';
+  if (venue.bookedDates.includes(addDaysISO(iso, -1)) || venue.bookedDates.includes(addDaysISO(iso, 1))) {
+    return 'limited';
+  }
+  return 'available';
 }
 
 export function findTier(venue: Venue, tierId: string): MenuTier | undefined {

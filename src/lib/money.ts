@@ -1,21 +1,15 @@
 import type { Locale } from '@/i18n';
 
 /**
- * All monetary amounts in the app are integer Macedonian denars (MKD).
- * Deni (1/100) are never used in venue pricing, so integers are exact —
- * no floating point, no rounding surprises. Multi-currency support later
- * means introducing a Money = { amount, currency } value object at the
- * domain layer; formatting already goes through this single module.
- *
- * We format manually instead of relying on Intl so output is deterministic
- * across Hermes/ICU builds.
+ * Domain amounts remain integer Macedonian denars (MKD) — exact, no floats.
+ * The v3 design displays prices in EUR (the quoting currency Macedonian
+ * venues actually use with couples), converted at a pinned display rate.
+ * When the backend lands, venues will set their own quote currency and the
+ * rate moves server-side; every screen already formats through this module.
  */
 
-const CURRENCY_SUFFIX: Record<Locale, string> = {
-  mk: 'ден.',
-  sq: 'den.',
-  en: 'MKD',
-};
+/** Pinned display rate (MKD per EUR). The denar is pegged; drift is minimal. */
+export const MKD_PER_EUR = 61.5;
 
 const GROUP_SEPARATOR: Record<Locale, string> = {
   mk: '.',
@@ -36,12 +30,16 @@ export function groupDigits(value: number, locale: Locale): string {
   return negative ? `-${grouped}` : grouped;
 }
 
-/** "30.000 ден." / "30,000 MKD" */
-export function formatMkd(amount: number, locale: Locale): string {
-  return `${groupDigits(amount, locale)} ${CURRENCY_SUFFIX[locale]}`;
+export function mkdToEur(amountMkd: number): number {
+  return Math.round(amountMkd / MKD_PER_EUR);
 }
 
-/** Price-per-guest shorthand used on cards: "1.450 ден." (suffix added by caller copy). */
-export function formatMkdBare(amount: number, locale: Locale): string {
-  return groupDigits(amount, locale);
+/** "€3,200" (en) / "€3.200" (mk, sq) — takes MKD, displays EUR. */
+export function formatMkd(amountMkd: number, locale: Locale): string {
+  return `€${groupDigits(mkdToEur(amountMkd), locale)}`;
+}
+
+/** EUR number without the symbol — for strings that place € themselves. */
+export function formatMkdBare(amountMkd: number, locale: Locale): string {
+  return groupDigits(mkdToEur(amountMkd), locale);
 }

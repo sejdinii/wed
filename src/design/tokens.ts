@@ -1,28 +1,29 @@
 /**
- * Design tokens v2 — travel-marketplace visual language (Viator-structured).
+ * Design tokens v3 — the Kapar purple identity (per the approved mockups).
  *
- * White paper ground, near-black ink, a single confident green that carries
- * ratings, CTAs and confirmation; mint for reassurance banners; red strictly
- * for scarcity/urgency; gold reserved for kapar amounts. One bold sans
- * (Manrope, Cyrillic-complete) at heavy weights carries all hierarchy —
- * no display serif in v2.
+ * Deep violet primary carries CTAs, ratings, icons and kapar amounts;
+ * lavender washes carry reassurance cards and soft chips; semantic colors
+ * are reserved for calendar/booking states: green = available, amber =
+ * limited, red = booked/error. One bold sans (Manrope, Cyrillic-complete)
+ * at heavy weights carries all hierarchy.
  */
 
 export const brand = {
-  ink: '#131A16',
+  ink: '#1E1B2E',
   paper: '#FFFFFF',
-  green: '#0B7B4B',
-  greenDark: '#0A6A41',
-  greenBright: '#3EA574',
-  mint: '#E4F2EA',
-  mintInk: '#146A42',
-  chip: '#121712',
-  red: '#CC4433',
-  redSoft: '#FAE8E5',
-  amber: '#9A6E1C',
-  amberSoft: '#F6ECD6',
-  gold: '#A87F2F',
-  goldSoft: '#F5EBD6',
+  violet: '#5B21B6',
+  violetDeep: '#4C1D95',
+  violetBright: '#8B5CF6',
+  lavender: '#F0EDFA',
+  lavenderDeep: '#E4DEF7',
+  haze: '#F8F7FC',
+  chip: '#1E1B2E',
+  green: '#16A34A',
+  greenSoft: '#E8F7EE',
+  amber: '#D97706',
+  amberSoft: '#FBF0DC',
+  red: '#DC2626',
+  redSoft: '#FCE9E9',
 } as const;
 
 /** 4pt base grid. Use spacing(n) instead of raw numbers everywhere. */
@@ -30,10 +31,10 @@ export const spacing = (n: number): number => n * 4;
 
 export const radius = {
   xs: 6,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 26,
   pill: 999,
 } as const;
 
@@ -72,14 +73,14 @@ export type TypeVariant = keyof typeof typeScale;
 
 export const shadow = {
   card: {
-    shadowColor: '#131A16',
+    shadowColor: '#3B2E6E',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 3,
   },
   raised: {
-    shadowColor: '#131A16',
+    shadowColor: '#3B2E6E',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.14,
     shadowRadius: 20,

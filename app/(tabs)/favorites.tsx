@@ -13,8 +13,8 @@ import { venueApi } from '@/data/api';
 import { useFavorites } from '@/stores/favorites';
 import { useI18n } from '@/i18n';
 
-/** Wishlist — the family shortlist. Weddings are chosen by committee. */
-export default function WishlistScreen() {
+/** Favorites — the family shortlist. Weddings are chosen by committee. */
+export default function FavoritesScreen() {
   const { t } = useI18n();
   const router = useRouter();
   const favoriteIds = useFavorites((s) => s.venueIds);
@@ -36,7 +36,7 @@ export default function WishlistScreen() {
   return (
     <Screen>
       <View style={{ paddingHorizontal: spacing(4), paddingTop: spacing(3), paddingBottom: spacing(3) }}>
-        <AppText variant="display">{t('wishlist.title')}</AppText>
+        <AppText variant="display">{t('tabs.favorites')}</AppText>
       </View>
       {allVenues === null ? (
         <View style={{ paddingHorizontal: spacing(4), gap: spacing(3) }}>
