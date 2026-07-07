@@ -85,10 +85,11 @@ export function formatMediumDate(iso: string, locale: Locale): string {
   return `${date.getDate()} ${month} ${date.getFullYear()}`;
 }
 
-/** "саб, 25 мај 2026" — search fields (short weekday + medium date). */
+/** "Саб, 25 мај 2026" — search fields (capitalized short weekday + medium date). */
 export function formatDowMediumDate(iso: string, locale: Locale): string {
   const date = parseISODate(iso);
-  const dow = (WEEKDAYS_LONG[locale][mondayIndex(date)] ?? '').slice(0, 3);
+  const raw = (WEEKDAYS_LONG[locale][mondayIndex(date)] ?? '').replace(/^e /, '').slice(0, 3);
+  const dow = raw.charAt(0).toUpperCase() + raw.slice(1);
   return `${dow}, ${formatMediumDate(iso, locale)}`;
 }
 

@@ -54,24 +54,30 @@ export default function HomeScreen() {
   const popular = venues?.filter((v) => v.featured) ?? [];
   const topRated = venues ? [...venues].sort((a, b) => b.rating - a.rating).slice(0, 4) : [];
 
-  const searchField = (label: string, icon: React.ComponentProps<typeof Ionicons>['name'], value: string, onPress: () => void) => (
+  const searchField = (
+    label: string,
+    icon: React.ComponentProps<typeof Ionicons>['name'],
+    iconColor: string,
+    value: string,
+    onPress: () => void,
+  ) => (
     <PressableScale
       onPress={onPress}
       scaleTo={0.98}
       hapticFeedback="select"
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={{ flex: 1, gap: spacing(1) }}
+      style={{ flex: 1, gap: spacing(2) }}
     >
       <AppText variant="label" color="secondary">
         {label}
       </AppText>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
-        <Ionicons name={icon} size={16} color={colors.primary} />
-        <AppText variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
+        <Ionicons name={icon} size={18} color={iconColor} />
+        <AppText variant="bodyStrong" style={{ flex: 1, fontSize: 15.5 }} numberOfLines={1}>
           {value}
         </AppText>
-        <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
+        <Ionicons name="chevron-down" size={16} color={colors.text} />
       </View>
     </PressableScale>
   );
@@ -156,11 +162,18 @@ export default function HomeScreen() {
             {searchField(
               t('home.dateLabel'),
               'calendar-outline',
+              colors.primary,
               dateISO ? formatDowMediumDate(dateISO, locale) : t('availability.pickDate'),
               () => setDateSheetOpen(true),
             )}
             <View style={{ width: 1, backgroundColor: colors.border }} />
-            {searchField(t('home.guestsLabel'), 'person-outline', `${guests} ${t('common.guests')}`, () => setGuestSheetOpen(true))}
+            {searchField(
+              t('home.guestsLabel'),
+              'person-outline',
+              colors.text,
+              `${guests} ${t('common.guests')}`,
+              () => setGuestSheetOpen(true),
+            )}
           </View>
           <Button
             title={t('home.searchCta')}
@@ -170,8 +183,9 @@ export default function HomeScreen() {
                 params: { city, ...(dateISO ? { date: dateISO } : {}), guests: String(guests) },
               })
             }
-            iconLeft={<Ionicons name="search" size={16} color={colors.onPrimary} />}
+            iconLeft={<Ionicons name="search" size={17} color={colors.onPrimary} />}
             fullWidth
+            style={{ height: 50, borderRadius: 12 }}
           />
         </View>
 
