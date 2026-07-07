@@ -244,6 +244,7 @@ export default function VenueDetailScreen() {
               icon="people-outline"
               label={`${hall?.capacityMin ?? venue.capacityMin} – ${hall?.capacityMax ?? venue.capacityMax} ${t('common.guests')}`}
             />
+            {hall ? <FactChip icon="resize-outline" label={t('hall.area', { m2: hall.areaM2 })} /> : null}
             <FactChip icon={hall?.indoor ? 'home-outline' : 'sunny-outline'} label={hall?.indoor ? t('venue.indoor') : t('venue.outdoor')} />
             {venue.amenities.includes('parking') ? <FactChip icon="car-outline" label={t('amenity.parking')} /> : null}
             <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
@@ -279,10 +280,19 @@ export default function VenueDetailScreen() {
                       size={18}
                       color={selected ? colors.primary : colors.textTertiary}
                     />
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, gap: 2 }}>
                       <AppText variant="bodyStrong">{h.name[locale]}</AppText>
                       <AppText variant="bodySm" color="secondary">
-                        {h.capacityMin} – {h.capacityMax} {t('common.guests')} · {h.indoor ? t('venue.indoor') : t('venue.outdoor')}
+                        {h.capacityMin} – {h.capacityMax} {t('common.guests')} · {t('hall.area', { m2: h.areaM2 })} ·{' '}
+                        {h.indoor ? t('venue.indoor') : t('venue.outdoor')}
+                      </AppText>
+                      {fullRefundDays && fullRefundDays.refundPercent >= 100 ? (
+                        <AppText variant="caption" color="success">
+                          ✓ {t('venue.kaparRefundableBody', { days: fullRefundDays.minDaysBeforeEvent })}
+                        </AppText>
+                      ) : null}
+                      <AppText variant="caption" color="success">
+                        ✓ {t('hall.payKaparOnly')}
                       </AppText>
                     </View>
                     <AppText variant="bodySmStrong" color="brand">
@@ -334,6 +344,28 @@ export default function VenueDetailScreen() {
                 <View key={key} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2.5) }}>
                   <Ionicons name="checkmark-circle" size={18} color={colors.success} />
                   <AppText variant="body">{t(`included.${key}`)}</AppText>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Food & menu options — the "breakfast included" equivalent */}
+          <View style={{ gap: spacing(2.5) }}>
+            <AppText variant="heading">{t('food.title')}</AppText>
+            <View
+              style={{
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: radius.lg,
+                padding: spacing(4),
+                gap: spacing(3),
+              }}
+            >
+              {venue.foodOptions.map((key) => (
+                <View key={key} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2.5) }}>
+                  <Ionicons name="restaurant-outline" size={16} color={colors.success} />
+                  <AppText variant="body">{t(`food.${key}`)}</AppText>
                 </View>
               ))}
             </View>

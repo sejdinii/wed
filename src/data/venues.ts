@@ -1,4 +1,4 @@
-import type { CityKey, Hall, IncludedKey, NearbyPlace, Venue, VenueScores } from '@/domain/types';
+import type { CityKey, FoodOptionKey, Hall, IncludedKey, NearbyPlace, Venue, VenueScores } from '@/domain/types';
 
 /**
  * Seed catalogue — realistic North Macedonian wedding venues.
@@ -16,7 +16,12 @@ import type { CityKey, Hall, IncludedKey, NearbyPlace, Venue, VenueScores } from
 
 const img = (id: string): string => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=80`;
 
-type VenueSeed = Omit<Venue, 'slug' | 'published' | 'halls' | 'included' | 'scores' | 'houseRules' | 'coords' | 'nearby'>;
+type VenueSeed = Omit<Venue, 'slug' | 'published' | 'halls' | 'included' | 'scores' | 'houseRules' | 'coords' | 'nearby' | 'foodOptions'>;
+
+/** ~1.1 m² per seated guest, rounded to 10 — realistic banquet-hall sizing. */
+function hallArea(capacityMax: number): number {
+  return Math.round((capacityMax * 1.1) / 10) * 10;
+}
 
 const SEEDS: VenueSeed[] = [
   {
@@ -830,6 +835,7 @@ const HALL_OVERRIDES: Record<string, Hall[]> = {
       capacityMin: 120,
       capacityMax: 300,
       indoor: false,
+      areaM2: 330,
       pricePerGuestAdjMkd: 0,
     },
     {
@@ -838,6 +844,7 @@ const HALL_OVERRIDES: Record<string, Hall[]> = {
       capacityMin: 200,
       capacityMax: 450,
       indoor: true,
+      areaM2: 500,
       pricePerGuestAdjMkd: 100,
     },
   ],
@@ -848,6 +855,7 @@ const HALL_OVERRIDES: Record<string, Hall[]> = {
       capacityMin: 200,
       capacityMax: 400,
       indoor: true,
+      areaM2: 440,
       pricePerGuestAdjMkd: 0,
     },
     {
@@ -856,6 +864,7 @@ const HALL_OVERRIDES: Record<string, Hall[]> = {
       capacityMin: 300,
       capacityMax: 600,
       indoor: true,
+      areaM2: 660,
       pricePerGuestAdjMkd: 150,
     },
   ],
@@ -866,6 +875,7 @@ const HALL_OVERRIDES: Record<string, Hall[]> = {
       capacityMin: 150,
       capacityMax: 500,
       indoor: true,
+      areaM2: 550,
       pricePerGuestAdjMkd: 0,
     },
     {
@@ -874,6 +884,7 @@ const HALL_OVERRIDES: Record<string, Hall[]> = {
       capacityMin: 100,
       capacityMax: 250,
       indoor: false,
+      areaM2: 280,
       pricePerGuestAdjMkd: -50,
     },
   ],
@@ -925,6 +936,7 @@ function augment(seed: VenueSeed, index: number): Venue {
       capacityMin: seed.capacityMin,
       capacityMax: seed.capacityMax,
       indoor: seed.venueType === 'ballroom' || seed.venueType === 'restaurant',
+      areaM2: hallArea(seed.capacityMax),
       pricePerGuestAdjMkd: 0,
     },
   ];
@@ -955,6 +967,16 @@ function augment(seed: VenueSeed, index: number): Venue {
     ...(seed.city === 'skopje' || seed.city === 'ohrid' ? [{ label: NEAR_AIRPORT, km: seed.city === 'skopje' ? 22 : 9 }] : []),
   ];
 
+  const foodOptions: FoodOptionKey[] = [
+    'traditional',
+    'kidsMenu',
+    ...(seed.venueType === 'lake' || seed.city === 'ohrid' || seed.city === 'struga' ? (['fishMenu'] as const) : []),
+    ...(seed.rating >= 4.6 ? (['international'] as const) : []),
+    ...(index % 2 === 0 ? (['vegetarian'] as const) : []),
+    ...(seed.amenities.includes('inHouseCatering') ? (['lateSnack'] as const) : []),
+    ...(index % 3 !== 1 ? (['ownCakeAllowed'] as const) : []),
+  ];
+
   return {
     ...seed,
     slug: seed.id,
@@ -965,6 +987,7 @@ function augment(seed: VenueSeed, index: number): Venue {
     scores,
     coords,
     nearby,
+    foodOptions,
     houseRules: {
       musicUntil: index % 3 === 0 ? '01:00' : index % 3 === 1 ? '00:00' : '02:00',
       fireworksAllowed: seed.amenities.includes('fireworks'),

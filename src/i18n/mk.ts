@@ -371,6 +371,18 @@ export const mk = {
   'sort.priceAsc': 'Цена (најниска прво)',
   'sort.scoreDesc': 'Оценка (највисока прво)',
   'filters.minScore': 'Минимална оценка',
+
+  'hall.area': '{m2} m²',
+  'hall.payKaparOnly': 'Плаќаш само капар — остатокот во салата',
+
+  'food.title': 'Храна и опции',
+  'food.traditional': 'Традиционална кујна',
+  'food.international': 'Интернационално мени',
+  'food.fishMenu': 'Рибно мени',
+  'food.vegetarian': 'Вегетаријански опции',
+  'food.kidsMenu': 'Детско мени',
+  'food.lateSnack': 'Доцна вечера / мезе',
+  'food.ownCakeAllowed': 'Дозволена сопствена торта',
 } as const;
 
 export type Dict = Record<keyof typeof mk, string>;

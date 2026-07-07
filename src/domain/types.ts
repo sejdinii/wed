@@ -89,9 +89,21 @@ export interface Hall {
   capacityMin: number;
   capacityMax: number;
   indoor: boolean;
+  /** Hall floor area — the "room size m²" equivalent. */
+  areaM2: number;
   /** Per-guest surcharge/discount vs. the venue's base menu prices. */
   pricePerGuestAdjMkd: number;
 }
+
+/** Food & menu options — the "breakfast included" equivalent for venues. */
+export type FoodOptionKey =
+  | 'traditional'
+  | 'international'
+  | 'fishMenu'
+  | 'vegetarian'
+  | 'kidsMenu'
+  | 'lateSnack'
+  | 'ownCakeAllowed';
 
 export type AmenityKey =
   | 'parking'
@@ -153,6 +165,7 @@ export interface Venue {
   included: IncludedKey[];
   scores: VenueScores;
   houseRules: HouseRules;
+  foodOptions: FoodOptionKey[];
   coords: { lat: number; lng: number };
   nearby: NearbyPlace[];
   address: string;

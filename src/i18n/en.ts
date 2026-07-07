@@ -369,4 +369,16 @@ export const en: Dict = {
   'sort.priceAsc': 'Price (lowest first)',
   'sort.scoreDesc': 'Score (highest first)',
   'filters.minScore': 'Minimum score',
+
+  'hall.area': '{m2} m²',
+  'hall.payKaparOnly': 'Pay only the kapar — balance at the venue',
+
+  'food.title': 'Food & menu options',
+  'food.traditional': 'Traditional cuisine',
+  'food.international': 'International menu',
+  'food.fishMenu': 'Fish menu',
+  'food.vegetarian': 'Vegetarian options',
+  'food.kidsMenu': 'Kids menu',
+  'food.lateSnack': 'Late-night snack',
+  'food.ownCakeAllowed': 'Own cake allowed',
 };

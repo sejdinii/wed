@@ -369,4 +369,16 @@ export const sq: Dict = {
   'sort.priceAsc': 'Çmimi (më i ulëti së pari)',
   'sort.scoreDesc': 'Vlerësimi (më i larti së pari)',
   'filters.minScore': 'Vlerësimi minimal',
+
+  'hall.area': '{m2} m²',
+  'hall.payKaparOnly': 'Paguan vetëm kaparin — pjesën tjetër në sallë',
+
+  'food.title': 'Ushqimi dhe opsionet',
+  'food.traditional': 'Kuzhinë tradicionale',
+  'food.international': 'Meny ndërkombëtare',
+  'food.fishMenu': 'Meny peshku',
+  'food.vegetarian': 'Opsione vegjetariane',
+  'food.kidsMenu': 'Meny për fëmijë',
+  'food.lateSnack': 'Meze e vonë',
+  'food.ownCakeAllowed': 'Lejohet torta e vet',
 };
