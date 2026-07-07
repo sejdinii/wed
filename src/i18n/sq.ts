@@ -325,4 +325,48 @@ export const sq: Dict = {
   'included.parking': 'Parkim',
   'included.basicDecor': 'Dekor bazë',
   'included.waitstaff': 'Kamarierë',
+
+  'score.exceptional': 'Përjashtimore',
+  'score.superb': 'Superb',
+  'score.fabulous': 'Shkëlqyeshëm',
+  'score.veryGood': 'Shumë mirë',
+  'score.good': 'Mirë',
+  'score.pleasant': 'Këndshëm',
+
+  'cat.food': 'Ushqimi dhe menyja',
+  'cat.service': 'Shërbimi dhe stafi',
+  'cat.organization': 'Organizimi',
+  'cat.location': 'Lokacioni',
+  'cat.value': 'Vlera për paratë',
+
+  'reviews.title': 'Vlerësime nga mysafirët',
+  'reviews.showAll': 'Shfaq të gjitha {count} vlerësimet',
+  'reviews.guestLine': '{guests} mysafirë · {date}',
+  'reviews.liked': 'Çfarë u pëlqeu',
+  'reviews.remarks': 'Vërejtje',
+
+  'location.title': 'Lokacioni',
+  'location.nearby': 'Në afërsi',
+  'location.openMap': 'Hap në harta',
+
+  'fac.space': 'Hapësira dhe ambienti',
+  'fac.music': 'Muzika dhe programi',
+  'fac.food': 'Ushqimi dhe pijet',
+  'fac.family': 'Për familjet dhe çiftin',
+  'fac.access': 'Parkimi dhe qasja',
+
+  'rules.title': 'Rregullat e sallës',
+  'rules.music': 'Muzikë live',
+  'rules.until': 'deri në {time}',
+  'rules.fireworks': 'Fishekzjarre',
+  'rules.ownAlcohol': 'Pije të veta',
+  'rules.decor': 'Dekor i vet',
+  'rules.allowed': 'Lejohet',
+  'rules.notAllowed': 'Nuk lejohet',
+  'rules.payment': 'Pagesa',
+  'rules.paymentBody': 'Kapar përmes Kapar · pjesa tjetër direkt në sallë, sipas kontratës.',
+
+  'sort.priceAsc': 'Çmimi (më i ulëti së pari)',
+  'sort.scoreDesc': 'Vlerësimi (më i larti së pari)',
+  'filters.minScore': 'Vlerësimi minimal',
 };

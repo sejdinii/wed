@@ -325,4 +325,48 @@ export const en: Dict = {
   'included.parking': 'Parking',
   'included.basicDecor': 'Basic decoration',
   'included.waitstaff': 'Waitstaff',
+
+  'score.exceptional': 'Exceptional',
+  'score.superb': 'Superb',
+  'score.fabulous': 'Fabulous',
+  'score.veryGood': 'Very good',
+  'score.good': 'Good',
+  'score.pleasant': 'Pleasant',
+
+  'cat.food': 'Food & menu',
+  'cat.service': 'Service & staff',
+  'cat.organization': 'Organization',
+  'cat.location': 'Location',
+  'cat.value': 'Value for money',
+
+  'reviews.title': 'Guest reviews',
+  'reviews.showAll': 'Show all {count} reviews',
+  'reviews.guestLine': '{guests} guests · {date}',
+  'reviews.liked': 'What they loved',
+  'reviews.remarks': 'Remarks',
+
+  'location.title': 'Location',
+  'location.nearby': 'What’s nearby',
+  'location.openMap': 'Open in maps',
+
+  'fac.space': 'Space & ambience',
+  'fac.music': 'Music & programme',
+  'fac.food': 'Food & drink',
+  'fac.family': 'For families & the couple',
+  'fac.access': 'Parking & access',
+
+  'rules.title': 'Venue rules',
+  'rules.music': 'Live music',
+  'rules.until': 'until {time}',
+  'rules.fireworks': 'Fireworks',
+  'rules.ownAlcohol': 'Own drinks',
+  'rules.decor': 'Own decoration',
+  'rules.allowed': 'Allowed',
+  'rules.notAllowed': 'Not allowed',
+  'rules.payment': 'Payment',
+  'rules.paymentBody': 'Kapar via Kapar · the balance directly at the venue, per contract.',
+
+  'sort.priceAsc': 'Price (lowest first)',
+  'sort.scoreDesc': 'Score (highest first)',
+  'filters.minScore': 'Minimum score',
 };

@@ -43,6 +43,42 @@ export type IncludedKey =
   | 'basicDecor'
   | 'waitstaff';
 
+/** Booking-style 10-scale category scores. */
+export interface VenueScores {
+  food: number;
+  service: number;
+  organization: number;
+  location: number;
+  value: number;
+}
+
+/** A guest review — shown in its original language, like real review systems. */
+export interface Review {
+  id: string;
+  venueId: string;
+  author: string;
+  /** 1–10. */
+  score: number;
+  eventDateISO: string;
+  guestCount: number;
+  positive: string;
+  negative?: string;
+}
+
+/** Venue house rules — the "hotel policies" equivalent for wedding venues. */
+export interface HouseRules {
+  /** Live music curfew, e.g. "01:00". */
+  musicUntil: string;
+  fireworksAllowed: boolean;
+  ownAlcoholAllowed: boolean;
+  ownDecorAllowed: boolean;
+}
+
+export interface NearbyPlace {
+  label: Record<Locale, string>;
+  km: number;
+}
+
 /**
  * A bookable hall within a venue. Multi-hall venues get a selector on the
  * detail page and the price follows the selection (C3 spec).
@@ -115,6 +151,10 @@ export interface Venue {
   venueType: VenueType;
   halls: Hall[];
   included: IncludedKey[];
+  scores: VenueScores;
+  houseRules: HouseRules;
+  coords: { lat: number; lng: number };
+  nearby: NearbyPlace[];
   address: string;
   phone: string;
   photos: string[];

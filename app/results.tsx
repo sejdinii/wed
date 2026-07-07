@@ -27,6 +27,8 @@ import { useI18n } from '@/i18n';
 const TYPES: VenueType[] = ['garden', 'lake', 'ballroom', 'terrace', 'panoramic', 'restaurant'];
 type PriceBand = 'b1' | 'b2' | 'b3' | null;
 type KaparBand = 18500 | 40000 | null;
+type MinScore = 8 | 9 | null;
+type SortKey = 'recommended' | 'priceAsc' | 'scoreDesc';
 
 interface Filters {
   dateISO: string | null;
@@ -34,7 +36,17 @@ interface Filters {
   type: VenueType | null;
   priceBand: PriceBand;
   maxKapar: KaparBand;
+  minScore: MinScore;
 }
+
+const EMPTY_FILTERS: Omit<Filters, 'dateISO' | 'guests' | 'type'> & Pick<Filters, 'dateISO' | 'guests' | 'type'> = {
+  dateISO: null,
+  guests: 0,
+  type: null,
+  priceBand: null,
+  maxKapar: null,
+  minScore: null,
+};
 
 function applyFilters(venues: Venue[], f: Filters): Venue[] {
   return venues.filter((v) => {
@@ -46,8 +58,17 @@ function applyFilters(venues: Venue[], f: Filters): Venue[] {
     if (f.priceBand === 'b2' && (price <= 1250 || price > 1800)) return false;
     if (f.priceBand === 'b3' && price <= 1800) return false;
     if (f.maxKapar && minKaparMkd(v) > f.maxKapar) return false;
+    if (f.minScore && v.rating * 2 < f.minScore) return false;
     return true;
   });
+}
+
+function applySort(venues: Venue[], sort: SortKey): Venue[] {
+  const sorted = [...venues];
+  if (sort === 'priceAsc') sorted.sort((a, b) => minEstimateMkd(a) - minEstimateMkd(b));
+  if (sort === 'scoreDesc') sorted.sort((a, b) => b.rating - a.rating);
+  // 'recommended' keeps catalogue order: featured venues first is the seed order.
+  return sorted;
 }
 
 /**
@@ -65,13 +86,14 @@ export default function ResultsScreen() {
 
   const [venues, setVenues] = useState<Venue[] | null>(null);
   const [filters, setFilters] = useState<Filters>({
+    ...EMPTY_FILTERS,
     dateISO: typeof params.date === 'string' ? params.date : null,
     guests: typeof params.guests === 'string' ? Number(params.guests) || 0 : 0,
     type: typeof params.type === 'string' ? (params.type as VenueType) : null,
-    priceBand: null,
-    maxKapar: null,
   });
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sort, setSort] = useState<SortKey>('recommended');
+  const [sortOpen, setSortOpen] = useState(false);
   const [draft, setDraft] = useState<Filters>(filters);
 
   useEffect(() => {
@@ -85,10 +107,20 @@ export default function ResultsScreen() {
     };
   }, [city]);
 
-  const visible = venues ? applyFilters(venues, filters) : null;
+  const visible = venues ? applySort(applyFilters(venues, filters), sort) : null;
   const draftCount = venues ? applyFilters(venues, draft).length : 0;
   const hasFilters =
-    filters.dateISO !== null || filters.guests > 0 || filters.type !== null || filters.priceBand !== null || filters.maxKapar !== null;
+    filters.dateISO !== null ||
+    filters.guests > 0 ||
+    filters.type !== null ||
+    filters.priceBand !== null ||
+    filters.maxKapar !== null ||
+    filters.minScore !== null;
+  const sortLabel: Record<SortKey, string> = {
+    recommended: t('results.recommended'),
+    priceAsc: t('sort.priceAsc'),
+    scoreDesc: t('sort.scoreDesc'),
+  };
 
   const openSheet = () => {
     setDraft(filters);
@@ -179,16 +211,22 @@ export default function ResultsScreen() {
         }}
       >
         <AppText variant="bodyStrong">{visible !== null ? t('results.found', { count: visible.length }) : ' '}</AppText>
-        {/* Sort is fixed to Recommended in v0.3 — options come with reviews/distance data. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1) }}>
-          <AppText variant="bodySm" color="secondary">
-            {t('results.sortBy')}
-          </AppText>
-          <AppText variant="bodySmStrong" color="brand">
-            {t('results.recommended')}
-          </AppText>
-          <Ionicons name="chevron-down" size={13} color={colors.primary} />
-        </View>
+        <PressableScale
+          onPress={() => setSortOpen(true)}
+          hapticFeedback="select"
+          accessibilityRole="button"
+          accessibilityLabel={t('results.sortBy')}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1) }}>
+            <AppText variant="bodySm" color="secondary">
+              {t('results.sortBy')}
+            </AppText>
+            <AppText variant="bodySmStrong" color="brand">
+              {sortLabel[sort]}
+            </AppText>
+            <Ionicons name="chevron-down" size={13} color={colors.primary} />
+          </View>
+        </PressableScale>
       </View>
 
       <FlatList
@@ -210,13 +248,53 @@ export default function ResultsScreen() {
               title={t('results.emptyTitle')}
               body={t('results.emptyBody')}
               actionLabel={hasFilters ? t('filters.clearAll') : undefined}
-              onAction={
-                hasFilters ? () => setFilters({ dateISO: null, guests: 0, type: null, priceBand: null, maxKapar: null }) : undefined
-              }
+              onAction={hasFilters ? () => setFilters({ ...EMPTY_FILTERS }) : undefined}
             />
           )
         }
       />
+
+      {/* Sort options sheet */}
+      <Modal visible={sortOpen} transparent animationType="slide" onRequestClose={() => setSortOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+          <Pressable style={{ flex: 1 }} onPress={() => setSortOpen(false)} accessibilityRole="button" />
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: radius.xl,
+              borderTopRightRadius: radius.xl,
+              padding: spacing(4),
+              paddingBottom: insets.bottom + spacing(5),
+              gap: spacing(2),
+            }}
+          >
+            <AppText variant="heading" style={{ marginBottom: spacing(2) }}>
+              {t('results.sortBy')}
+            </AppText>
+            {(['recommended', 'priceAsc', 'scoreDesc'] as const).map((key) => (
+              <PressableScale
+                key={key}
+                onPress={() => {
+                  setSort(key);
+                  setSortOpen(false);
+                }}
+                hapticFeedback="select"
+                scaleTo={0.99}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: sort === key }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2.5), paddingVertical: spacing(2.5) }}
+              >
+                <Ionicons
+                  name={sort === key ? 'radio-button-on' : 'radio-button-off'}
+                  size={19}
+                  color={sort === key ? colors.primary : colors.textTertiary}
+                />
+                <AppText variant="body">{sortLabel[key]}</AppText>
+              </PressableScale>
+            ))}
+          </View>
+        </View>
+      </Modal>
 
       {/* Floating Map View pill — PLACEHOLDER until the map screen lands. */}
       <PressableScale
@@ -333,6 +411,21 @@ export default function ResultsScreen() {
             </View>
 
             <View style={{ gap: spacing(3) }}>
+              <AppText variant="heading">{t('filters.minScore')}</AppText>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) }}>
+                <Chip label={t('filters.any')} selected={draft.minScore === null} onPress={() => setDraft((d) => ({ ...d, minScore: null }))} />
+                {([8, 9] as const).map((score) => (
+                  <Chip
+                    key={score}
+                    label={`${score}+`}
+                    selected={draft.minScore === score}
+                    onPress={() => setDraft((d) => ({ ...d, minScore: d.minScore === score ? null : score }))}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View style={{ gap: spacing(3) }}>
               <AppText variant="heading">{t('filters.kapar')}</AppText>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) }}>
                 <Chip label={t('filters.any')} selected={draft.maxKapar === null} onPress={() => setDraft((d) => ({ ...d, maxKapar: null }))} />
@@ -362,7 +455,7 @@ export default function ResultsScreen() {
             <Pressable
               onPress={() => {
                 haptic.select();
-                setDraft({ dateISO: null, guests: 0, type: null, priceBand: null, maxKapar: null });
+                setDraft({ ...EMPTY_FILTERS });
               }}
               accessibilityRole="button"
             >

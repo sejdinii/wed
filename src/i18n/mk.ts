@@ -327,6 +327,50 @@ export const mk = {
   'included.parking': 'Паркинг',
   'included.basicDecor': 'Основна декорација',
   'included.waitstaff': 'Послуга',
+
+  'score.exceptional': 'Исклучително',
+  'score.superb': 'Супер',
+  'score.fabulous': 'Одлично',
+  'score.veryGood': 'Многу добро',
+  'score.good': 'Добро',
+  'score.pleasant': 'Пристојно',
+
+  'cat.food': 'Храна и мени',
+  'cat.service': 'Услуга и персонал',
+  'cat.organization': 'Организација',
+  'cat.location': 'Локација',
+  'cat.value': 'Вредност за пари',
+
+  'reviews.title': 'Рецензии од гости',
+  'reviews.showAll': 'Прикажи ги сите {count} рецензии',
+  'reviews.guestLine': '{guests} гости · {date}',
+  'reviews.liked': 'Што им се допадна',
+  'reviews.remarks': 'Забелешки',
+
+  'location.title': 'Локација',
+  'location.nearby': 'Во близина',
+  'location.openMap': 'Отвори во мапи',
+
+  'fac.space': 'Простор и амбиент',
+  'fac.music': 'Музика и програма',
+  'fac.food': 'Храна и пијалаци',
+  'fac.family': 'За семејства и младенци',
+  'fac.access': 'Паркинг и пристап',
+
+  'rules.title': 'Правила на салата',
+  'rules.music': 'Музика во живо',
+  'rules.until': 'до {time} ч.',
+  'rules.fireworks': 'Огномет',
+  'rules.ownAlcohol': 'Сопствен пијалак',
+  'rules.decor': 'Своја декорација',
+  'rules.allowed': 'Дозволено',
+  'rules.notAllowed': 'Не е дозволено',
+  'rules.payment': 'Плаќање',
+  'rules.paymentBody': 'Капар преку Kapar · остатокот директно во салата, според договор.',
+
+  'sort.priceAsc': 'Цена (најниска прво)',
+  'sort.scoreDesc': 'Оценка (највисока прво)',
+  'filters.minScore': 'Минимална оценка',
 } as const;
 
 export type Dict = Record<keyof typeof mk, string>;

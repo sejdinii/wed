@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { BrandedImage } from '@/components/BrandedImage';
+import { ScoreBadge } from '@/components/ScoreBadge';
 import { AppText } from '@/design/components/AppText';
 import { Divider } from '@/design/components/Divider';
 import { PressableScale } from '@/design/components/PressableScale';
@@ -260,14 +261,8 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
           </AppText>
           <HeartButton venueId={venue.id} />
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Ionicons name="star" size={13} color={colors.primary} />
-          <AppText variant="bodySmStrong" color="brand">
-            {venue.rating.toFixed(1)}
-          </AppText>
-          <AppText variant="bodySm" color="secondary">
-            ({venue.reviewCount})
-          </AppText>
+        <View style={{ alignSelf: 'flex-start' }}>
+          <ScoreBadge venue={venue} size="sm" />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
           <Ionicons name="business-outline" size={13} color={colors.textSecondary} />

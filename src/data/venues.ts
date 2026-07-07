@@ -1,4 +1,4 @@
-import type { Hall, IncludedKey, Venue } from '@/domain/types';
+import type { CityKey, Hall, IncludedKey, NearbyPlace, Venue, VenueScores } from '@/domain/types';
 
 /**
  * Seed catalogue — realistic North Macedonian wedding venues.
@@ -16,7 +16,7 @@ import type { Hall, IncludedKey, Venue } from '@/domain/types';
 
 const img = (id: string): string => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=80`;
 
-type VenueSeed = Omit<Venue, 'slug' | 'published' | 'halls' | 'included'>;
+type VenueSeed = Omit<Venue, 'slug' | 'published' | 'halls' | 'included' | 'scores' | 'houseRules' | 'coords' | 'nearby'>;
 
 const SEEDS: VenueSeed[] = [
   {
@@ -890,7 +890,34 @@ const HALL_NAME_BY_TYPE: Record<VenueSeed['venueType'], Hall['name']> = {
   restaurant: { mk: 'Главна сала', sq: 'Salla kryesore', en: 'Main Hall' },
 };
 
-function augment(seed: VenueSeed): Venue {
+const CITY_COORDS: Record<CityKey, { lat: number; lng: number }> = {
+  skopje: { lat: 41.9981, lng: 21.4254 },
+  tetovo: { lat: 42.0106, lng: 20.9714 },
+  gostivar: { lat: 41.8, lng: 20.9083 },
+  ohrid: { lat: 41.1231, lng: 20.8016 },
+  bitola: { lat: 41.0328, lng: 21.3347 },
+  struga: { lat: 41.1778, lng: 20.6783 },
+  kumanovo: { lat: 42.1322, lng: 21.7144 },
+  prilep: { lat: 41.3464, lng: 21.5542 },
+  veles: { lat: 41.7153, lng: 21.7753 },
+  stip: { lat: 41.7414, lng: 22.195 },
+  strumica: { lat: 41.4378, lng: 22.6431 },
+  kavadarci: { lat: 41.4328, lng: 22.0117 },
+  gevgelija: { lat: 41.1392, lng: 22.5017 },
+};
+
+const NEAR_CENTER: NearbyPlace['label'] = { mk: 'Центар на градот', sq: 'Qendra e qytetit', en: 'City center' };
+const NEAR_HOTELS: NearbyPlace['label'] = { mk: 'Хотели за гости', sq: 'Hotele për mysafirët', en: 'Guest hotels' };
+const NEAR_CHURCH: NearbyPlace['label'] = { mk: 'Црква / верски објект', sq: 'Kishë / objekt fetar', en: 'Church / place of worship' };
+const NEAR_AIRPORT: NearbyPlace['label'] = { mk: 'Аеродром', sq: 'Aeroporti', en: 'Airport' };
+
+/** Deterministic one-decimal jitter so category bars look real, not uniform. */
+function jitter(base: number, salt: number, spread: number): number {
+  const offset = (((salt * 37) % 9) / 8 - 0.5) * spread;
+  return Math.min(10, Math.round((base + offset) * 10) / 10);
+}
+
+function augment(seed: VenueSeed, index: number): Venue {
   const halls: Hall[] = HALL_OVERRIDES[seed.id] ?? [
     {
       id: 'main',
@@ -909,7 +936,42 @@ function augment(seed: VenueSeed): Venue {
   const included: IncludedKey[] = seed.amenities.includes('inHouseCatering')
     ? [...DEFAULT_INCLUDED, 'waitstaff', 'basicDecor']
     : DEFAULT_INCLUDED;
-  return { ...seed, slug: seed.id, published: true, halls, included, photos };
+
+  const base = seed.rating * 2;
+  const scores: VenueScores = {
+    food: jitter(base, index + 1, 0.6),
+    service: jitter(base, index + 2, 0.6),
+    organization: jitter(base, index + 3, 0.5),
+    location: jitter(base, index + 4, 0.9),
+    value: jitter(base, index + 5, 0.8),
+  };
+
+  const city = CITY_COORDS[seed.city] ?? CITY_COORDS.skopje;
+  const coords = { lat: city.lat + (index % 5) * 0.004 - 0.008, lng: city.lng + (index % 7) * 0.003 - 0.009 };
+  const nearby: NearbyPlace[] = [
+    { label: NEAR_CENTER, km: Math.round((0.8 + (index % 5) * 0.9) * 10) / 10 },
+    { label: NEAR_CHURCH, km: Math.round((0.4 + (index % 3) * 0.5) * 10) / 10 },
+    { label: NEAR_HOTELS, km: Math.round((0.6 + (index % 4) * 0.7) * 10) / 10 },
+    ...(seed.city === 'skopje' || seed.city === 'ohrid' ? [{ label: NEAR_AIRPORT, km: seed.city === 'skopje' ? 22 : 9 }] : []),
+  ];
+
+  return {
+    ...seed,
+    slug: seed.id,
+    published: true,
+    halls,
+    included,
+    photos,
+    scores,
+    coords,
+    nearby,
+    houseRules: {
+      musicUntil: index % 3 === 0 ? '01:00' : index % 3 === 1 ? '00:00' : '02:00',
+      fireworksAllowed: seed.amenities.includes('fireworks'),
+      ownAlcoholAllowed: index % 4 === 0,
+      ownDecorAllowed: index % 5 !== 4,
+    },
+  };
 }
 
 export const VENUES: Venue[] = SEEDS.map(augment);

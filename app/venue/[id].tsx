@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, Share, View } from 'react-native';
+import { Linking, Platform, ScrollView, Share, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import MapView, { Marker } from 'react-native-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,12 +15,13 @@ import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
 import { PhotoCarousel } from '@/components/PhotoCarousel';
 import { RefundTimeline } from '@/components/RefundTimeline';
+import { ScoreBadge } from '@/components/ScoreBadge';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMkd, formatMkdBare } from '@/lib/money';
 import { hallFor, minEstimateMkd } from '@/domain/kapar';
-import type { AmenityKey, Venue } from '@/domain/types';
+import type { AmenityKey, Review, Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { useFavorites } from '@/stores/favorites';
 import { useBookingDraft } from '@/stores/bookingDraft';
@@ -40,6 +42,15 @@ const AMENITY_ICONS: Record<AmenityKey, React.ComponentProps<typeof Ionicons>['n
   cityView: 'business-outline',
 };
 
+/** Booking-style facility groups. */
+const FACILITY_GROUPS: ReadonlyArray<{ labelKey: 'fac.space' | 'fac.music' | 'fac.food' | 'fac.family' | 'fac.access'; keys: AmenityKey[] }> = [
+  { labelKey: 'fac.space', keys: ['garden', 'terrace', 'lakeView', 'cityView', 'airCon'] },
+  { labelKey: 'fac.music', keys: ['liveMusic', 'fireworks'] },
+  { labelKey: 'fac.food', keys: ['inHouseCatering'] },
+  { labelKey: 'fac.family', keys: ['childrenArea', 'bridalSuite'] },
+  { labelKey: 'fac.access', keys: ['parking', 'accessible'] },
+];
+
 /**
  * C3 — Venue Details: the conversion page.
  * Gallery (swipe, 1/N counter, tap → full-screen) with heart + share;
@@ -58,6 +69,7 @@ export default function VenueDetailScreen() {
   const insets = useSafeAreaInsets();
 
   const [venue, setVenue] = useState<Venue | null | 'missing'>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [hallId, setHallId] = useState<string | null>(null);
   const [aboutExpanded, setAboutExpanded] = useState(false);
   const isFavorite = useFavorites((s) => (typeof id === 'string' ? s.venueIds.includes(id) : false));
@@ -68,9 +80,10 @@ export default function VenueDetailScreen() {
     let cancelled = false;
     if (typeof id !== 'string') return;
     (async () => {
-      const result = await venueApi.getVenue(id);
+      const [result, venueReviews] = await Promise.all([venueApi.getVenue(id), venueApi.listReviews(id)]);
       if (!cancelled) {
         setVenue(result ?? 'missing');
+        setReviews(venueReviews);
         if (result) setHallId(result.halls[0]?.id ?? null);
       }
     })();
@@ -201,17 +214,20 @@ export default function VenueDetailScreen() {
         />
 
         <View style={{ padding: spacing(4), gap: spacing(4) }}>
-          {/* Name · rating · location */}
-          <View style={{ gap: spacing(1.5) }}>
-            <AppText variant="title">{venue.name}</AppText>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="star" size={14} color={colors.primary} />
-              <AppText variant="bodySmStrong" color="brand">
-                {venue.rating.toFixed(1)}
+          {/* Name · score plaque · location */}
+          <View style={{ gap: spacing(2) }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing(3) }}>
+              <AppText variant="title" style={{ flexShrink: 1 }}>
+                {venue.name}
               </AppText>
-              <AppText variant="bodySm" color="secondary">
-                ({t('venue.reviews', { count: venue.reviewCount })})
-              </AppText>
+              <PressableScale
+                onPress={() => router.push(`/reviews/${venue.id}`)}
+                hapticFeedback="select"
+                accessibilityRole="button"
+                accessibilityLabel={t('reviews.title')}
+              >
+                <ScoreBadge venue={venue} size="md" />
+              </PressableScale>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
@@ -359,21 +375,149 @@ export default function VenueDetailScreen() {
             </ExpandableSection>
             <Divider />
             <ExpandableSection title={t('venue.amenities')}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                {venue.amenities.map((amenity) => (
-                  <View
-                    key={amenity}
-                    style={{ width: '50%', flexDirection: 'row', alignItems: 'center', gap: spacing(2), paddingVertical: spacing(1.5) }}
-                  >
-                    <Ionicons name={AMENITY_ICONS[amenity]} size={16} color={colors.textSecondary} />
-                    <AppText variant="bodySm" color="secondary" style={{ flex: 1 }}>
-                      {t(`amenity.${amenity}`)}
-                    </AppText>
-                  </View>
-                ))}
+              <View style={{ gap: spacing(3) }}>
+                {FACILITY_GROUPS.map((group) => {
+                  const present = group.keys.filter((k) => venue.amenities.includes(k));
+                  if (present.length === 0) return null;
+                  return (
+                    <View key={group.labelKey} style={{ gap: spacing(1) }}>
+                      <AppText variant="bodySmStrong">{t(group.labelKey)}</AppText>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                        {present.map((amenity) => (
+                          <View
+                            key={amenity}
+                            style={{ width: '50%', flexDirection: 'row', alignItems: 'center', gap: spacing(2), paddingVertical: spacing(1.5) }}
+                          >
+                            <Ionicons name={AMENITY_ICONS[amenity]} size={16} color={colors.textSecondary} />
+                            <AppText variant="bodySm" color="secondary" style={{ flex: 1 }}>
+                              {t(`amenity.${amenity}`)}
+                            </AppText>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             </ExpandableSection>
             <Divider />
+          </View>
+
+          {/* Venue rules — the policies block */}
+          <View style={{ gap: spacing(2.5) }}>
+            <AppText variant="heading">{t('rules.title')}</AppText>
+            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing(4), gap: spacing(3) }}>
+              {(
+                [
+                  ['musical-notes-outline', t('rules.music'), t('rules.until', { time: venue.houseRules.musicUntil })],
+                  ['sparkles-outline', t('rules.fireworks'), venue.houseRules.fireworksAllowed ? t('rules.allowed') : t('rules.notAllowed')],
+                  ['wine-outline', t('rules.ownAlcohol'), venue.houseRules.ownAlcoholAllowed ? t('rules.allowed') : t('rules.notAllowed')],
+                  ['color-palette-outline', t('rules.decor'), venue.houseRules.ownDecorAllowed ? t('rules.allowed') : t('rules.notAllowed')],
+                  ['card-outline', t('rules.payment'), t('rules.paymentBody')],
+                ] as const
+              ).map(([icon, label, value]) => (
+                <View key={label} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing(2.5) }}>
+                  <Ionicons name={icon} size={17} color={colors.textSecondary} style={{ marginTop: 1 }} />
+                  <AppText variant="bodySm" style={{ width: 110 }}>
+                    {label}
+                  </AppText>
+                  <AppText variant="bodySmStrong" style={{ flex: 1 }}>
+                    {value}
+                  </AppText>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Location: map, nearby distances, open-in-maps */}
+          <View style={{ gap: spacing(2.5) }}>
+            <AppText variant="heading">{t('location.title')}</AppText>
+            <View style={{ borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
+              <MapView
+                style={{ width: '100%', height: 160 }}
+                initialRegion={{
+                  latitude: venue.coords.lat,
+                  longitude: venue.coords.lng,
+                  latitudeDelta: 0.02,
+                  longitudeDelta: 0.02,
+                }}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                pitchEnabled={false}
+                rotateEnabled={false}
+              >
+                <Marker coordinate={{ latitude: venue.coords.lat, longitude: venue.coords.lng }} title={venue.name} />
+              </MapView>
+            </View>
+            <AppText variant="bodySm" color="secondary">
+              {venue.address}
+            </AppText>
+            <View style={{ gap: spacing(1.5) }}>
+              <AppText variant="bodySmStrong">{t('location.nearby')}</AppText>
+              {venue.nearby.map((place) => (
+                <View key={place.label.en} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <AppText variant="bodySm" color="secondary">
+                    {place.label[locale]}
+                  </AppText>
+                  <AppText variant="bodySm" color="secondary">
+                    {place.km} km
+                  </AppText>
+                </View>
+              ))}
+            </View>
+            <Button
+              title={t('location.openMap')}
+              onPress={() => {
+                const { lat, lng } = venue.coords;
+                const url = Platform.select({
+                  ios: `maps:0,0?q=${encodeURIComponent(venue.name)}@${lat},${lng}`,
+                  default: `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(venue.name)})`,
+                });
+                Linking.openURL(url).catch(() => {});
+              }}
+              variant="outline"
+              size="md"
+            />
+          </View>
+
+          {/* Reviews preview + show all */}
+          <View style={{ gap: spacing(2.5) }}>
+            <AppText variant="heading">{t('reviews.title')}</AppText>
+            {reviews.slice(0, 2).map((review) => (
+              <View
+                key={review.id}
+                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing(3.5), gap: spacing(2) }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <AppText variant="bodySmStrong">{review.author}</AppText>
+                  <View
+                    style={{
+                      minWidth: 26,
+                      height: 26,
+                      paddingHorizontal: 4,
+                      borderRadius: radius.sm,
+                      borderBottomLeftRadius: 0,
+                      backgroundColor: colors.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <AppText variant="caption" style={{ color: colors.onPrimary }}>
+                      {review.score.toFixed(1)}
+                    </AppText>
+                  </View>
+                </View>
+                <AppText variant="bodySm" color="secondary" numberOfLines={3}>
+                  “{review.positive}”
+                </AppText>
+              </View>
+            ))}
+            <Button
+              title={t('reviews.showAll', { count: venue.reviewCount })}
+              onPress={() => router.push(`/reviews/${venue.id}`)}
+              variant="outline"
+              size="md"
+            />
           </View>
         </View>
       </ScrollView>

@@ -1,5 +1,6 @@
-import type { CityKey, Hall, Venue } from '@/domain/types';
+import type { CityKey, Hall, Review, Venue } from '@/domain/types';
 import { VENUES } from './venues';
+import { REVIEWS } from './reviews';
 
 /**
  * Repository boundary between UI and data. Screens depend only on `VenueApi`;
@@ -10,6 +11,7 @@ import { VENUES } from './venues';
  *   listVenues  → GET /v1/venues?city=&date=&minGuests=
  *   getVenue    → GET /v1/venues/:id   (unpublished → 410 Gone)
  *   listHalls   → GET /v1/venues/:id/halls
+ *   listReviews → GET /v1/venues/:id/reviews
  */
 
 export interface VenueFilters {
@@ -25,6 +27,7 @@ export interface VenueApi {
   /** Returns unpublished venues too — the detail screen renders the 410 state. */
   getVenue(id: string): Promise<Venue | undefined>;
   listHalls(venueId: string): Promise<Hall[]>;
+  listReviews(venueId: string): Promise<Review[]>;
 }
 
 /** Simulated network latency keeps loading states honest during development. */
@@ -61,6 +64,11 @@ class MockVenueApi implements VenueApi {
   async listHalls(venueId: string): Promise<Hall[]> {
     await delay(LATENCY_MS / 2);
     return VENUES.find((v) => v.id === venueId)?.halls ?? [];
+  }
+
+  async listReviews(venueId: string): Promise<Review[]> {
+    await delay(LATENCY_MS / 2);
+    return REVIEWS.filter((r) => r.venueId === venueId);
   }
 }
 

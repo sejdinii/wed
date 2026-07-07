@@ -34,6 +34,7 @@ function RootNavigator() {
         <Stack.Screen name="search" options={{ animation: 'fade_from_bottom' }} />
         <Stack.Screen name="results" />
         <Stack.Screen name="venue/[id]" />
+        <Stack.Screen name="reviews/[venueId]" />
         <Stack.Screen name="gallery/[venueId]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="booking/availability" />
         <Stack.Screen name="booking/checkout" />
