@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Linking, Platform, ScrollView, Share, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,6 +15,7 @@ import { Skeleton } from '@/design/components/Skeleton';
 import { PhotoCarousel } from '@/components/PhotoCarousel';
 import { RefundTimeline } from '@/components/RefundTimeline';
 import { ScoreBadge } from '@/components/ScoreBadge';
+import { VenueMap } from '@/components/VenueMap';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
@@ -465,21 +465,7 @@ export default function VenueDetailScreen() {
           <View style={{ gap: spacing(2.5) }}>
             <AppText variant="heading">{t('location.title')}</AppText>
             <View style={{ borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
-              <MapView
-                style={{ width: '100%', height: 160 }}
-                initialRegion={{
-                  latitude: venue.coords.lat,
-                  longitude: venue.coords.lng,
-                  latitudeDelta: 0.02,
-                  longitudeDelta: 0.02,
-                }}
-                scrollEnabled={false}
-                zoomEnabled={false}
-                pitchEnabled={false}
-                rotateEnabled={false}
-              >
-                <Marker coordinate={{ latitude: venue.coords.lat, longitude: venue.coords.lng }} title={venue.name} />
-              </MapView>
+              <VenueMap name={venue.name} lat={venue.coords.lat} lng={venue.coords.lng} height={160} />
             </View>
             <AppText variant="bodySm" color="secondary">
               {venue.address}
@@ -503,6 +489,7 @@ export default function VenueDetailScreen() {
                 const { lat, lng } = venue.coords;
                 const url = Platform.select({
                   ios: `maps:0,0?q=${encodeURIComponent(venue.name)}@${lat},${lng}`,
+                  web: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
                   default: `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(venue.name)})`,
                 });
                 Linking.openURL(url).catch(() => {});
