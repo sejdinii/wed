@@ -1,9 +1,9 @@
 import React from 'react';
 import { View } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { BrandedImage } from '@/components/BrandedImage';
 import { AppText } from '@/design/components/AppText';
 import { Divider } from '@/design/components/Divider';
 import { PressableScale } from '@/design/components/PressableScale';
@@ -136,12 +136,10 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
         ]}
       >
         <View>
-          <Image
-            source={{ uri: venue.photos[0] }}
+          <BrandedImage uri={venue.photos[0]}
             style={{ width: '100%', aspectRatio: 5 / 4 }}
             contentFit="cover"
             transition={200}
-            accessibilityIgnoresInvertColors
           />
           <HeartButton venueId={venue.id} onImage />
           <View style={{ position: 'absolute', bottom: spacing(2), left: spacing(2) }}>
@@ -188,12 +186,10 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
           mode === 'light' ? shadow.card : null,
         ]}
       >
-        <Image
-          source={{ uri: venue.photos[0] }}
+        <BrandedImage uri={venue.photos[0]}
           style={{ width: 64, height: 64, borderRadius: radius.md }}
           contentFit="cover"
           transition={200}
-          accessibilityIgnoresInvertColors
         />
         <View style={{ flex: 1, gap: spacing(1) }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
@@ -233,12 +229,10 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
       ]}
     >
       <View>
-        <Image
-          source={{ uri: venue.photos[0] }}
+        <BrandedImage uri={venue.photos[0]}
           style={{ width: 118, height: 132, borderRadius: radius.md }}
           contentFit="cover"
           transition={200}
-          accessibilityIgnoresInvertColors
         />
         {venue.featured ? (
           <View

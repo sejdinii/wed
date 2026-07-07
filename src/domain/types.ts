@@ -34,6 +34,29 @@ export type RegionKey =
 /** Category driving home carousels and the type filter. */
 export type VenueType = 'garden' | 'lake' | 'ballroom' | 'terrace' | 'panoramic' | 'restaurant';
 
+/** Venue-level "What's included" checklist items (C3 spec). */
+export type IncludedKey =
+  | 'tablesChairs'
+  | 'lightingSound'
+  | 'bridalRoom'
+  | 'parking'
+  | 'basicDecor'
+  | 'waitstaff';
+
+/**
+ * A bookable hall within a venue. Multi-hall venues get a selector on the
+ * detail page and the price follows the selection (C3 spec).
+ */
+export interface Hall {
+  id: string;
+  name: Record<Locale, string>;
+  capacityMin: number;
+  capacityMax: number;
+  indoor: boolean;
+  /** Per-guest surcharge/discount vs. the venue's base menu prices. */
+  pricePerGuestAdjMkd: number;
+}
+
 export type AmenityKey =
   | 'parking'
   | 'liveMusic'
@@ -83,9 +106,15 @@ export interface KaparPolicy {
 
 export interface Venue {
   id: string;
+  /** URL slug for deep links: kapar.mk/v/{slug}. */
+  slug: string;
+  /** Unpublished venues 410 on detail and never appear in lists. */
+  published: boolean;
   name: string;
   city: CityKey;
   venueType: VenueType;
+  halls: Hall[];
+  included: IncludedKey[];
   address: string;
   phone: string;
   photos: string[];
@@ -151,6 +180,8 @@ export interface Booking {
   contactName: string;
   contactPhone: string;
   specialRequests?: string;
+  /** Display name of the booked hall (multi-hall venues). */
+  hallName?: string;
 }
 
 /** One message in the couple ↔ venue thread attached to a booking. */

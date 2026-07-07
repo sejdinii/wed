@@ -306,4 +306,22 @@ export const sq: Dict = {
   'availability.dataProtected': 'Të dhënat e tua janë të mbrojtura',
 
   'checkout.menuLabel': 'Zgjidh menynë',
+
+  'venue.aboutThis': 'Rreth kësaj salle',
+  'venue.readLess': 'Shfaq më pak',
+  'venue.whatsIncluded': 'Çfarë përfshihet',
+  'venue.halls': 'Sallat',
+  'venue.indoor': 'E mbyllur',
+  'venue.outdoor': 'Në natyrë',
+  'venue.kaparRequired': 'Kapar (depozitë rezervimi) — i detyrueshëm',
+  'venue.goneTitle': 'Salla nuk është e disponueshme',
+  'venue.goneBody': 'Kjo sallë nuk është më e publikuar në Kapar. Shiko sallat e tjera — ka të ngjashme.',
+  'venue.shareMessage': '{name} në Kapar — {url}',
+
+  'included.tablesChairs': 'Tavolina dhe karrige',
+  'included.lightingSound': 'Ndriçim dhe zë',
+  'included.bridalRoom': 'Dhoma e nuses',
+  'included.parking': 'Parkim',
+  'included.basicDecor': 'Dekor bazë',
+  'included.waitstaff': 'Kamarierë',
 };

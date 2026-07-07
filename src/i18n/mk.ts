@@ -308,6 +308,24 @@ export const mk = {
   'availability.dataProtected': 'Твоите податоци се заштитени',
 
   'checkout.menuLabel': 'Избери мени',
+
+  'venue.aboutThis': 'За оваа сала',
+  'venue.readLess': 'Прикажи помалку',
+  'venue.whatsIncluded': 'Што е вклучено',
+  'venue.halls': 'Сали',
+  'venue.indoor': 'Затворено',
+  'venue.outdoor': 'На отворено',
+  'venue.kaparRequired': 'Капар (резервациски депозит) — задолжителен',
+  'venue.goneTitle': 'Салата не е достапна',
+  'venue.goneBody': 'Оваа сала веќе не е објавена на Kapar. Погледни ги другите сали — има слични.',
+  'venue.shareMessage': '{name} на Kapar — {url}',
+
+  'included.tablesChairs': 'Маси и столици',
+  'included.lightingSound': 'Осветлување и озвучување',
+  'included.bridalRoom': 'Соба за невестата',
+  'included.parking': 'Паркинг',
+  'included.basicDecor': 'Основна декорација',
+  'included.waitstaff': 'Послуга',
 } as const;
 
 export type Dict = Record<keyof typeof mk, string>;

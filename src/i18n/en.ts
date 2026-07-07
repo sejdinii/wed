@@ -306,4 +306,22 @@ export const en: Dict = {
   'availability.dataProtected': 'Your data is protected',
 
   'checkout.menuLabel': 'Choose a menu',
+
+  'venue.aboutThis': 'About this venue',
+  'venue.readLess': 'Show less',
+  'venue.whatsIncluded': 'What’s included',
+  'venue.halls': 'Halls',
+  'venue.indoor': 'Indoor',
+  'venue.outdoor': 'Outdoor',
+  'venue.kaparRequired': 'Kapar (Reservation Deposit) required',
+  'venue.goneTitle': 'Venue not available',
+  'venue.goneBody': 'This venue is no longer listed on Kapar. Browse other venues — there are similar ones.',
+  'venue.shareMessage': '{name} on Kapar — {url}',
+
+  'included.tablesChairs': 'Tables & Chairs',
+  'included.lightingSound': 'Lighting & Sound System',
+  'included.bridalRoom': 'Bridal Room',
+  'included.parking': 'Parking',
+  'included.basicDecor': 'Basic decoration',
+  'included.waitstaff': 'Waitstaff',
 };

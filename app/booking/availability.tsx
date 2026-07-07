@@ -15,7 +15,7 @@ import { radius, shadow, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMkd } from '@/lib/money';
 import { formatLongDate, todayISO } from '@/lib/dates';
-import { estimateTotalMkd, kaparAmountMkd, venueDayState } from '@/domain/kapar';
+import { estimateTotalMkd, hallFor, kaparAmountMkd, venueDayState } from '@/domain/kapar';
 import type { Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { useBookingDraft } from '@/stores/bookingDraft';
@@ -50,11 +50,14 @@ export default function AvailabilityScreen() {
 
   if (!draft.venueId) return <Redirect href="/(tabs)" />;
 
-  // Kapar preview on the cheapest menu; the exact figure firms up in checkout.
+  // Kapar preview on the selected hall + default menu; firms up in checkout.
   const kapar =
     venue && draft.menuTierId
-      ? kaparAmountMkd(venue.kaparPolicy, estimateTotalMkd(venue, draft.menuTierId, draft.guestCount))
+      ? kaparAmountMkd(venue.kaparPolicy, estimateTotalMkd(venue, draft.menuTierId, draft.guestCount, draft.hallId))
       : 0;
+  const hall = venue ? hallFor(venue, draft.hallId) : undefined;
+  const capMin = hall?.capacityMin ?? venue?.capacityMin ?? 0;
+  const capMax = hall?.capacityMax ?? venue?.capacityMax ?? 0;
 
   const cardStyle = [
     {
@@ -80,7 +83,7 @@ export default function AvailabilityScreen() {
     if (!venue) return null;
     const step = 10;
     const next = type === 'inc' ? draft.guestCount + step : draft.guestCount - step;
-    const enabled = next >= venue.capacityMin && next <= venue.capacityMax;
+    const enabled = next >= capMin && next <= capMax;
     return (
       <PressableScale
         onPress={() => {
@@ -202,7 +205,7 @@ export default function AvailabilityScreen() {
                 <StepButton type="inc" />
               </View>
               <AppText variant="bodySm" color="secondary" align="center">
-                {t('availability.accommodates', { min: venue.capacityMin, max: venue.capacityMax })}
+                {t('availability.accommodates', { min: capMin, max: capMax })}
               </AppText>
             </View>
 

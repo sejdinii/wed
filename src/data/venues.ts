@@ -1,4 +1,4 @@
-import type { Venue } from '@/domain/types';
+import type { Hall, IncludedKey, Venue } from '@/domain/types';
 
 /**
  * Seed catalogue — realistic North Macedonian wedding venues.
@@ -7,11 +7,18 @@ import type { Venue } from '@/domain/types';
  * Pricing reflects the local convention: per-guest (куверт) with menu included,
  * typically 1.100–2.400 MKD. Kapar is either a fixed amount (the traditional
  * handshake figure) or a percentage of the estimated total with a floor.
+ *
+ * Seeds are written without slug/published/halls/included; `augment()` at the
+ * bottom fills sensible defaults (single hall from venue capacity, standard
+ * inclusions) with explicit overrides for multi-hall venues — so adding a
+ * venue stays a small, safe edit.
  */
 
 const img = (id: string): string => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=80`;
 
-export const VENUES: Venue[] = [
+type VenueSeed = Omit<Venue, 'slug' | 'published' | 'halls' | 'included'>;
+
+const SEEDS: VenueSeed[] = [
   {
     id: 'panorama-garden',
     name: 'Панорама Гарден',
@@ -813,3 +820,96 @@ export const VENUES: Venue[] = [
     bookedDates: ['2026-08-15', '2026-08-22', '2026-09-12'],
   },
 ];
+
+/** Explicit halls for multi-hall venues; everyone else gets one default hall. */
+const HALL_OVERRIDES: Record<string, Hall[]> = {
+  'panorama-garden': [
+    {
+      id: 'garden',
+      name: { mk: 'Градина Панорама', sq: 'Kopshti Panorama', en: 'Panorama Garden' },
+      capacityMin: 120,
+      capacityMax: 300,
+      indoor: false,
+      pricePerGuestAdjMkd: 0,
+    },
+    {
+      id: 'grand',
+      name: { mk: 'Гранд сала', sq: 'Salla Grand', en: 'Grand Hall' },
+      capacityMin: 200,
+      capacityMax: 450,
+      indoor: true,
+      pricePerGuestAdjMkd: 100,
+    },
+  ],
+  'mermeren-dvor': [
+    {
+      id: 'crystal',
+      name: { mk: 'Кристална сала', sq: 'Salla e Kristaltë', en: 'Crystal Hall' },
+      capacityMin: 200,
+      capacityMax: 400,
+      indoor: true,
+      pricePerGuestAdjMkd: 0,
+    },
+    {
+      id: 'imperial',
+      name: { mk: 'Империјал сала', sq: 'Salla Imperial', en: 'Imperial Hall' },
+      capacityMin: 300,
+      capacityMax: 600,
+      indoor: true,
+      pricePerGuestAdjMkd: 150,
+    },
+  ],
+  'grand-park-bitola': [
+    {
+      id: 'grand',
+      name: { mk: 'Гранд сала', sq: 'Salla Grand', en: 'Grand Hall' },
+      capacityMin: 150,
+      capacityMax: 500,
+      indoor: true,
+      pricePerGuestAdjMkd: 0,
+    },
+    {
+      id: 'garden',
+      name: { mk: 'Летна градина', sq: 'Kopshti veror', en: 'Summer Garden' },
+      capacityMin: 100,
+      capacityMax: 250,
+      indoor: false,
+      pricePerGuestAdjMkd: -50,
+    },
+  ],
+};
+
+const DEFAULT_INCLUDED: IncludedKey[] = ['tablesChairs', 'lightingSound', 'bridalRoom', 'parking'];
+
+const HALL_NAME_BY_TYPE: Record<VenueSeed['venueType'], Hall['name']> = {
+  garden: { mk: 'Градинска сала', sq: 'Salla me kopsht', en: 'Garden Hall' },
+  lake: { mk: 'Езерска сала', sq: 'Salla e liqenit', en: 'Lake Hall' },
+  ballroom: { mk: 'Голема сала', sq: 'Salla e madhe', en: 'Grand Hall' },
+  terrace: { mk: 'Тераса', sq: 'Tarraca', en: 'Terrace Hall' },
+  panoramic: { mk: 'Панорамска сала', sq: 'Salla panoramike', en: 'Panorama Hall' },
+  restaurant: { mk: 'Главна сала', sq: 'Salla kryesore', en: 'Main Hall' },
+};
+
+function augment(seed: VenueSeed): Venue {
+  const halls: Hall[] = HALL_OVERRIDES[seed.id] ?? [
+    {
+      id: 'main',
+      name: HALL_NAME_BY_TYPE[seed.venueType],
+      capacityMin: seed.capacityMin,
+      capacityMax: seed.capacityMax,
+      indoor: seed.venueType === 'ballroom' || seed.venueType === 'restaurant',
+      pricePerGuestAdjMkd: 0,
+    },
+  ];
+  // Widen the gallery: unique variant URLs so keys stay distinct (C3: swipe counter).
+  const photos = [
+    ...seed.photos,
+    ...seed.photos.map((uri) => `${uri}&sat=-12`),
+  ];
+  const included: IncludedKey[] = seed.amenities.includes('inHouseCatering')
+    ? [...DEFAULT_INCLUDED, 'waitstaff', 'basicDecor']
+    : DEFAULT_INCLUDED;
+  return { ...seed, slug: seed.id, published: true, halls, included, photos };
+}
+
+export const VENUES: Venue[] = SEEDS.map(augment);

@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { FlatList, View, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
+import { FlatList, Pressable, View, useWindowDimensions } from 'react-native';
 
 import { AppText } from '@/design/components/AppText';
+import { BrandedImage } from '@/components/BrandedImage';
 import { spacing } from '@/design/tokens';
 
 export interface PhotoCarouselProps {
   photos: string[];
   height: number;
+  /** Tap on a photo — receives the photo index (opens the full-screen gallery). */
+  onPhotoPress?: (index: number) => void;
 }
 
-/** Full-bleed paged gallery with dots and an index chip (Airbnb pattern). */
-export function PhotoCarousel({ photos, height }: PhotoCarouselProps) {
+/** Full-bleed paged gallery with dots and the "1/18" counter (C3 spec). */
+export function PhotoCarousel({ photos, height, onPhotoPress }: PhotoCarouselProps) {
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
 
@@ -24,14 +26,14 @@ export function PhotoCarousel({ photos, height }: PhotoCarouselProps) {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
-        renderItem={({ item }) => (
-          <Image
-            source={{ uri: item }}
-            style={{ width, height }}
-            contentFit="cover"
-            transition={250}
-            accessibilityIgnoresInvertColors
-          />
+        renderItem={({ item, index: photoIndex }) => (
+          <Pressable
+            onPress={onPhotoPress ? () => onPhotoPress(photoIndex) : undefined}
+            disabled={!onPhotoPress}
+            accessibilityRole={onPhotoPress ? 'imagebutton' : 'image'}
+          >
+            <BrandedImage uri={item} style={{ width, height }} transition={250} />
+          </Pressable>
         )}
       />
       <View
@@ -43,7 +45,7 @@ export function PhotoCarousel({ photos, height }: PhotoCarouselProps) {
           gap: spacing(1.5),
         }}
       >
-        {photos.map((uri, i) => (
+        {photos.slice(0, 8).map((uri, i) => (
           <View
             key={uri}
             style={{

@@ -1,28 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, View, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
+import { FlatList, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/design/components/AppText';
+import { BrandedImage } from '@/components/BrandedImage';
 import { PressableScale } from '@/design/components/PressableScale';
-import { Screen } from '@/design/components/Screen';
-import { Skeleton } from '@/design/components/Skeleton';
-import { useTheme } from '@/design/theme';
-import { radius, spacing } from '@/design/tokens';
+import { spacing } from '@/design/tokens';
 import type { Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { useI18n } from '@/i18n';
 
-/** Gallery — two-column photo grid presented as a modal sheet. */
+/**
+ * Full-screen gallery (C3): black canvas, swipe between photos, "1/18"
+ * counter, close button. Opens at the tapped photo via ?index=.
+ */
 export default function GalleryScreen() {
-  const { venueId } = useLocalSearchParams<{ venueId: string }>();
-  const { colors } = useTheme();
+  const { venueId, index: indexParam } = useLocalSearchParams<{ venueId: string; index?: string }>();
   const { t } = useI18n();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
 
+  const initialIndex = typeof indexParam === 'string' ? Math.max(0, Number(indexParam) || 0) : 0;
   const [venue, setVenue] = useState<Venue | null>(null);
+  const [index, setIndex] = useState(initialIndex);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,52 +39,64 @@ export default function GalleryScreen() {
     };
   }, [venueId]);
 
-  const cellWidth = (width - spacing(4) * 2 - spacing(2)) / 2;
-
   return (
-    <Screen edges={['top']}>
-      <View
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      {venue ? (
+        <FlatList
+          data={venue.photos}
+          keyExtractor={(uri) => uri}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={Math.min(initialIndex, venue.photos.length - 1)}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
+          renderItem={({ item }) => (
+            <View style={{ width, height, justifyContent: 'center' }}>
+              <BrandedImage uri={item} style={{ width, height: height * 0.7 }} contentFit="contain" />
+            </View>
+          )}
+        />
+      ) : null}
+
+      {/* Close */}
+      <PressableScale
+        onPress={() => router.back()}
+        hapticFeedback="select"
+        scaleTo={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={t('common.done')}
         style={{
-          flexDirection: 'row',
+          position: 'absolute',
+          top: insets.top + spacing(2),
+          left: spacing(4),
+          width: 38,
+          height: 38,
+          borderRadius: 19,
+          backgroundColor: 'rgba(255,255,255,0.15)',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: spacing(4),
-          paddingVertical: spacing(3),
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
+          justifyContent: 'center',
         }}
       >
-        <AppText variant="heading">{t('venue.gallery', { count: venue?.photos.length ?? 0 })}</AppText>
-        <PressableScale onPress={() => router.back()} hapticFeedback="select" accessibilityRole="button" accessibilityLabel={t('common.done')}>
-          <Ionicons name="close" size={22} color={colors.text} />
-        </PressableScale>
+        <Ionicons name="close" size={20} color="#FFFFFF" />
+      </PressableScale>
+
+      {/* Counter */}
+      <View
+        style={{
+          position: 'absolute',
+          top: insets.top + spacing(3.5),
+          alignSelf: 'center',
+          backgroundColor: 'rgba(255,255,255,0.15)',
+          borderRadius: 999,
+          paddingHorizontal: spacing(3),
+          paddingVertical: spacing(1),
+        }}
+      >
+        <AppText variant="bodySmStrong" style={{ color: '#FFFFFF' }}>
+          {venue ? `${index + 1}/${venue.photos.length}` : ''}
+        </AppText>
       </View>
-      <ScrollView contentContainerStyle={{ padding: spacing(4) }} showsVerticalScrollIndicator={false}>
-        {venue === null ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) }}>
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} width={cellWidth} height={140} radius={radius.md} />
-            ))}
-          </View>
-        ) : (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) }}>
-            {venue.photos.map((uri, index) => (
-              <Image
-                key={uri}
-                source={{ uri }}
-                style={{
-                  width: index === 0 ? cellWidth * 2 + spacing(2) : cellWidth,
-                  height: index === 0 ? 200 : 140,
-                  borderRadius: radius.md,
-                }}
-                contentFit="cover"
-                transition={200}
-                accessibilityIgnoresInvertColors
-              />
-            ))}
-          </View>
-        )}
-      </ScrollView>
-    </Screen>
+    </View>
   );
 }

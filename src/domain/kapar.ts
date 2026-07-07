@@ -1,4 +1,4 @@
-import type { Booking, BookingStatus, KaparPolicy, MenuTier, Venue } from './types';
+import type { Booking, BookingStatus, Hall, KaparPolicy, MenuTier, Venue } from './types';
 import { addDaysISO, daysBetween } from '@/lib/dates';
 
 /**
@@ -11,9 +11,19 @@ export function cheapestPerGuest(venue: Venue): number {
   return Math.min(...venue.menuTiers.map((t) => t.pricePerGuestMkd));
 }
 
-/** Minimum realistic event total — powers "From €X" on cards. */
-export function minEstimateMkd(venue: Venue): number {
-  return cheapestPerGuest(venue) * venue.capacityMin;
+export function hallFor(venue: Venue, hallId: string | null | undefined): Hall | undefined {
+  return venue.halls.find((h) => h.id === hallId) ?? venue.halls[0];
+}
+
+/**
+ * Minimum realistic event total — powers "From €X" on cards and the C3
+ * sticky bar. With a hall selected, the price follows the hall (capacity
+ * floor and per-guest adjustment).
+ */
+export function minEstimateMkd(venue: Venue, hallId?: string | null): number {
+  const hall = hallFor(venue, hallId);
+  const perGuest = cheapestPerGuest(venue) + (hall?.pricePerGuestAdjMkd ?? 0);
+  return perGuest * (hall?.capacityMin ?? venue.capacityMin);
 }
 
 /** €€–€€€€ price level derived from the cheapest per-guest menu. */
@@ -41,11 +51,12 @@ export function findTier(venue: Venue, tierId: string): MenuTier | undefined {
   return venue.menuTiers.find((t) => t.id === tierId);
 }
 
-/** Estimated event total: per-guest menu price × guest count. */
-export function estimateTotalMkd(venue: Venue, tierId: string, guestCount: number): number {
+/** Estimated event total: (per-guest menu price + hall adjustment) × guests. */
+export function estimateTotalMkd(venue: Venue, tierId: string, guestCount: number, hallId?: string | null): number {
   const tier = findTier(venue, tierId) ?? venue.menuTiers[0];
   if (!tier) return 0;
-  return tier.pricePerGuestMkd * guestCount;
+  const hallAdj = hallId !== undefined ? (hallFor(venue, hallId)?.pricePerGuestAdjMkd ?? 0) : 0;
+  return (tier.pricePerGuestMkd + hallAdj) * guestCount;
 }
 
 /**

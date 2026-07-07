@@ -13,7 +13,7 @@ import { radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMkd, formatMkdBare } from '@/lib/money';
 import { formatLongDate } from '@/lib/dates';
-import { estimateTotalMkd, kaparAmountMkd, makeConfirmationCode } from '@/domain/kapar';
+import { estimateTotalMkd, hallFor, kaparAmountMkd, makeConfirmationCode } from '@/domain/kapar';
 import type { Booking, Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { simulateVenueSide } from '@/data/venueBot';
@@ -92,9 +92,10 @@ export default function CheckoutScreen() {
 
   if (!draft.venueId || !draft.dateISO || !draft.menuTierId) return <Redirect href="/(tabs)" />;
 
-  const estimate = venue ? estimateTotalMkd(venue, draft.menuTierId, draft.guestCount) : 0;
+  const estimate = venue ? estimateTotalMkd(venue, draft.menuTierId, draft.guestCount, draft.hallId) : 0;
   const kapar = venue ? kaparAmountMkd(venue.kaparPolicy, estimate) : 0;
   const balance = Math.max(0, estimate - kapar);
+  const hall = venue ? hallFor(venue, draft.hallId) : undefined;
 
   const goNext = () => {
     if (step === 1) {
@@ -151,6 +152,7 @@ export default function CheckoutScreen() {
         contactName: `${draft.firstName.trim()} ${draft.lastName.trim()}`,
         contactPhone: draft.phone.trim(),
         specialRequests: draft.specialRequests.trim() || undefined,
+        hallName: venue.halls.length > 1 ? hall?.name[locale] : undefined,
       };
       addBooking(booking);
       simulateVenueSide(booking.id, venue.name);
@@ -390,7 +392,10 @@ export default function CheckoutScreen() {
               })}
             </View>
             <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing(3.5), gap: spacing(2) }}>
-              <AppText variant="subheading">{venue.name}</AppText>
+              <AppText variant="subheading">
+                {venue.name}
+                {venue.halls.length > 1 && hall ? ` · ${hall.name[locale]}` : ''}
+              </AppText>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
                 <Ionicons name="calendar-outline" size={15} color={colors.textSecondary} />
                 <AppText variant="bodySm" color="secondary">

@@ -7,6 +7,7 @@ import { create } from 'zustand';
  */
 interface BookingDraftState {
   venueId: string | null;
+  hallId: string | null;
   dateISO: string | null;
   guestCount: number;
   menuTierId: string | null;
@@ -14,7 +15,7 @@ interface BookingDraftState {
   lastName: string;
   phone: string;
   specialRequests: string;
-  start: (venueId: string, defaults: { guestCount: number; menuTierId: string; dateISO?: string }) => void;
+  start: (venueId: string, defaults: { guestCount: number; menuTierId: string; hallId?: string; dateISO?: string }) => void;
   setDate: (dateISO: string) => void;
   setGuestCount: (count: number) => void;
   setMenuTier: (tierId: string) => void;
@@ -24,6 +25,7 @@ interface BookingDraftState {
 
 const initial = {
   venueId: null,
+  hallId: null,
   dateISO: null,
   guestCount: 0,
   menuTierId: null,
@@ -41,6 +43,7 @@ export const useBookingDraft = create<BookingDraftState>()((set) => ({
       venueId,
       guestCount: defaults.guestCount,
       menuTierId: defaults.menuTierId,
+      hallId: defaults.hallId ?? null,
       dateISO: defaults.dateISO ?? null,
     }),
   setDate: (dateISO) => set({ dateISO }),

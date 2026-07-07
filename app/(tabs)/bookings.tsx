@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { FlatList, View } from 'react-native';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 
+import { BrandedImage } from '@/components/BrandedImage';
 import { AppText } from '@/design/components/AppText';
 import { Badge, type BadgeTone } from '@/design/components/Badge';
 import { EmptyState } from '@/design/components/EmptyState';
@@ -86,12 +86,10 @@ export default function BookingsScreen() {
               ]}
             >
               <View>
-                <Image
-                  source={{ uri: item.venuePhoto }}
+                <BrandedImage uri={item.venuePhoto}
                   style={{ width: '100%', height: 150 }}
                   contentFit="cover"
                   transition={200}
-                  accessibilityIgnoresInvertColors
                 />
                 {segment === 'upcoming' && daysLeft >= 0 ? (
                   <View

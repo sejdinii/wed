@@ -1,9 +1,9 @@
 import React from 'react';
 import { FlatList, View } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { BrandedImage } from '@/components/BrandedImage';
 import { AppText } from '@/design/components/AppText';
 import { EmptyState } from '@/design/components/EmptyState';
 import { PressableScale } from '@/design/components/PressableScale';
@@ -63,12 +63,10 @@ export default function MessagesInboxScreen() {
               mode === 'light' ? shadow.card : null,
             ]}
           >
-            <Image
-              source={{ uri: item.booking.venuePhoto }}
+            <BrandedImage uri={item.booking.venuePhoto}
               style={{ width: 52, height: 52, borderRadius: 26 }}
               contentFit="cover"
               transition={200}
-              accessibilityIgnoresInvertColors
             />
             <View style={{ flex: 1, gap: 2 }}>
               <AppText variant="subheading" numberOfLines={1}>
