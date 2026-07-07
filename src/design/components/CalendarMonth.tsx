@@ -112,7 +112,7 @@ export function CalendarMonth({ month, locale, selectedISO, minISO, isBlocked, o
                         width: 4,
                         height: 4,
                         borderRadius: 2,
-                        backgroundColor: colors.accent,
+                        backgroundColor: colors.gold,
                       }}
                     />
                   ) : null}

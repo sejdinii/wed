@@ -15,6 +15,7 @@ function tabIcon(focused: IconName, unfocused: IconName) {
   };
 }
 
+/** Explore · Bookings · Wishlist · Profile — the Viator tab set. */
 export default function TabsLayout() {
   const { colors } = useTheme();
   const { t } = useI18n();
@@ -30,7 +31,7 @@ export default function TabsLayout() {
           borderTopColor: colors.tabBarBorder,
         },
         tabBarLabelStyle: {
-          fontFamily: fontFamily.sansSemiBold,
+          fontFamily: fontFamily.semiBold,
           fontSize: 10,
         },
       }}
@@ -43,12 +44,12 @@ export default function TabsLayout() {
         options={{ title: t('tabs.explore'), tabBarIcon: tabIcon('search', 'search-outline') }}
       />
       <Tabs.Screen
-        name="saved"
-        options={{ title: t('tabs.saved'), tabBarIcon: tabIcon('heart', 'heart-outline') }}
+        name="bookings"
+        options={{ title: t('tabs.bookings'), tabBarIcon: tabIcon('ticket', 'ticket-outline') }}
       />
       <Tabs.Screen
-        name="bookings"
-        options={{ title: t('tabs.bookings'), tabBarIcon: tabIcon('calendar', 'calendar-outline') }}
+        name="wishlist"
+        options={{ title: t('tabs.wishlist'), tabBarIcon: tabIcon('heart', 'heart-outline') }}
       />
       <Tabs.Screen
         name="profile"

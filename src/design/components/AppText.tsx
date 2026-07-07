@@ -10,9 +10,10 @@ type TextColor =
   | 'tertiary'
   | 'inverse'
   | 'brand'
-  | 'accent'
+  | 'gold'
   | 'success'
   | 'danger'
+  | 'urgency'
   | 'onPrimary';
 
 export interface AppTextProps extends TextProps {
@@ -35,9 +36,10 @@ export function AppText({ variant = 'body', color = 'primary', align, style, ...
     tertiary: colors.textTertiary,
     inverse: colors.textInverse,
     brand: colors.primary,
-    accent: colors.accent,
+    gold: colors.gold,
     success: colors.success,
     danger: colors.danger,
+    urgency: colors.urgency,
     onPrimary: colors.onPrimary,
   };
 

@@ -6,7 +6,7 @@ import { PressableScale } from './PressableScale';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type ButtonVariant = 'primary' | 'dark' | 'mint' | 'outline' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps {
@@ -21,8 +21,9 @@ export interface ButtonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const HEIGHT: Record<ButtonSize, number> = { sm: 38, md: 46, lg: 54 };
+const HEIGHT: Record<ButtonSize, number> = { sm: 36, md: 44, lg: 50 };
 
+/** Pill CTA — green for booking actions, dark for messaging (Viator pattern). */
 export function Button({
   title,
   onPress,
@@ -38,10 +39,10 @@ export function Button({
 
   const palette: Record<ButtonVariant, { bg: string; fg: string; borderColor?: string }> = {
     primary: { bg: colors.primary, fg: colors.onPrimary },
-    secondary: { bg: colors.primarySoft, fg: colors.onPrimarySoft },
+    dark: { bg: colors.chip, fg: colors.onChip },
+    mint: { bg: colors.mint, fg: colors.onMint },
     outline: { bg: 'transparent', fg: colors.text, borderColor: colors.borderStrong },
     ghost: { bg: 'transparent', fg: colors.primary },
-    danger: { bg: colors.danger, fg: '#FFFFFF' },
   };
 
   const { bg, fg, borderColor } = palette[variant];
@@ -51,19 +52,19 @@ export function Button({
     <PressableScale
       onPress={onPress}
       disabled={isBlocked}
-      hapticFeedback={variant === 'primary' || variant === 'danger' ? 'medium' : 'select'}
+      hapticFeedback={variant === 'primary' || variant === 'dark' ? 'medium' : 'select'}
       accessibilityRole="button"
       accessibilityState={{ disabled: isBlocked, busy: loading }}
       accessibilityLabel={title}
       style={[
         {
           height: HEIGHT[size],
-          borderRadius: radius.md,
+          borderRadius: radius.pill,
           backgroundColor: bg,
           borderWidth: borderColor ? 1.5 : 0,
           borderColor,
           opacity: isBlocked && !loading ? 0.45 : 1,
-          paddingHorizontal: size === 'sm' ? spacing(3) : spacing(5),
+          paddingHorizontal: size === 'sm' ? spacing(4) : spacing(6),
           alignItems: 'center',
           justifyContent: 'center',
           alignSelf: fullWidth ? 'stretch' : 'auto',

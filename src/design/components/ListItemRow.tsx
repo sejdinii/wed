@@ -44,12 +44,12 @@ export function ListItemRow({ icon, title, value, chevron = false, onPress }: Li
           width: 36,
           height: 36,
           borderRadius: 12,
-          backgroundColor: colors.primarySoft,
+          backgroundColor: colors.mint,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={icon} size={18} color={colors.onPrimarySoft} />
+        <Ionicons name={icon} size={18} color={colors.onMint} />
       </View>
       <AppText variant="body" style={{ flex: 1 }}>
         {title}

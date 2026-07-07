@@ -1,7 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -11,31 +10,127 @@ import { PressableScale } from '@/design/components/PressableScale';
 import { useTheme } from '@/design/theme';
 import { radius, shadow, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
-import { formatMkd, formatMkdBare } from '@/lib/money';
-import { cheapestPerGuest, minKaparMkd } from '@/domain/kapar';
+import { formatMkdBare } from '@/lib/money';
+import { addDaysISO, nextFreeSaturdays, todayISO } from '@/lib/dates';
+import { cheapestPerGuest } from '@/domain/kapar';
 import type { Venue } from '@/domain/types';
 import { useFavorites } from '@/stores/favorites';
 import { useI18n } from '@/i18n';
 
-export interface VenueCardProps {
-  venue: Venue;
-  /** 'featured' renders a fixed-width card for horizontal carousels. */
-  variant?: 'list' | 'featured';
+/** Red scarcity pill — only when the calendar is genuinely tight (≤3 free Saturdays in 90 days). */
+function urgencyCount(venue: Venue): number | null {
+  const horizon = addDaysISO(todayISO(), 90);
+  const free = nextFreeSaturdays(todayISO(), 4, (iso) => iso > horizon || venue.bookedDates.includes(iso));
+  return free.length <= 3 ? free.length : null;
 }
 
-/**
- * The workhorse of discovery. Deliberate hierarchy: photo sells the dream,
- * then name → social proof → capacity → price per guest → and always the
- * kapar amount, because "how much to lock the date?" is THE question here.
- */
-export function VenueCard({ venue, variant = 'list' }: VenueCardProps) {
+function Stars({ rating }: { rating: number }) {
+  const { colors } = useTheme();
+  const full = Math.round(rating);
+  return (
+    <View style={{ flexDirection: 'row', gap: 1 }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Ionicons key={i} name={i <= full ? 'star' : 'star-outline'} size={11} color={colors.primary} />
+      ))}
+    </View>
+  );
+}
+
+function HeartButton({ venueId }: { venueId: string }) {
+  const isFavorite = useFavorites((s) => s.venueIds.includes(venueId));
+  const toggle = useFavorites((s) => s.toggle);
+  return (
+    <PressableScale
+      onPress={() => {
+        haptic.light();
+        toggle(venueId);
+      }}
+      scaleTo={0.8}
+      hapticFeedback={null}
+      accessibilityRole="button"
+      accessibilityState={{ selected: isFavorite }}
+      accessibilityLabel="♥"
+      style={{
+        position: 'absolute',
+        top: spacing(2),
+        right: spacing(2),
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={17} color={isFavorite ? '#CC4433' : '#131A16'} />
+    </PressableScale>
+  );
+}
+
+export interface VenueCardProps {
+  venue: Venue;
+  /** 'carousel': fixed-width vertical card (home). 'split': image-left row card (results). */
+  variant?: 'carousel' | 'split';
+}
+
+export function VenueCard({ venue, variant = 'split' }: VenueCardProps) {
   const { colors, mode } = useTheme();
   const { locale, t } = useI18n();
   const router = useRouter();
-  const isFavorite = useFavorites((s) => s.venueIds.includes(venue.id));
-  const toggleFavorite = useFavorites((s) => s.toggle);
 
-  const width = variant === 'featured' ? 300 : undefined;
+  const urgency = urgencyCount(venue);
+  const priceLine = (
+    <AppText variant="bodySm" color="secondary">
+      {t('common.from')}{' '}
+      <AppText variant="price" style={{ fontSize: 14 }}>
+        {formatMkdBare(cheapestPerGuest(venue), locale)} ден.
+      </AppText>{' '}
+      {t('common.perGuest')}
+    </AppText>
+  );
+
+  if (variant === 'carousel') {
+    return (
+      <PressableScale
+        onPress={() => router.push(`/venue/${venue.id}`)}
+        scaleTo={0.98}
+        accessibilityRole="button"
+        accessibilityLabel={venue.name}
+        style={{ width: 210 }}
+      >
+        <View style={{ borderRadius: radius.lg, overflow: 'hidden' }}>
+          <Image
+            source={{ uri: venue.photos[0] }}
+            style={{ width: '100%', aspectRatio: 4 / 3 }}
+            contentFit="cover"
+            transition={200}
+            accessibilityIgnoresInvertColors
+          />
+          {urgency !== null ? (
+            <View style={{ position: 'absolute', top: spacing(2), left: spacing(2) }}>
+              <Badge label={t('home.fewSaturdays', { count: urgency })} tone="urgency" style={{ backgroundColor: '#FFFFFF' }} />
+            </View>
+          ) : null}
+          <HeartButton venueId={venue.id} />
+        </View>
+        <View style={{ paddingTop: spacing(2), gap: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
+            <Stars rating={venue.rating} />
+            <AppText variant="bodySm" color="secondary">
+              {venue.rating.toFixed(1)} ({venue.reviewCount})
+            </AppText>
+          </View>
+          <AppText variant="bodySmStrong" numberOfLines={2}>
+            {venue.name}, {t(`city.${venue.city}`)}
+          </AppText>
+          <AppText variant="bodySm" color="secondary">
+            {t('venue.capacityLine', { min: venue.capacityMin, max: venue.capacityMax })}
+          </AppText>
+          {priceLine}
+        </View>
+      </PressableScale>
+    );
+  }
 
   return (
     <PressableScale
@@ -45,7 +140,7 @@ export function VenueCard({ venue, variant = 'list' }: VenueCardProps) {
       accessibilityLabel={venue.name}
       style={[
         {
-          width,
+          flexDirection: 'row',
           backgroundColor: colors.surface,
           borderRadius: radius.lg,
           borderWidth: 1,
@@ -55,71 +150,31 @@ export function VenueCard({ venue, variant = 'list' }: VenueCardProps) {
         mode === 'light' ? shadow.card : null,
       ]}
     >
-      <View>
+      <View style={{ width: 128 }}>
         <Image
           source={{ uri: venue.photos[0] }}
-          style={{ width: '100%', aspectRatio: variant === 'featured' ? 4 / 3 : 16 / 10 }}
+          style={{ width: '100%', height: '100%', minHeight: 128 }}
           contentFit="cover"
-          transition={250}
+          transition={200}
           accessibilityIgnoresInvertColors
         />
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.45)']}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 84 }}
-        />
-        <PressableScale
-          onPress={() => {
-            haptic.light();
-            toggleFavorite(venue.id);
-          }}
-          scaleTo={0.85}
-          hapticFeedback={null}
-          accessibilityRole="button"
-          accessibilityState={{ selected: isFavorite }}
-          accessibilityLabel={t('tabs.saved')}
-          style={{
-            position: 'absolute',
-            top: spacing(3),
-            right: spacing(3),
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: 'rgba(0,0,0,0.35)',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? '#FF6B6B' : '#FFFFFF'} />
-        </PressableScale>
-        <View style={{ position: 'absolute', bottom: spacing(3), left: spacing(3), flexDirection: 'row', alignItems: 'center', gap: spacing(1) }}>
-          <Ionicons name="star" size={13} color="#FFD66B" />
-          <AppText variant="bodySmStrong" style={{ color: '#FFFFFF' }}>
-            {venue.rating.toFixed(1)}
-          </AppText>
-          <AppText variant="bodySm" style={{ color: 'rgba(255,255,255,0.85)' }}>
+        <HeartButton venueId={venue.id} />
+      </View>
+      <View style={{ flex: 1, padding: spacing(3), gap: 2 }}>
+        {urgency !== null ? <Badge label={t('home.fewSaturdays', { count: urgency })} tone="urgency" /> : null}
+        <AppText variant="bodyStrong" numberOfLines={2}>
+          {venue.name}
+        </AppText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
+          <Stars rating={venue.rating} />
+          <AppText variant="bodySm" color="secondary">
             ({venue.reviewCount})
           </AppText>
         </View>
-      </View>
-
-      <View style={{ padding: spacing(3.5), gap: spacing(1.5) }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
-          <AppText variant="subheading" numberOfLines={1} style={{ flexShrink: 1 }}>
-            {venue.name}
-          </AppText>
-          {venue.verified ? <Ionicons name="shield-checkmark" size={15} color={colors.primary} /> : null}
-        </View>
-        <AppText variant="bodySm" color="secondary">
-          {t(`city.${venue.city}`)} · {t('explore.capacity', { min: venue.capacityMin, max: venue.capacityMax })}
+        <AppText variant="bodySm" color="secondary" numberOfLines={1}>
+          {t('venue.capacityLine', { min: venue.capacityMin, max: venue.capacityMax })} · {t(`city.${venue.city}`)}
         </AppText>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing(1) }}>
-          <AppText variant="bodySm" color="secondary">
-            {t('common.from')}{' '}
-            <AppText variant="bodyStrong">{formatMkdBare(cheapestPerGuest(venue), locale)} ден.</AppText>{' '}
-            {t('common.perGuest')}
-          </AppText>
-          <Badge label={t('explore.kaparFrom', { amount: formatMkd(minKaparMkd(venue), locale) })} tone="accent" />
-        </View>
+        <View style={{ alignItems: 'flex-end', marginTop: 'auto' }}>{priceLine}</View>
       </View>
     </PressableScale>
   );

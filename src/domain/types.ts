@@ -8,13 +8,31 @@ import type { Locale } from '@/i18n';
 
 export type CityKey =
   | 'skopje'
+  | 'tetovo'
+  | 'gostivar'
   | 'ohrid'
   | 'bitola'
-  | 'tetovo'
   | 'struga'
   | 'kumanovo'
+  | 'prilep'
   | 'veles'
-  | 'prilep';
+  | 'stip'
+  | 'strumica'
+  | 'kavadarci'
+  | 'gevgelija';
+
+export type RegionKey =
+  | 'skopski'
+  | 'poloski'
+  | 'jugozapaden'
+  | 'pelagoniski'
+  | 'severoistocen'
+  | 'vardarski'
+  | 'istocen'
+  | 'jugoistocen';
+
+/** Category driving home carousels and the type filter. */
+export type VenueType = 'garden' | 'lake' | 'ballroom' | 'terrace' | 'panoramic' | 'restaurant';
 
 export type AmenityKey =
   | 'parking'
@@ -67,6 +85,7 @@ export interface Venue {
   id: string;
   name: string;
   city: CityKey;
+  venueType: VenueType;
   address: string;
   phone: string;
   photos: string[];
@@ -128,4 +147,17 @@ export interface Booking {
   status: BookingStatus;
   createdAtISO: string;
   timeline: BookingTimelineEvent[];
+  /** Sent to the venue for confirmation and the contract. */
+  contactName: string;
+  contactPhone: string;
+  specialRequests?: string;
+}
+
+/** One message in the couple ↔ venue thread attached to a booking. */
+export interface ChatMessage {
+  id: string;
+  bookingId: string;
+  from: 'couple' | 'venue';
+  text: string;
+  atISO: string;
 }

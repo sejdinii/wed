@@ -5,27 +5,26 @@ import { AppText } from './AppText';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 
-export type BadgeTone = 'neutral' | 'primary' | 'accent' | 'success' | 'warning' | 'danger';
+export type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'gold' | 'urgency';
 
 export interface BadgeProps {
   label: string;
   tone?: BadgeTone;
-  /** Leading status dot. */
   dot?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
-/** Status pill — booking lifecycle states, "Премиум", kapar amounts on cards. */
+/** Status / urgency pill. `urgency` is the red scarcity pill on venue cards. */
 export function Badge({ label, tone = 'neutral', dot = false, style }: BadgeProps) {
   const { colors } = useTheme();
 
   const tones: Record<BadgeTone, { bg: string; fg: string }> = {
     neutral: { bg: colors.surfaceElevated, fg: colors.textSecondary },
-    primary: { bg: colors.primarySoft, fg: colors.onPrimarySoft },
-    accent: { bg: colors.accentSoft, fg: colors.onAccentSoft },
-    success: { bg: colors.successSoft, fg: colors.onSuccessSoft },
-    warning: { bg: colors.warningSoft, fg: colors.onWarningSoft },
-    danger: { bg: colors.dangerSoft, fg: colors.onDangerSoft },
+    success: { bg: colors.mint, fg: colors.onMint },
+    warning: { bg: colors.amberSoft, fg: colors.amber },
+    danger: { bg: colors.dangerSoft, fg: colors.danger },
+    gold: { bg: colors.goldSoft, fg: colors.gold },
+    urgency: { bg: colors.urgencySoft, fg: colors.urgency },
   };
 
   const { bg, fg } = tones[tone];

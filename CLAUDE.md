@@ -4,6 +4,17 @@ Mobile-only (Expo/React Native) wedding-venue booking app for North Macedonia. T
 only the **kapar** (reservation deposit) through the app; the balance goes directly to the venue.
 Kapar is the product, not a payment option. Read `docs/PRODUCT.md` before product decisions.
 
+## Design direction (v2)
+
+The UI follows the **structure and interaction patterns of the Viator iOS app** (analyzed via
+Mobbin), adapted to wedding venues: 4 tabs (Explore/Bookings/Wishlist/Profile), search pill →
+city search → split-card results with a filter sheet, activity-style venue detail with sticky
+"check dates" bar, date+guests+menu availability screen, 3-step checkout (Contact › Event ›
+Payment) under a pinned kapar bar, two-phase status (request sent → venue confirmed), countdown
+booking cards, per-booking venue chat. Brand assets (name, logo, exact hexes) stay ours —
+structural fidelity, not trademark cloning. Flow: Search → Results → Venue → Date & Guests →
+Kapar Payment → Booking Status.
+
 ## Design law (non-negotiable) — full text in docs/DESIGN-PRINCIPLES.md
 
 - **Simplicity above everything.** Complexity lives in `src/domain/` and the future backend —

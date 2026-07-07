@@ -14,24 +14,23 @@ export interface ThemeColors {
   textInverse: string;
   primary: string;
   onPrimary: string;
-  primarySoft: string;
-  onPrimarySoft: string;
-  accent: string;
-  accentSoft: string;
-  onAccentSoft: string;
+  mint: string;
+  onMint: string;
+  chip: string;
+  onChip: string;
+  urgency: string;
+  urgencySoft: string;
+  amber: string;
+  amberSoft: string;
+  gold: string;
+  goldSoft: string;
   border: string;
   borderStrong: string;
   success: string;
   successSoft: string;
-  onSuccessSoft: string;
-  warning: string;
-  warningSoft: string;
-  onWarningSoft: string;
   danger: string;
   dangerSoft: string;
-  onDangerSoft: string;
   overlay: string;
-  scrim: string;
   skeleton: string;
   tabBar: string;
   tabBarBorder: string;
@@ -43,69 +42,67 @@ export interface Theme {
 }
 
 const lightColors: ThemeColors = {
-  background: brand.ivory,
+  background: brand.paper,
   surface: brand.paper,
-  surfaceElevated: brand.paper,
+  surfaceElevated: '#F3F6F3',
   text: brand.ink,
-  textSecondary: '#55605A',
-  textTertiary: '#8A948D',
-  textInverse: '#F7F3EA',
-  primary: brand.green700,
-  onPrimary: '#F7F3EA',
-  primarySoft: brand.green100,
-  onPrimarySoft: brand.green700,
-  accent: brand.gold600,
-  accentSoft: brand.gold100,
-  onAccentSoft: brand.gold700,
-  border: '#E7E1D5',
-  borderStrong: '#D5CDBD',
-  success: '#2E7D53',
-  successSoft: '#E1F0E7',
-  onSuccessSoft: '#1F5E3D',
-  warning: '#9C6F1E',
-  warningSoft: '#F7EDD8',
-  onWarningSoft: '#7A5715',
-  danger: '#B3402F',
-  dangerSoft: '#F8E4E0',
-  onDangerSoft: '#8F3225',
-  overlay: 'rgba(20, 26, 22, 0.55)',
-  scrim: 'rgba(0, 0, 0, 0.35)',
-  skeleton: '#ECE6DA',
+  textSecondary: '#5D6A61',
+  textTertiary: '#8C978F',
+  textInverse: '#FFFFFF',
+  primary: brand.green,
+  onPrimary: '#FFFFFF',
+  mint: brand.mint,
+  onMint: brand.mintInk,
+  chip: brand.chip,
+  onChip: '#FFFFFF',
+  urgency: brand.red,
+  urgencySoft: brand.redSoft,
+  amber: brand.amber,
+  amberSoft: brand.amberSoft,
+  gold: brand.gold,
+  goldSoft: brand.goldSoft,
+  border: '#E3E8E3',
+  borderStrong: '#C9D1CA',
+  success: brand.green,
+  successSoft: brand.mint,
+  danger: brand.red,
+  dangerSoft: brand.redSoft,
+  overlay: 'rgba(19, 26, 22, 0.55)',
+  skeleton: '#ECF0EC',
   tabBar: brand.paper,
-  tabBarBorder: '#EFE9DE',
+  tabBarBorder: '#E9EDE9',
 };
 
 const darkColors: ThemeColors = {
-  background: brand.green900,
-  surface: '#161D18',
-  surfaceElevated: '#1C2620',
-  text: '#EFEDE4',
-  textSecondary: '#A6B0A8',
-  textTertiary: '#6F7A72',
+  background: '#0F1411',
+  surface: '#151B17',
+  surfaceElevated: '#1C231E',
+  text: '#EBEFEA',
+  textSecondary: '#A2AEA5',
+  textTertiary: '#6E7A71',
   textInverse: brand.ink,
-  primary: brand.green600,
-  onPrimary: '#F2F7F1',
-  primarySoft: '#1D3327',
-  onPrimarySoft: brand.green200,
-  accent: brand.gold500,
-  accentSoft: '#2E2717',
-  onAccentSoft: brand.gold300,
-  border: '#27302A',
-  borderStrong: '#35403A',
-  success: '#5CB185',
-  successSoft: '#1A3324',
-  onSuccessSoft: '#8FCCA9',
-  warning: '#D9A94E',
-  warningSoft: '#33290F',
-  onWarningSoft: '#E5C070',
-  danger: '#E06A54',
-  dangerSoft: '#3A1F19',
-  onDangerSoft: '#EF9A89',
+  primary: brand.greenBright,
+  onPrimary: '#0C130F',
+  mint: '#173226',
+  onMint: '#7FC5A2',
+  chip: '#E9EDE9',
+  onChip: brand.ink,
+  urgency: '#E0705F',
+  urgencySoft: '#38201B',
+  amber: '#D8A94E',
+  amberSoft: '#322810',
+  gold: '#D0AA61',
+  goldSoft: '#2E2615',
+  border: '#252D26',
+  borderStrong: '#39423A',
+  success: brand.greenBright,
+  successSoft: '#173226',
+  danger: '#E0705F',
+  dangerSoft: '#38201B',
   overlay: 'rgba(0, 0, 0, 0.6)',
-  scrim: 'rgba(0, 0, 0, 0.5)',
-  skeleton: '#222B25',
-  tabBar: '#121814',
-  tabBarBorder: '#1F2823',
+  skeleton: '#212822',
+  tabBar: '#121813',
+  tabBarBorder: '#1F2620',
 };
 
 export const lightTheme: Theme = { mode: 'light', colors: lightColors };

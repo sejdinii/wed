@@ -27,7 +27,7 @@ export function RefundTimeline({ policy, eventDateISO }: RefundTimelineProps) {
   const tiers = sortedRefundTiers(policy);
 
   const dotColor = (percent: number): string =>
-    percent >= 100 ? colors.success : percent > 0 ? colors.warning : colors.danger;
+    percent >= 100 ? colors.success : percent > 0 ? colors.amber : colors.danger;
 
   const rows = tiers.map((tier, i) => {
     const prev = tiers[i - 1];

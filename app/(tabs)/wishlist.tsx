@@ -13,9 +13,8 @@ import { venueApi } from '@/data/api';
 import { useFavorites } from '@/stores/favorites';
 import { useI18n } from '@/i18n';
 
-/** Saved venues — the couple's shortlist. Weddings are chosen by committee;
- *  the shortlist is what gets passed around the family table. */
-export default function SavedScreen() {
+/** Wishlist — the family shortlist. Weddings are chosen by committee. */
+export default function WishlistScreen() {
   const { t } = useI18n();
   const router = useRouter();
   const favoriteIds = useFavorites((s) => s.venueIds);
@@ -36,27 +35,27 @@ export default function SavedScreen() {
 
   return (
     <Screen>
-      <View style={{ paddingHorizontal: spacing(5), paddingTop: spacing(3), paddingBottom: spacing(4) }}>
-        <AppText variant="title">{t('saved.title')}</AppText>
+      <View style={{ paddingHorizontal: spacing(4), paddingTop: spacing(3), paddingBottom: spacing(3) }}>
+        <AppText variant="display">{t('wishlist.title')}</AppText>
       </View>
       {allVenues === null ? (
-        <View style={{ paddingHorizontal: spacing(5), gap: spacing(4) }}>
-          <Skeleton height={220} radius={radius.lg} />
-          <Skeleton height={18} width="60%" />
+        <View style={{ paddingHorizontal: spacing(4), gap: spacing(3) }}>
+          <Skeleton height={130} radius={radius.lg} />
+          <Skeleton height={130} radius={radius.lg} />
         </View>
       ) : (
         <FlatList
           data={saved}
           keyExtractor={(v) => v.id}
-          contentContainerStyle={{ paddingHorizontal: spacing(5), paddingBottom: spacing(8), gap: spacing(4) }}
+          contentContainerStyle={{ paddingHorizontal: spacing(4), paddingBottom: spacing(8), gap: spacing(3) }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => <VenueCard venue={item} />}
+          renderItem={({ item }) => <VenueCard venue={item} variant="split" />}
           ListEmptyComponent={
             <EmptyState
               icon="heart-outline"
-              title={t('saved.emptyTitle')}
-              body={t('saved.emptyBody')}
-              actionLabel={t('saved.emptyCta')}
+              title={t('wishlist.emptyTitle')}
+              body={t('wishlist.emptyBody')}
+              actionLabel={t('wishlist.emptyCta')}
               onAction={() => router.push('/(tabs)')}
             />
           }

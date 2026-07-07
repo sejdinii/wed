@@ -4,10 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import {
-  PlayfairDisplay_600SemiBold,
-  PlayfairDisplay_700Bold,
-} from '@expo-google-fonts/playfair-display';
-import {
   Manrope_400Regular,
   Manrope_500Medium,
   Manrope_600SemiBold,
@@ -33,14 +29,16 @@ function RootNavigator() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="search" options={{ animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="results" />
         <Stack.Screen name="venue/[id]" />
-        <Stack.Screen name="booking/date" />
-        <Stack.Screen name="booking/review" />
-        <Stack.Screen name="booking/pay" />
-        <Stack.Screen
-          name="booking/confirmed"
-          options={{ gestureEnabled: false, animation: 'fade' }}
-        />
+        <Stack.Screen name="gallery/[venueId]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="booking/availability" />
+        <Stack.Screen name="booking/checkout" />
+        <Stack.Screen name="booking/status" options={{ gestureEnabled: false, animation: 'fade' }} />
+        <Stack.Screen name="booking/[id]" />
+        <Stack.Screen name="messages/[bookingId]" />
+        <Stack.Screen name="settings" />
       </Stack>
     </>
   );
@@ -48,8 +46,6 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    PlayfairDisplay_600SemiBold,
-    PlayfairDisplay_700Bold,
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,

@@ -25,12 +25,12 @@ export function EmptyState({ icon, title, body, actionLabel, onAction }: EmptySt
           width: 72,
           height: 72,
           borderRadius: 36,
-          backgroundColor: colors.primarySoft,
+          backgroundColor: colors.mint,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={icon} size={30} color={colors.onPrimarySoft} />
+        <Ionicons name={icon} size={30} color={colors.onMint} />
       </View>
       <AppText variant="heading" align="center">
         {title}
@@ -39,7 +39,7 @@ export function EmptyState({ icon, title, body, actionLabel, onAction }: EmptySt
         {body}
       </AppText>
       {actionLabel && onAction ? (
-        <Button title={actionLabel} onPress={onAction} variant="secondary" size="md" style={{ marginTop: spacing(2) }} />
+        <Button title={actionLabel} onPress={onAction} variant="mint" size="md" style={{ marginTop: spacing(2) }} />
       ) : null}
     </View>
   );

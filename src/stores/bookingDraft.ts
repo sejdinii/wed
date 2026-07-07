@@ -10,12 +10,15 @@ interface BookingDraftState {
   dateISO: string | null;
   guestCount: number;
   menuTierId: string | null;
-  termsAccepted: boolean;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  specialRequests: string;
   start: (venueId: string, defaults: { guestCount: number; menuTierId: string; dateISO?: string }) => void;
   setDate: (dateISO: string) => void;
   setGuestCount: (count: number) => void;
   setMenuTier: (tierId: string) => void;
-  setTermsAccepted: (accepted: boolean) => void;
+  setContact: (patch: Partial<Pick<BookingDraftState, 'firstName' | 'lastName' | 'phone' | 'specialRequests'>>) => void;
   reset: () => void;
 }
 
@@ -24,7 +27,10 @@ const initial = {
   dateISO: null,
   guestCount: 0,
   menuTierId: null,
-  termsAccepted: false,
+  firstName: '',
+  lastName: '',
+  phone: '',
+  specialRequests: '',
 };
 
 export const useBookingDraft = create<BookingDraftState>()((set) => ({
@@ -40,6 +46,6 @@ export const useBookingDraft = create<BookingDraftState>()((set) => ({
   setDate: (dateISO) => set({ dateISO }),
   setGuestCount: (guestCount) => set({ guestCount }),
   setMenuTier: (menuTierId) => set({ menuTierId }),
-  setTermsAccepted: (termsAccepted) => set({ termsAccepted }),
+  setContact: (patch) => set(patch),
   reset: () => set(initial),
 }));
