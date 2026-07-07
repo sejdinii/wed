@@ -946,7 +946,7 @@ function augment(seed: VenueSeed, index: number): Venue {
     value: jitter(base, index + 5, 0.8),
   };
 
-  const city = CITY_COORDS[seed.city] ?? CITY_COORDS.skopje;
+  const city: { lat: number; lng: number } = CITY_COORDS[seed.city] ?? { lat: 41.9981, lng: 21.4254 };
   const coords = { lat: city.lat + (index % 5) * 0.004 - 0.008, lng: city.lng + (index % 7) * 0.003 - 0.009 };
   const nearby: NearbyPlace[] = [
     { label: NEAR_CENTER, km: Math.round((0.8 + (index % 5) * 0.9) * 10) / 10 },
