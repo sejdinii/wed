@@ -3,6 +3,13 @@
 # Status values: DONE (built + verified running) | PARTIAL (built, missing states/edge cases)
 #                STUB (placeholder/mock only) | MISSING (not started) | BLOCKED (needs user decision)
 # RULE: nothing gets marked DONE without being run/tested in this session.
+#
+# AUDIT 2026-07-09 (/gap-check): statuses below reconciled against the actual code.
+# This file was created AFTER the first 14 build commits and never initialized, so
+# it claimed MISSING for flows that exist. Now fixed. NOTE: the app could NOT be
+# run this session — the remote environment blocks registry.npmjs.org, so npm
+# install fails and nothing is run-verified. All statuses are from a static code
+# trace; per the rule above, nothing may be DONE until verified running.
 
 ## MVP Definition of Done
 An MVP is DONE when: the app boots with zero errors, every CORE flow below is
@@ -13,32 +20,57 @@ on device/simulator without a crash.
 ## CORE FLOWS (MVP-blocking)
 | Feature | Status | Verified how | Notes |
 |---|---|---|---|
-| Venue search + filters | MISSING | — | |
-| Venue detail page (gallery, pricing, availability) | MISSING | — | |
-| Booking flow (date select → request/confirm) | MISSING | — | |
-| Double-booking prevention | MISSING | — | server-side check required |
-| Booking confirmation + status screen | MISSING | — | |
-| Auth (signup/login, both user types) | MISSING | — | |
-| Vendor: venue listing creation/edit | MISSING | — | |
-| Vendor: calendar/availability management | MISSING | — | |
-| Vendor: incoming booking requests | MISSING | — | |
-| Cancellation/refund flow | BLOCKED | — | policy undecided — known gap |
+| Venue search + filters | PARTIAL | static code trace 2026-07-09 | home → search → results built vs MockVenueApi (16 seeded venues, src/data/api.ts). Loading+empty states yes; NO error state; "Map view" pill is a dead end (results.tsx:299) |
+| Venue detail page (gallery, pricing, availability) | PARTIAL | static code trace 2026-07-09 | Gallery, halls, reviews, map, 410-unpublished state built. CRASH BUG: `fullRefundDays` undefined at venue/[id].tsx:289 → ReferenceError on the 3 multi-hall venues (panorama-garden, mermeren-dvor, grand-park-bitola). No error state |
+| Booking flow (date select → request/confirm) | PARTIAL | static code trace 2026-07-09 | availability calendar (booked dates unselectable) → 3-step checkout built. Payment gateway is a setTimeout placeholder (checkout.tsx:130). No availability re-check at pay time. Draft store in-memory only |
+| Double-booking prevention | MISSING | static code trace 2026-07-09 | Client-only filter on static `venue.bookedDates`; a completed booking NEVER writes back to bookedDates, so the same venue+date can be booked twice even on one device. Real fix is server-side |
+| Booking confirmation + status screen | PARTIAL | static code trace 2026-07-09 | status + booking-detail screens built with live state subscription. But "venue confirms" is a 22s setTimeout bot (venueBot.ts) whose timers die on app restart → booking stuck `reserved` forever. "Add to calendar" is a no-op (status.tsx:139) |
+| Auth (signup/login, both user types) | STUB | static code trace 2026-07-09 | welcome (phone) + verify (OTP) screens exist, but ANY 6 digits pass (verify.tsx:33); no SMS, no sessions, no accounts. Wall only guards the (tabs) group — venue/booking routes reachable via deep link unauthenticated. No vendor auth at all |
+| Vendor: venue listing creation/edit | MISSING | static code trace 2026-07-09 | Zero vendor-facing code. "Become a Partner" button is a no-op (profile.tsx:87) |
+| Vendor: calendar/availability management | MISSING | static code trace 2026-07-09 | bookedDates are hardcoded in src/data/venues.ts |
+| Vendor: incoming booking requests | MISSING | static code trace 2026-07-09 | Faked by venueBot auto-confirm + hardcoded Macedonian chat messages |
+| Cancellation/refund flow | BLOCKED | static code trace 2026-07-09 | Policy still undecided (user decision). Refund math (domain/kapar.ts:87-98) and read-only RefundTimeline exist, but there is NO cancel button anywhere — `cancelled_by_*` states are unreachable from the UI |
 
 ## REQUIRED BUT NOT CORE (post-boot, pre-launch)
 | Feature | Status | Verified how | Notes |
 |---|---|---|---|
-| Empty states (all list screens) | MISSING | — | |
-| Error states + retry (all network screens) | MISSING | — | |
-| Reviews/ratings | MISSING | — | |
-| Notifications (booking status changes) | MISSING | — | |
-| Deposits/payments | MISSING | — | decide: in-MVP or manual? |
-| Onboarding (first-run) | MISSING | — | |
-| Profile/settings | MISSING | — | |
+| Empty states (all list screens) | PARTIAL | static code trace 2026-07-09 | bookings/favorites/messages/results/booking-detail have EmptyState. Missing: home venue rails ((tabs)/index.tsx), reviews list (reviews/[venueId].tsx) |
+| Error states + retry (all network screens) | MISSING | static code trace 2026-07-09 | ZERO error UI in the app. 8 unguarded `await venueApi.*` calls (index:46, favorites:26, results:102, venue/[id]:83, gallery:34, reviews:37, availability:43, checkout:84) — a failure = silent infinite skeleton |
+| Reviews/ratings | STUB | static code trace 2026-07-09 | Deterministically generated fake reviews (src/data/reviews.ts), display-only; no write path |
+| Notifications (booking status changes) | MISSING | static code trace 2026-07-09 | Home notification bell is a no-op ((tabs)/index.tsx:112) |
+| Deposits/payments | STUB | static code trace 2026-07-09 | Luhn-validated card form → fake 1.4s gateway; card data held in React state (PCI liability if ever shipped). CaSys cPay vs Stripe decision still open. Payment can never fail in the mock, so the failure path is unbuilt AND unexercised |
+| Onboarding (first-run) | PARTIAL | static code trace 2026-07-09 | welcome → verify → tabs flow with redirect gate ((tabs)/_layout.tsx:26). Terms/Privacy links are no-ops |
+| Profile/settings | PARTIAL | static code trace 2026-07-09 | Profile tab + settings (language en/mk/sq, theme) work. Dead buttons: personal info, payment methods (profile.tsx:61,63), terms/privacy (settings.tsx:128,130), help (booking/[id].tsx:177) |
 
 ## DISCOVERED GAPS (agent appends here when it finds unstated requirements)
-- (agent: every time you notice a missing requirement mid-build, add it here
-  immediately — do not rely on remembering it later)
+- 2026-07-09 CRASH: venue/[id].tsx:289 references undefined `fullRefundDays` →
+  ReferenceError rendering the halls section; breaks search→detail for all 3
+  multi-hall venues. MVP-blocking, trivial fix.
+- 2026-07-09: `expired` and `completed` booking states exist in the state machine
+  but NO code path ever sets them — past bookings stay `confirmed`/`reserved` forever.
+  Needs a lifecycle job (client-side sweep now, server cron later).
+- 2026-07-09: venueBot timers don't survive app restart → a booking made then
+  app-killed within 22s is stuck `reserved` with no reconciliation on next launch.
+- 2026-07-09: no availability re-check at checkout time; user's own booking doesn't
+  mark the date locally, so the SAME device can double-book a venue+date.
+- 2026-07-09: auth wall only wraps (tabs); venue/[id], booking/*, checkout are
+  deep-linkable without verification (share links make this reachable in practice).
+- 2026-07-09: UI copy overclaims — "secure payment · data protected" on a fake
+  gateway; "venue confirms within 24h" when it's a 22s bot; "we'll text you a
+  code" when no SMS is sent. Must be reworded or made true before any real user.
+- 2026-07-09: all 16 venues' photos hot-link Unsplash — licensing + reliability
+  risk for production; BrandedImage fallback exists but offline behavior unverified.
+- 2026-07-09: venueBot chat messages hardcoded Macedonian regardless of locale.
+- 2026-07-09: zero tests, no CI; typecheck is the only gate and was NOT runnable
+  this session (see next line).
+- 2026-07-09 ENVIRONMENT: the remote session's network policy blocks
+  registry.npmjs.org → npm ci fails → app cannot boot in cloud sessions. Add
+  registry.npmjs.org to the environment's network egress allowlist, or all
+  run-verification must happen locally.
 
 ## DECISIONS LOG
 - (agent: record every product decision the user makes, with date, so future
   sessions don't re-ask)
+- 2026-07-09: OPEN — cancellation/refund policy (blocks cancellation flow build).
+- 2026-07-09: OPEN — payment rails for MVP: CaSys cPay (domestic) vs Stripe
+  (diaspora) vs manual/kapar-on-visit; blocks real checkout.
