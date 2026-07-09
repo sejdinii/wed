@@ -1,64 +1,45 @@
-# Kapar — Свадбени сали, резервирани со капар
+# Adversarial App-Builder Setup for Claude Code
 
-**The Booking.com for wedding venues in North Macedonia — built mobile-only, around the local
-reservation deposit (капар / kapar) instead of full upfront payment.**
-
-Couples browse venues, check real availability for *their* date, and lock it by paying only the
-**kapar** through the app. The balance is paid directly to the venue on the venue's own terms.
-Kapar is not a payment feature — it is the product.
-
-## Why kapar-first wins
-
-| | Full-payment platforms | Kapar |
-|---|---|---|
-| Commitment asked on mobile | 300.000–900.000+ ден. | 15.000–40.000 ден. |
-| Venue's incentive to join | Loses control of pricing & payments | Keeps its own payment terms, gets guaranteed deposits + a full calendar |
-| Trust model | Foreign platform holds everything | Deposit held in escrow ("Kapar Protection") until the venue confirms |
-| Cultural fit | Imported | Formalises what every Macedonian venue already does with cash |
-
-## Stack
-
-- **Expo SDK 54 · React Native 0.81 · TypeScript (strict, `noUncheckedIndexedAccess`)**
-- **Expo Router** (file-based navigation), **Zustand** (+ AsyncStorage persistence)
-- Custom design system — no UI kit. Playfair Display + Manrope (both Cyrillic-complete), light & dark themes
-- i18n: **Macedonian (primary), Albanian, English** — typed dictionaries; a missing key is a compile error
-- No Reanimated/gesture-handler in v1 — all motion uses the built-in `Animated` API (deliberate: fewer fragile native deps until we need shared-element transitions)
-
-## Getting started
-
-```bash
-npm install
-npm run typecheck   # tsc --noEmit
-npm start           # Expo dev server → scan with Expo Go (iOS/Android)
-```
-
-> Note: this repository was authored in a sandboxed environment without npm registry access;
-> dependency versions are pinned to Expo SDK 54 ranges. If `npm install` reports a peer conflict,
-> run `npx expo install --fix` to align versions.
-
-## Project structure
+## Install
+Copy into your project root:
 
 ```
-app/                    # Expo Router routes
-  (tabs)/               #   Explore · Saved · Bookings · Profile
-  venue/[id].tsx        #   Venue detail (sticky kapar bar)
-  booking/              #   3-step checkout: date → review → pay → confirmed
-src/
-  design/               # Tokens, themes, primitive components (the design system)
-  components/           # Feature components (VenueCard, KaparBreakdown, RefundTimeline, …)
-  domain/               # Types + kapar business rules (pure, testable)
-  data/                 # Repository-pattern API (mock now, HTTP later)
-  stores/               # Zustand stores (preferences, favorites, bookings, draft)
-  i18n/                 # mk / sq / en dictionaries
-  lib/                  # money, dates, haptics
-docs/
-  PRODUCT.md            # Market, kapar deep-dive, booking lifecycle, roadmap
-  ARCHITECTURE.md       # Client architecture + backend/expansion plan
+your-project/
+├── CLAUDE.md                          # persona + standing rules
+└── .claude/
+    ├── commands/
+    │   └── build-app.md               # /build-app slash command
+    └── agents/
+        ├── design-researcher.md       # fetches current UI references
+        └── design-critic.md           # adversarial review pass
 ```
 
-## Status
+Then in Claude Code:
 
-v0.1 — full consumer flow working end-to-end against seeded data: discovery (date-first search),
-venue detail, kapar checkout with refund-ladder transparency, wallet-style confirmation, booking
-ledger, trilingual UI, dark mode. Payments are a marked mock (CaSys cPay / Stripe integration
-point). Venue-partner portal, accounts and backend are next — see `docs/PRODUCT.md`.
+```
+/build-app a wedding venue booking marketplace for North Macedonia
+```
+
+## Why three layers instead of just CLAUDE.md
+- CLAUDE.md instructions decay over long sessions. The slash command re-injects
+  the full workflow at the moment you invoke it — fresh context, full strength.
+- Subagents run with their own context window and their own narrow persona, so
+  the critic stays harsh even when the main agent has drifted agreeable, and the
+  researcher can burn tokens on fetching without polluting the build context.
+
+## Enabling the tools
+- Allow WebSearch/WebFetch when prompted (or pre-approve in .claude/settings.json).
+- Mobbin MCP: the design-researcher subagent has NO `tools:` field on purpose —
+  omitting it inherits all tools, including MCP servers. If you ever add a
+  `tools:` list to that agent, you must include the Mobbin tools explicitly
+  (run /mcp to see exact names, e.g. mcp__mobbin__search_flows) or the agent
+  silently loses Mobbin access. Partial allowlists are the #1 silent failure here.
+- Verify the wiring once: run /build-app on a test idea and confirm Phase 2
+  output cites Mobbin flows/screens by app name. If it only cites web articles,
+  the MCP isn't reaching the subagent.
+
+## Tuning the aggression
+If it's still too agreeable: the failure is almost always that it started coding
+too early. Tighten Phase 1 ("do not proceed until the user has responded to your
+objections"). If it's too obstructive after plan approval, strengthen Rule 5.
+Edit → retry takes 30 seconds. This file IS your training loop.
