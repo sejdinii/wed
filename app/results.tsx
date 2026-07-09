@@ -18,7 +18,7 @@ import { useTheme } from '@/design/theme';
 import { radius, shadow, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMediumDate, todayISO } from '@/lib/dates';
-import { cheapestPerGuest, minKaparMkd } from '@/domain/kapar';
+import { cheapestPerGuest, minEstimateMkd, minKaparMkd } from '@/domain/kapar';
 import { formatMkd } from '@/lib/money';
 import type { CityKey, Venue, VenueType } from '@/domain/types';
 import { venueApi } from '@/data/api';

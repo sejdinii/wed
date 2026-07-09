@@ -99,6 +99,7 @@ export const sq: Dict = {
   'venue.verified': 'Sallë e verifikuar',
   'venue.notFound': 'Salla nuk u gjet.',
   'venue.menuPerGuest': '€{amount} / mysafir',
+  'venue.menus': 'Menutë',
 
   'availability.title': 'Kontrollo disponueshmërinë',
   'availability.menusAvailable': '{count} meny të disponueshme',

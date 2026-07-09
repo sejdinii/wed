@@ -68,7 +68,7 @@ export default function AvailabilityScreen() {
       padding: spacing(4),
     },
     mode === 'light' ? shadow.card : null,
-  ] as const;
+  ];
 
   const Legend = ({ color, label }: { color: string; label: string }) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>

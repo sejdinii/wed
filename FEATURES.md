@@ -6,10 +6,11 @@
 #
 # AUDIT 2026-07-09 (/gap-check): statuses below reconciled against the actual code.
 # This file was created AFTER the first 14 build commits and never initialized, so
-# it claimed MISSING for flows that exist. Now fixed. NOTE: the app could NOT be
-# run this session — the remote environment blocks registry.npmjs.org, so npm
-# install fails and nothing is run-verified. All statuses are from a static code
-# trace; per the rule above, nothing may be DONE until verified running.
+# it claimed MISSING for flows that exist. Now fixed.
+# SESSION 2026-07-09b: npm registry unblocked — install + typecheck + web boot all
+# work now (see ENVIRONMENT note in DISCOVERED GAPS for the two required tweaks).
+# "run-verified (web)" below means: driven in headless Chromium against Metro this
+# session, zero console errors.
 
 ## MVP Definition of Done
 An MVP is DONE when: the app boots with zero errors, every CORE flow below is
@@ -21,7 +22,7 @@ on device/simulator without a crash.
 | Feature | Status | Verified how | Notes |
 |---|---|---|---|
 | Venue search + filters | PARTIAL | static code trace 2026-07-09 | home → search → results built vs MockVenueApi (16 seeded venues, src/data/api.ts). Loading+empty states yes; NO error state; "Map view" pill is a dead end (results.tsx:299) |
-| Venue detail page (gallery, pricing, availability) | PARTIAL | static code trace 2026-07-09 | Gallery, halls, reviews, map, 410-unpublished state built. CRASH BUG: `fullRefundDays` undefined at venue/[id].tsx:289 → ReferenceError on the 3 multi-hall venues (panorama-garden, mermeren-dvor, grand-park-bitola). No error state |
+| Venue detail page (gallery, pricing, availability) | PARTIAL | run-verified (web) 2026-07-09b | Gallery, halls, reviews, map, 410-unpublished state built. `fullRefundDays` crash FIXED + verified on panorama-garden (multi-hall renders). Still no error state |
 | Booking flow (date select → request/confirm) | PARTIAL | static code trace 2026-07-09 | availability calendar (booked dates unselectable) → 3-step checkout built. Payment gateway is a setTimeout placeholder (checkout.tsx:130). No availability re-check at pay time. Draft store in-memory only |
 | Double-booking prevention | MISSING | static code trace 2026-07-09 | Client-only filter on static `venue.bookedDates`; a completed booking NEVER writes back to bookedDates, so the same venue+date can be booked twice even on one device. Real fix is server-side |
 | Booking confirmation + status screen | PARTIAL | static code trace 2026-07-09 | status + booking-detail screens built with live state subscription. But "venue confirms" is a 22s setTimeout bot (venueBot.ts) whose timers die on app restart → booking stuck `reserved` forever. "Add to calendar" is a no-op (status.tsx:139) |
@@ -45,7 +46,14 @@ on device/simulator without a crash.
 ## DISCOVERED GAPS (agent appends here when it finds unstated requirements)
 - 2026-07-09 CRASH: venue/[id].tsx:289 references undefined `fullRefundDays` →
   ReferenceError rendering the halls section; breaks search→detail for all 3
-  multi-hall venues. MVP-blocking, trivial fix.
+  multi-hall venues. MVP-blocking, trivial fix. FIXED 2026-07-09b (derived from
+  sortedRefundTiers), run-verified on panorama-garden.
+- 2026-07-09b: results.tsx price-sort referenced un-imported `minEstimateMkd` →
+  would crash the moment a user picked "price" sort. Same class of bug as the
+  fullRefundDays crash (unimported identifier compiles in Metro, dies at runtime).
+  FIXED same session; typecheck now gates this class. Typecheck was ALSO broken
+  in availability.tsx (readonly style tuple) and venue/[id].tsx (missing
+  `venue.menus` i18n key) — all four fixed, `tsc --noEmit` exits 0.
 - 2026-07-09: `expired` and `completed` booking states exist in the state machine
   but NO code path ever sets them — past bookings stay `confirmed`/`reserved` forever.
   Needs a lifecycle job (client-side sweep now, server cron later).
@@ -64,9 +72,13 @@ on device/simulator without a crash.
 - 2026-07-09: zero tests, no CI; typecheck is the only gate and was NOT runnable
   this session (see next line).
 - 2026-07-09 ENVIRONMENT: the remote session's network policy blocks
-  registry.npmjs.org → npm ci fails → app cannot boot in cloud sessions. Add
-  registry.npmjs.org to the environment's network egress allowlist, or all
-  run-verification must happen locally.
+  registry.npmjs.org → npm ci fails → app cannot boot in cloud sessions.
+  RESOLVED 2026-07-09b: registry is now allowlisted; npm install works. Two
+  standing quirks: (1) api.expo.dev is still blocked, so `expo start` crashes
+  unless run with `--offline`; (2) zustand v5's ESM build uses `import.meta`,
+  which kills the classic-script web bundle on boot — metro.config.js now pins
+  zustand to CJS (committed). Unsplash photo hosts are also blocked here, so
+  venue photos show the BrandedImage fallback in cloud runs.
 
 ## DECISIONS LOG
 - (agent: record every product decision the user makes, with date, so future

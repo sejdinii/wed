@@ -101,6 +101,7 @@ export const mk = {
   'venue.verified': 'Потврдена сала',
   'venue.notFound': 'Салата не е пронајдена.',
   'venue.menuPerGuest': '€{amount} / гостин',
+  'venue.menus': 'Менија',
 
   'availability.title': 'Провери достапност',
   'availability.menusAvailable': '{count} менија достапни',

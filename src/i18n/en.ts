@@ -99,6 +99,7 @@ export const en: Dict = {
   'venue.verified': 'Verified venue',
   'venue.notFound': 'Venue not found.',
   'venue.menuPerGuest': '€{amount} / guest',
+  'venue.menus': 'Menus',
 
   'availability.title': 'Check availability',
   'availability.menusAvailable': '{count} menus available',
