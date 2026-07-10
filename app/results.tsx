@@ -8,6 +8,7 @@ import { AppText } from '@/design/components/AppText';
 import { Button } from '@/design/components/Button';
 import { Chip } from '@/design/components/Chip';
 import { EmptyState } from '@/design/components/EmptyState';
+import { ErrorState } from '@/design/components/ErrorState';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
@@ -96,16 +97,25 @@ export default function ResultsScreen() {
   const [sortOpen, setSortOpen] = useState(false);
   const [draft, setDraft] = useState<Filters>(filters);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+
   useEffect(() => {
     let cancelled = false;
+    setLoadFailed(false);
     (async () => {
-      const result = await venueApi.listVenues({ city: city ?? undefined });
-      if (!cancelled) setVenues(result);
+      try {
+        const result = await venueApi.listVenues({ city: city ?? undefined });
+        if (!cancelled) setVenues(result);
+      } catch {
+        if (!cancelled) setLoadFailed(true);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [city]);
+  }, [city, attempt]);
 
   const visible = venues ? applySort(applyFilters(venues, filters), sort) : null;
   const draftCount = venues ? applyFilters(venues, draft).length : 0;
@@ -236,7 +246,9 @@ export default function ResultsScreen() {
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => <VenueCard venue={item} variant="split" showAvailable={filters.dateISO !== null} />}
         ListEmptyComponent={
-          visible === null ? (
+          loadFailed ? (
+            <ErrorState onRetry={retry} />
+          ) : visible === null ? (
             <View style={{ gap: spacing(3) }}>
               {[0, 1, 2].map((i) => (
                 <Skeleton key={i} height={150} radius={radius.lg} />

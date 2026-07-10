@@ -21,7 +21,7 @@ on device/simulator without a crash.
 ## CORE FLOWS (MVP-blocking)
 | Feature | Status | Verified how | Notes |
 |---|---|---|---|
-| Venue search + filters | PARTIAL | static code trace 2026-07-09 | home → search → results built vs MockVenueApi (16 seeded venues, src/data/api.ts). Loading+empty states yes; NO error state; "Map view" pill is a dead end (results.tsx:299) |
+| Venue search + filters | PARTIAL | run-verified (web) 2026-07-10 | home → search → results built vs MockVenueApi (14 published seed venues — earlier "16" was wrong). Loading+empty+error states all present now; "Map view" pill is still a dead end |
 | Venue detail page (gallery, pricing, availability) | PARTIAL | run-verified (web) 2026-07-09b | Gallery, halls, reviews, map, 410-unpublished state built. `fullRefundDays` crash FIXED + verified on panorama-garden (multi-hall renders). Still no error state |
 | Booking flow (date select → request/confirm) | PARTIAL | run-verified (web) 2026-07-10 | REWORKED to pay-at-visit (decision 2026-07-09): card form deleted; checkout = Contact › Event › Review, submit creates a `pending_kapar` request, no money online. Full flow driven in browser. Still missing: availability re-check at submit, error state on the venue fetch, draft store in-memory |
 | Double-booking prevention | MISSING | static code trace 2026-07-09 | Client-only filter on static `venue.bookedDates`; a completed booking NEVER writes back to bookedDates, so the same venue+date can be booked twice even on one device. Real fix is server-side |
@@ -35,8 +35,8 @@ on device/simulator without a crash.
 ## REQUIRED BUT NOT CORE (post-boot, pre-launch)
 | Feature | Status | Verified how | Notes |
 |---|---|---|---|
-| Empty states (all list screens) | PARTIAL | static code trace 2026-07-09 | bookings/favorites/messages/results/booking-detail have EmptyState. Missing: home venue rails ((tabs)/index.tsx), reviews list (reviews/[venueId].tsx) |
-| Error states + retry (all network screens) | MISSING | static code trace 2026-07-09 | ZERO error UI in the app. 8 unguarded `await venueApi.*` calls (index:46, favorites:26, results:102, venue/[id]:83, gallery:34, reviews:37, availability:43, checkout:84) — a failure = silent infinite skeleton |
+| Empty states (all list screens) | DONE | code + browser 2026-07-10 | All list screens have EmptyState incl. new home-rails and reviews-list ones. Caveat: the two new branches are unreachable with seed data (mock always returns venues/reviews), so they are render-guards verified by code, not driven |
+| Error states + retry (all network screens) | DONE | run-verified (web) 2026-07-10 | New ErrorState design component; all 8 previously-unguarded venueApi awaits wrapped with retry wiring. Every screen driven in browser with the new dev switch `globalThis.__KAPAR_API_FAIL__` (api.ts); home/results/venue-detail also verified to RECOVER on retry |
 | Reviews/ratings | STUB | static code trace 2026-07-09 | Deterministically generated fake reviews (src/data/reviews.ts), display-only; no write path |
 | Notifications (booking status changes) | MISSING | static code trace 2026-07-09 | Home notification bell is a no-op ((tabs)/index.tsx:112) |
 | Deposits/payments | DONE | run-verified (web) 2026-07-10 | DECIDED 2026-07-09: MVP has NO online payments — kapar is paid in person at the venue visit. Card form + fake gateway deleted (PCI risk gone); all "secure payment" claims reworded in en/mk/sq; profile "Payment methods" row removed. Online rails (CaSys/Stripe) become a post-launch feature |

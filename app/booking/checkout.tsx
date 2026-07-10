@@ -8,6 +8,7 @@ import { AppText } from '@/design/components/AppText';
 import { Button } from '@/design/components/Button';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
+import { ErrorState } from '@/design/components/ErrorState';
 import { RefundTimeline } from '@/components/RefundTimeline';
 import { useTheme } from '@/design/theme';
 import { radius, spacing, typeScale } from '@/design/tokens';
@@ -49,20 +50,37 @@ export default function CheckoutScreen() {
   const [processing, setProcessing] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+
   useEffect(() => {
     let cancelled = false;
     if (!draft.venueId) return;
+    setLoadFailed(false);
     (async () => {
-      const result = await venueApi.getVenue(draft.venueId as string);
-      if (!cancelled && result) setVenue(result);
+      try {
+        const result = await venueApi.getVenue(draft.venueId as string);
+        if (!cancelled && result) setVenue(result);
+      } catch {
+        if (!cancelled) setLoadFailed(true);
+      }
     })();
     return () => {
       cancelled = true;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [draft.venueId]);
+  }, [draft.venueId, attempt]);
 
   if (!draft.venueId || !draft.dateISO || !draft.menuTierId) return <Redirect href="/(tabs)" />;
+
+  if (loadFailed) {
+    return (
+      <Screen>
+        <ErrorState onRetry={retry} secondaryLabel={t('common.back')} onSecondary={() => router.back()} />
+      </Screen>
+    );
+  }
 
   const estimate = venue ? estimateTotalMkd(venue, draft.menuTierId, draft.guestCount, draft.hallId) : 0;
   const kapar = venue ? kaparAmountMkd(venue.kaparPolicy, estimate) : 0;

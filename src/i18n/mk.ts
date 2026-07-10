@@ -113,6 +113,13 @@ export const mk = {
   'availability.legendBooked': 'Зафатено',
   'availability.legendSaturday': 'Сабота',
 
+  'error.title': 'Нешто тргна наопаку',
+  'error.body': 'Не успеавме да ги вчитаме податоците. Провери ја врската и обиди се повторно.',
+  'home.emptyTitle': 'Салите не се достапни',
+  'home.emptyBody': 'Повлечи или обиди се повторно за да ги вчиташ салите.',
+  'reviews.emptyTitle': 'Сè уште нема рецензии',
+  'reviews.emptyBody': 'Оваа сала нема објавени рецензии засега.',
+
   'calendar.prevMonth': 'Претходен месец',
   'calendar.nextMonth': 'Следен месец',
 

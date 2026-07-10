@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 
 import { AppText } from '@/design/components/AppText';
 import { EmptyState } from '@/design/components/EmptyState';
+import { ErrorState } from '@/design/components/ErrorState';
 import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
 import { VenueCard } from '@/components/VenueCard';
@@ -19,17 +20,25 @@ export default function FavoritesScreen() {
   const router = useRouter();
   const favoriteIds = useFavorites((s) => s.venueIds);
   const [allVenues, setAllVenues] = useState<Venue[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
 
   useEffect(() => {
     let cancelled = false;
+    setLoadFailed(false);
     (async () => {
-      const result = await venueApi.listVenues();
-      if (!cancelled) setAllVenues(result);
+      try {
+        const result = await venueApi.listVenues();
+        if (!cancelled) setAllVenues(result);
+      } catch {
+        if (!cancelled) setLoadFailed(true);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   const saved = allVenues?.filter((v) => favoriteIds.includes(v.id)) ?? [];
 
@@ -38,7 +47,9 @@ export default function FavoritesScreen() {
       <View style={{ paddingHorizontal: spacing(4), paddingTop: spacing(3), paddingBottom: spacing(3) }}>
         <AppText variant="display">{t('tabs.favorites')}</AppText>
       </View>
-      {allVenues === null ? (
+      {loadFailed ? (
+        <ErrorState onRetry={retry} />
+      ) : allVenues === null ? (
         <View style={{ paddingHorizontal: spacing(4), gap: spacing(3) }}>
           <Skeleton height={130} radius={radius.lg} />
           <Skeleton height={130} radius={radius.lg} />

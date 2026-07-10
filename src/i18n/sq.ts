@@ -111,6 +111,13 @@ export const sq: Dict = {
   'availability.legendBooked': 'E zënë',
   'availability.legendSaturday': 'E shtunë',
 
+  'error.title': 'Diçka shkoi keq',
+  'error.body': 'Nuk arritëm t’i ngarkojmë të dhënat. Kontrollo lidhjen dhe provo përsëri.',
+  'home.emptyTitle': 'Sallat nuk janë të disponueshme',
+  'home.emptyBody': 'Provo përsëri për t’i ngarkuar sallat.',
+  'reviews.emptyTitle': 'Ende nuk ka vlerësime',
+  'reviews.emptyBody': 'Kjo sallë nuk ka vlerësime të publikuara deri tani.',
+
   'calendar.prevMonth': 'Muaji i mëparshëm',
   'calendar.nextMonth': 'Muaji tjetër',
 

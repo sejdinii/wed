@@ -8,6 +8,7 @@ import { AppText } from '@/design/components/AppText';
 import { Button } from '@/design/components/Button';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
+import { ErrorState } from '@/design/components/ErrorState';
 import { Skeleton } from '@/design/components/Skeleton';
 import { MonthPager } from '@/components/MonthPager';
 import { useTheme } from '@/design/theme';
@@ -36,17 +37,26 @@ export default function AvailabilityScreen() {
   const draft = useBookingDraft();
   const [venue, setVenue] = useState<Venue | null>(null);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+
   useEffect(() => {
     let cancelled = false;
     if (!draft.venueId) return;
+    setLoadFailed(false);
     (async () => {
-      const result = await venueApi.getVenue(draft.venueId as string);
-      if (!cancelled && result) setVenue(result);
+      try {
+        const result = await venueApi.getVenue(draft.venueId as string);
+        if (!cancelled && result) setVenue(result);
+      } catch {
+        if (!cancelled) setLoadFailed(true);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [draft.venueId]);
+  }, [draft.venueId, attempt]);
 
   if (!draft.venueId) return <Redirect href="/(tabs)" />;
 
@@ -134,7 +144,9 @@ export default function AvailabilityScreen() {
         <View style={{ width: 22 }} />
       </View>
 
-      {venue === null ? (
+      {loadFailed ? (
+        <ErrorState onRetry={retry} secondaryLabel={t('common.back')} onSecondary={() => router.back()} />
+      ) : venue === null ? (
         <View style={{ padding: spacing(4), gap: spacing(3) }}>
           <Skeleton height={340} radius={radius.lg} />
           <Skeleton height={90} radius={radius.lg} />

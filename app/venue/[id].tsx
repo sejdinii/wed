@@ -8,6 +8,7 @@ import { AppText } from '@/design/components/AppText';
 import { Button } from '@/design/components/Button';
 import { Divider } from '@/design/components/Divider';
 import { EmptyState } from '@/design/components/EmptyState';
+import { ErrorState } from '@/design/components/ErrorState';
 import { ExpandableSection } from '@/design/components/ExpandableSection';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
@@ -76,21 +77,38 @@ export default function VenueDetailScreen() {
   const toggleFavorite = useFavorites((s) => s.toggle);
   const startDraft = useBookingDraft((s) => s.start);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+
   useEffect(() => {
     let cancelled = false;
     if (typeof id !== 'string') return;
+    setLoadFailed(false);
     (async () => {
-      const [result, venueReviews] = await Promise.all([venueApi.getVenue(id), venueApi.listReviews(id)]);
-      if (!cancelled) {
-        setVenue(result ?? 'missing');
-        setReviews(venueReviews);
-        if (result) setHallId(result.halls[0]?.id ?? null);
+      try {
+        const [result, venueReviews] = await Promise.all([venueApi.getVenue(id), venueApi.listReviews(id)]);
+        if (!cancelled) {
+          setVenue(result ?? 'missing');
+          setReviews(venueReviews);
+          if (result) setHallId(result.halls[0]?.id ?? null);
+        }
+      } catch {
+        if (!cancelled) setLoadFailed(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
+
+  if (loadFailed) {
+    return (
+      <Screen>
+        <ErrorState onRetry={retry} secondaryLabel={t('common.back')} onSecondary={() => router.back()} />
+      </Screen>
+    );
+  }
 
   if (venue === 'missing') {
     return (

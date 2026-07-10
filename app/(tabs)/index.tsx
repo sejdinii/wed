@@ -8,6 +8,8 @@ import { AppText } from '@/design/components/AppText';
 import { Button } from '@/design/components/Button';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
+import { EmptyState } from '@/design/components/EmptyState';
+import { ErrorState } from '@/design/components/ErrorState';
 import { Skeleton } from '@/design/components/Skeleton';
 import { Stepper } from '@/design/components/Stepper';
 import { MonthPager } from '@/components/MonthPager';
@@ -40,16 +42,25 @@ export default function HomeScreen() {
   const recentCities = usePreferences((s) => s.recentCities);
   const city = recentCities[0] ?? 'skopje';
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+
   useEffect(() => {
     let cancelled = false;
+    setLoadFailed(false);
     (async () => {
-      const result = await venueApi.listVenues();
-      if (!cancelled) setVenues(result);
+      try {
+        const result = await venueApi.listVenues();
+        if (!cancelled) setVenues(result);
+      } catch {
+        if (!cancelled) setLoadFailed(true);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   const popular = venues?.filter((v) => v.featured) ?? [];
   const topRated = venues ? [...venues].sort((a, b) => b.rating - a.rating).slice(0, 4) : [];
@@ -189,6 +200,12 @@ export default function HomeScreen() {
           />
         </View>
 
+        {loadFailed ? (
+          <ErrorState onRetry={retry} />
+        ) : venues !== null && venues.length === 0 ? (
+          <EmptyState icon="business-outline" title={t('home.emptyTitle')} body={t('home.emptyBody')} actionLabel={t('common.retry')} onAction={retry} />
+        ) : (
+          <>
         {/* Popular Venues */}
         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: spacing(4), marginTop: spacing(6), marginBottom: spacing(3) }}>
           <AppText variant="heading">{t('home.popular')}</AppText>
@@ -235,6 +252,8 @@ export default function HomeScreen() {
             ? [0, 1, 2].map((i) => <Skeleton key={i} height={84} radius={radius.lg} />)
             : topRated.map((venue) => <VenueCard key={venue.id} venue={venue} variant="row" />)}
         </View>
+          </>
+        )}
       </ScrollView>
 
       {/* Date sheet */}

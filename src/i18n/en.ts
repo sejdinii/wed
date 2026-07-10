@@ -111,6 +111,13 @@ export const en: Dict = {
   'availability.legendBooked': 'Taken',
   'availability.legendSaturday': 'Saturday',
 
+  'error.title': 'Something went wrong',
+  'error.body': 'We couldn’t load this. Check your connection and try again.',
+  'home.emptyTitle': 'Venues unavailable',
+  'home.emptyBody': 'Pull to refresh or try again to load venues.',
+  'reviews.emptyTitle': 'No reviews yet',
+  'reviews.emptyBody': 'This venue has no published reviews so far.',
+
   'calendar.prevMonth': 'Previous month',
   'calendar.nextMonth': 'Next month',
 
