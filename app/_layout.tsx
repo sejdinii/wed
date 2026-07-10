@@ -39,6 +39,7 @@ function RootNavigator() {
         <Stack.Screen name="booking/availability" />
         <Stack.Screen name="booking/checkout" />
         <Stack.Screen name="booking/status" options={{ gestureEnabled: false, animation: 'fade' }} />
+        <Stack.Screen name="booking/cancel" />
         <Stack.Screen name="booking/[id]" />
         <Stack.Screen name="messages/[bookingId]" />
         <Stack.Screen name="settings" />

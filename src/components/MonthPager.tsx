@@ -8,7 +8,7 @@ import { PressableScale } from '@/design/components/PressableScale';
 import { useTheme } from '@/design/theme';
 import { spacing } from '@/design/tokens';
 import { addMonths, formatMonthTitle, parseISODate } from '@/lib/dates';
-import type { Locale } from '@/i18n';
+import { useI18n, type Locale } from '@/i18n';
 
 export interface MonthPagerProps {
   locale: Locale;
@@ -21,6 +21,7 @@ export interface MonthPagerProps {
 /** Calendar with month navigation. Owns the visible-month state. */
 export function MonthPager({ locale, selectedISO, minISO, stateFor, onSelect }: MonthPagerProps) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const [month, setMonth] = useState<Date>(() => {
     const base = selectedISO ? parseISODate(selectedISO) : parseISODate(minISO);
     return new Date(base.getFullYear(), base.getMonth(), 1);
@@ -38,6 +39,7 @@ export function MonthPager({ locale, selectedISO, minISO, stateFor, onSelect }: 
         hapticFeedback="select"
         scaleTo={0.85}
         accessibilityRole="button"
+        accessibilityLabel={t(dir === 1 ? 'calendar.nextMonth' : 'calendar.prevMonth')}
         style={{
           width: 36,
           height: 36,

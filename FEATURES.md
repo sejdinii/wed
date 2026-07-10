@@ -30,7 +30,7 @@ on device/simulator without a crash.
 | Vendor: venue listing creation/edit | MISSING | static code trace 2026-07-09 | Zero vendor-facing code. "Become a Partner" button is a no-op (profile.tsx:87) |
 | Vendor: calendar/availability management | MISSING | static code trace 2026-07-09 | bookedDates are hardcoded in src/data/venues.ts |
 | Vendor: incoming booking requests | MISSING | static code trace 2026-07-09 | Faked by venueBot auto-confirm + hardcoded Macedonian chat messages |
-| Cancellation/refund flow | BLOCKED | static code trace 2026-07-09 | Policy still undecided (user decision). Refund math (domain/kapar.ts:87-98) and read-only RefundTimeline exist, but there is NO cancel button anywhere — `cancelled_by_*` states are unreachable from the UI |
+| Cancellation/refund flow | DONE | run-verified (web) 2026-07-10 | Platform policy decided + built (100/50/0 at 90/30 days, 7-day grace, venue-cancel always 100%). All 16 seed venues aligned to PLATFORM_REFUND_TIERS. Cancel entry on booking detail → dedicated confirm page with exact outcome preview ("{venue} returns €X (Y%)" — venue returns the money, platform holds none). Both paths verified in browser: free cancel before kapar, 100%-tier refund after confirmation; refund stamped on the booking. Venue-initiated cancel has no UI trigger yet (no vendor app) |
 
 ## REQUIRED BUT NOT CORE (post-boot, pre-launch)
 | Feature | Status | Verified how | Notes |
@@ -44,6 +44,14 @@ on device/simulator without a crash.
 | Profile/settings | PARTIAL | static code trace 2026-07-09 | Profile tab + settings (language en/mk/sq, theme) work. Dead buttons: personal info, payment methods (profile.tsx:61,63), terms/privacy (settings.tsx:128,130), help (booking/[id].tsx:177) |
 
 ## DISCOVERED GAPS (agent appends here when it finds unstated requirements)
+- 2026-07-10: the design-research pass for the cancellation UI could not run
+  (subagent hit the session usage limit), so the cancel screen follows the
+  Booking.com patterns this app already clones (dedicated confirm page,
+  outcome preview, policy ladder) WITHOUT fresh 2025/26 references. Revisit
+  with Mobbin research next session per Rule 2.
+- 2026-07-10: cancelling does not release the date for other users — same root
+  cause as the double-booking gap (bookedDates never written back client-side;
+  real fix is server-side).
 - 2026-07-09 CRASH: venue/[id].tsx:289 references undefined `fullRefundDays` →
   ReferenceError rendering the halls section; breaks search→detail for all 3
   multi-hall venues. MVP-blocking, trivial fix. FIXED 2026-07-09b (derived from

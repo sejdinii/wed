@@ -111,6 +111,9 @@ export const sq: Dict = {
   'availability.legendBooked': 'E zënë',
   'availability.legendSaturday': 'E shtunë',
 
+  'calendar.prevMonth': 'Muaji i mëparshëm',
+  'calendar.nextMonth': 'Muaji tjetër',
+
   'checkout.title': 'Rezervo',
   'checkout.kaparBar': 'Kapari — gjatë vizitës',
   'checkout.stepContact': 'Kontakti',
@@ -186,8 +189,20 @@ export const sq: Dict = {
   'details.refundReturned': 'Salla kthen kaparin ({percent}%)',
   'details.payBanner': 'Vizito {venue} dhe lëre kaparin deri më {date} — përndryshe rezervimi lirohet.',
   'details.balanceVenue': 'Pjesa tjetër — direkt në sallë',
+  'details.cancelBooking': 'Anulo rezervimin',
   'details.help': 'Ndihma dhe mbështetja',
   'details.notFound': 'Rezervimi nuk u gjet.',
+
+  'cancel.title': 'Anulimi i rezervimit',
+  'cancel.freeTitle': 'Anulim falas',
+  'cancel.freeBody': 'Ende nuk ke lënë kapar — me anulimin data lirohet menjëherë.',
+  'cancel.refundTitle': 'Kthimi i kaparit',
+  'cancel.refundBody': 'Sipas marrëveshjes së kaparit, {venue} të kthen {amount} nga kapari {kapar} ({percent}%).',
+  'cancel.noRefundBody': 'Më pak se {days} ditë para eventit kapari nuk kthehet — {kapar} i mbetet {venue}.',
+  'cancel.graceNote': 'Kthim i plotë: kapari u la në {days} ditët e fundit dhe eventi është më shumë se {minDays} ditë larg.',
+  'cancel.irreversible': 'Anulimi është përfundimtar — data lirohet edhe për çifte të tjera.',
+  'cancel.confirmCta': 'Anulo rezervimin',
+  'cancel.keepCta': 'Mbaje rezervimin',
 
   'messages.title': 'Mesazhet',
   'messages.online': 'online',

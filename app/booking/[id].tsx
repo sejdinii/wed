@@ -221,6 +221,24 @@ export default function BookingDetailsScreen() {
           </AppText>
           <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
         </PressableScale>
+        {booking.status === 'pending_kapar' || booking.status === 'reserved' || booking.status === 'confirmed' ? (
+          <>
+            <Divider />
+            <PressableScale
+              onPress={() => router.push({ pathname: '/booking/cancel', params: { bookingId: booking.id } })}
+              scaleTo={0.99}
+              hapticFeedback="select"
+              accessibilityRole="button"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(3), paddingVertical: spacing(3) }}
+            >
+              <Ionicons name="close-circle-outline" size={19} color={colors.danger} />
+              <AppText variant="bodyStrong" style={{ flex: 1, color: colors.danger }}>
+                {t('details.cancelBooking')}
+              </AppText>
+              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+            </PressableScale>
+          </>
+        ) : null}
       </ScrollView>
     </Screen>
   );

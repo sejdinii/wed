@@ -6,7 +6,7 @@ import { PressableScale } from './PressableScale';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 
-type ButtonVariant = 'primary' | 'dark' | 'mint' | 'outline' | 'ghost';
+type ButtonVariant = 'primary' | 'dark' | 'mint' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps {
@@ -43,6 +43,7 @@ export function Button({
     mint: { bg: colors.mint, fg: colors.onMint },
     outline: { bg: 'transparent', fg: colors.text, borderColor: colors.borderStrong },
     ghost: { bg: 'transparent', fg: colors.primary },
+    danger: { bg: colors.danger, fg: '#FFFFFF' },
   };
 
   const { bg, fg, borderColor } = palette[variant];

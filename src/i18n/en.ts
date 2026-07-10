@@ -111,6 +111,9 @@ export const en: Dict = {
   'availability.legendBooked': 'Taken',
   'availability.legendSaturday': 'Saturday',
 
+  'calendar.prevMonth': 'Previous month',
+  'calendar.nextMonth': 'Next month',
+
   'checkout.title': 'Reserve',
   'checkout.kaparBar': 'Kapar — at your visit',
   'checkout.stepContact': 'Contact',
@@ -186,8 +189,20 @@ export const en: Dict = {
   'details.refundReturned': 'Kapar returned by the venue ({percent}%)',
   'details.payBanner': 'Visit {venue} and pay the kapar by {date} — otherwise the hold lapses.',
   'details.balanceVenue': 'Balance — directly at the venue',
+  'details.cancelBooking': 'Cancel booking',
   'details.help': 'Help & support',
   'details.notFound': 'Booking not found.',
+
+  'cancel.title': 'Cancel booking',
+  'cancel.freeTitle': 'Free cancellation',
+  'cancel.freeBody': 'You haven’t paid a kapar yet — cancelling releases the date immediately.',
+  'cancel.refundTitle': 'Kapar refund',
+  'cancel.refundBody': 'Per the kapar agreement, {venue} returns {amount} of your {kapar} kapar ({percent}%).',
+  'cancel.noRefundBody': 'Less than {days} days before the event the kapar is non-refundable — {venue} keeps the {kapar}.',
+  'cancel.graceNote': 'Full refund: you paid the kapar within the last {days} days and the event is more than {minDays} days away.',
+  'cancel.irreversible': 'Cancelling is final — the date is released to other couples.',
+  'cancel.confirmCta': 'Cancel this booking',
+  'cancel.keepCta': 'Keep my booking',
 
   'messages.title': 'Messages',
   'messages.online': 'online',

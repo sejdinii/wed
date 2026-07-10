@@ -113,6 +113,9 @@ export const mk = {
   'availability.legendBooked': 'Зафатено',
   'availability.legendSaturday': 'Сабота',
 
+  'calendar.prevMonth': 'Претходен месец',
+  'calendar.nextMonth': 'Следен месец',
+
   'checkout.title': 'Резервирај',
   'checkout.kaparBar': 'Капар — при посета',
   'checkout.stepContact': 'Контакт',
@@ -188,8 +191,20 @@ export const mk = {
   'details.refundReturned': 'Салата враќа капар ({percent}%)',
   'details.payBanner': 'Посети ја {venue} и остави го капарот до {date} — инаку резервацијата се ослободува.',
   'details.balanceVenue': 'Остаток — директно во салата',
+  'details.cancelBooking': 'Откажи ја резервацијата',
   'details.help': 'Помош и поддршка',
   'details.notFound': 'Резервацијата не е пронајдена.',
+
+  'cancel.title': 'Откажување на резервација',
+  'cancel.freeTitle': 'Бесплатно откажување',
+  'cancel.freeBody': 'Сè уште немаш оставено капар — со откажувањето датумот веднаш се ослободува.',
+  'cancel.refundTitle': 'Поврат на капарот',
+  'cancel.refundBody': 'Според договорот за капар, {venue} ти враќа {amount} од капарот {kapar} ({percent}%).',
+  'cancel.noRefundBody': 'На помалку од {days} дена пред настанот капарот не се враќа — {kapar} останува кај {venue}.',
+  'cancel.graceNote': 'Целосен поврат: капарот е оставен во последните {days} дена, а настанот е на повеќе од {minDays} дена.',
+  'cancel.irreversible': 'Откажувањето е конечно — датумот се ослободува и за други парови.',
+  'cancel.confirmCta': 'Откажи ја резервацијата',
+  'cancel.keepCta': 'Задржи ја резервацијата',
 
   'messages.title': 'Пораки',
   'messages.online': 'онлајн',
