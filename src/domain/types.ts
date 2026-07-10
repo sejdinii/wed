@@ -187,15 +187,18 @@ export interface Venue {
 }
 
 /**
- * The kapar-first booking lifecycle:
+ * The kapar-first booking lifecycle (MVP: no online payment — the kapar is
+ * paid in person at the venue visit):
  *
- *  pending_kapar ──pay──▶ reserved ──venue confirms──▶ confirmed ──event──▶ completed
- *        │                   │
- *        ▼ (hold expires)    ├──couple cancels──▶ cancelled_by_couple (refund per ladder)
- *      expired               └──venue declines/cancels──▶ cancelled_by_venue (100% refund)
+ *  pending_kapar ──venue confirms hold──▶ reserved ──kapar paid at visit──▶ confirmed ──event──▶ completed
+ *        │                                    │
+ *        ▼ (no venue answer in 24h,           ├──couple cancels──▶ cancelled_by_couple
+ *           or kapar not paid by payBy)       │     (free before kapar is paid; refund ladder after)
+ *      expired ◀──────────────────────────────┘
+ *                                             └──venue declines/cancels──▶ cancelled_by_venue (100% back, always)
  *
- * While `reserved`, the kapar is held by the platform (Kapar Protection) and
- * only released to the venue on confirmation. This is the trust core of the product.
+ * The platform never holds money in the MVP. "Refund" always means the venue
+ * returns the kapar to the couple per the agreement shown at booking time.
  */
 export type BookingStatus =
   | 'pending_kapar'
@@ -228,6 +231,12 @@ export interface Booking {
   balanceDueMkd: number;
   status: BookingStatus;
   createdAtISO: string;
+  /** Deadline to visit the venue and pay the kapar; set when the venue confirms the hold. */
+  payByISO?: string;
+  /** When the venue marked the kapar as received (paid in person at the visit). */
+  kaparPaidAtISO?: string;
+  /** Stamped at cancellation so the outcome stays stable in the UI. */
+  refund?: { percent: number; amountMkd: number };
   timeline: BookingTimelineEvent[];
   /** Sent to the venue for confirmation and the contract. */
   contactName: string;

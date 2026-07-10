@@ -15,7 +15,7 @@ import { RefundTimeline } from '@/components/RefundTimeline';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 import { formatMkd, formatMkdBare } from '@/lib/money';
-import { formatLongDate } from '@/lib/dates';
+import { formatLongDate, formatMediumDate } from '@/lib/dates';
 import type { BookingStatus } from '@/domain/types';
 import { VENUES } from '@/data/venues';
 import { useBookings } from '@/stores/bookings';
@@ -111,6 +111,25 @@ export default function BookingDetailsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing(4), gap: spacing(3), paddingBottom: spacing(10) }}>
         <Badge label={t(`bookingStatus.${booking.status}`)} tone={STATUS_TONE[booking.status]} dot />
 
+        {/* Action-required banner while the hold waits for the kapar */}
+        {booking.status === 'reserved' && booking.payByISO ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: spacing(2.5),
+              backgroundColor: colors.amberSoft,
+              borderRadius: radius.md,
+              padding: spacing(3),
+              alignItems: 'flex-start',
+            }}
+          >
+            <Ionicons name="wallet-outline" size={17} color={colors.amber} style={{ marginTop: 1 }} />
+            <AppText variant="bodySm" style={{ flex: 1, color: colors.text }}>
+              {t('details.payBanner', { venue: booking.venueName, date: formatMediumDate(booking.payByISO, locale) })}
+            </AppText>
+          </View>
+        ) : null}
+
         <View>
           <SectionRow
             icon="heart-outline"
@@ -153,7 +172,23 @@ export default function BookingDetailsScreen() {
             })}
             value={formatMkd(booking.estimatedTotalMkd, locale)}
           />
-          <PayRow label={t('details.kaparPaid')} value={`− ${formatMkd(booking.kaparMkd, locale)}`} gold />
+          <PayRow
+            label={
+              booking.kaparPaidAtISO
+                ? t('details.kaparPaidAtVenue')
+                : booking.payByISO
+                  ? t('details.kaparDueBy', { date: formatMediumDate(booking.payByISO, locale) })
+                  : t('details.kaparDue')
+            }
+            value={`${booking.kaparPaidAtISO ? '− ' : ''}${formatMkd(booking.kaparMkd, locale)}`}
+            gold
+          />
+          {booking.refund ? (
+            <PayRow
+              label={t('details.refundReturned', { percent: booking.refund.percent })}
+              value={formatMkd(booking.refund.amountMkd, locale)}
+            />
+          ) : null}
           <Divider />
           <PayRow label={t('details.balanceVenue')} value={formatMkd(booking.balanceDueMkd, locale)} />
         </View>

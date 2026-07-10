@@ -266,9 +266,9 @@ export default function AvailabilityScreen() {
           >
             <Button title={t('common.continue')} onPress={() => router.push('/booking/checkout')} disabled={!draft.dateISO} fullWidth />
             <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing(1.5) }}>
-              <Ionicons name="lock-closed-outline" size={13} color={colors.textSecondary} />
+              <Ionicons name="wallet-outline" size={13} color={colors.textSecondary} />
               <AppText variant="bodySm" color="secondary">
-                {t('availability.securePayment')} · {t('availability.dataProtected')}
+                {t('availability.payAtVisitNote')}
               </AppText>
             </View>
           </View>

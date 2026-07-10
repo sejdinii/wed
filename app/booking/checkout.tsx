@@ -8,12 +8,13 @@ import { AppText } from '@/design/components/AppText';
 import { Button } from '@/design/components/Button';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
+import { RefundTimeline } from '@/components/RefundTimeline';
 import { useTheme } from '@/design/theme';
 import { radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMkd, formatMkdBare } from '@/lib/money';
 import { formatLongDate } from '@/lib/dates';
-import { estimateTotalMkd, hallFor, kaparAmountMkd, makeConfirmationCode } from '@/domain/kapar';
+import { estimateTotalMkd, hallFor, kaparAmountMkd, KAPAR_PAY_WINDOW_DAYS, makeConfirmationCode } from '@/domain/kapar';
 import type { Booking, Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { simulateVenueSide } from '@/data/venueBot';
@@ -21,43 +22,18 @@ import { useBookingDraft } from '@/stores/bookingDraft';
 import { useBookings } from '@/stores/bookings';
 import { useI18n } from '@/i18n';
 
-function isValidCardNumber(digits: string): boolean {
-  if (digits.length < 15 || digits.length > 16) return false;
-  let sum = 0;
-  let doubleIt = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let d = Number(digits.charAt(i));
-    if (doubleIt) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
-    sum += d;
-    doubleIt = !doubleIt;
-  }
-  return sum % 10 === 0;
-}
-
-function isValidExpiry(value: string): boolean {
-  const match = /^(\d{2})\/(\d{2})$/.exec(value);
-  if (!match) return false;
-  const month = Number(match[1]);
-  const year = 2000 + Number(match[2]);
-  if (month < 1 || month > 12) return false;
-  const now = new Date();
-  return year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth() + 1);
-}
-
 type Step = 1 | 2 | 3;
 
 /**
- * Checkout — numbered stepper (Contact › Event › Payment) under a pinned
- * kapar amount bar. Only the kapar is ever charged; the copy repeats where
- * the balance goes at the exact moment of commitment.
+ * Reserve flow — numbered stepper (Contact › Event › Review) under a pinned
+ * kapar amount bar. NOTHING is paid online (MVP decision 2026-07-09): the
+ * request holds the date, the venue confirms within 24h, and the kapar is
+ * paid in person at the venue visit. The review step repeats exactly that at
+ * the moment of commitment, plus the cancellation ladder.
  *
- * INTEGRATION POINT: `processPayment` timeout simulates the gateway.
- * Production wires CaSys cPay (domestic, 3-D Secure) / Stripe (diaspora)
- * behind the same async boundary; the booking is written only after the
- * charge resolves.
+ * INTEGRATION POINT: the submit timeout stands in for the request API call;
+ * the booking is written locally as `pending_kapar` and the venue bot mocks
+ * the venue's side.
  */
 export default function CheckoutScreen() {
   const { colors, mode } = useTheme();
@@ -69,10 +45,6 @@ export default function CheckoutScreen() {
   const addBooking = useBookings((s) => s.addBooking);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [step, setStep] = useState<Step>(1);
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
-  const [holderName, setHolderName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,21 +85,15 @@ export default function CheckoutScreen() {
       setStep(3);
       return;
     }
-    pay();
+    sendRequest();
   };
 
-  const pay = () => {
+  const sendRequest = () => {
     if (!venue) return;
-    const digits = cardNumber.replace(/\D/g, '');
-    if (!isValidCardNumber(digits) || !isValidExpiry(expiry) || cvc.length < 3 || holderName.trim().length < 2) {
-      setError(t('checkout.invalidCard'));
-      haptic.error();
-      return;
-    }
     setError(null);
     setProcessing(true);
 
-    // PLACEHOLDER PAYMENT GATEWAY — replace with CaSys cPay / Stripe.
+    // PLACEHOLDER — stands in for the booking-request API call.
     timeoutRef.current = setTimeout(() => {
       const now = new Date().toISOString();
       const booking: Booking = {
@@ -143,22 +109,19 @@ export default function CheckoutScreen() {
         estimatedTotalMkd: estimate,
         kaparMkd: kapar,
         balanceDueMkd: balance,
-        status: 'reserved',
+        status: 'pending_kapar',
         createdAtISO: now,
-        timeline: [
-          { status: 'pending_kapar', at: now },
-          { status: 'reserved', at: now },
-        ],
+        timeline: [{ status: 'pending_kapar', at: now }],
         contactName: `${draft.firstName.trim()} ${draft.lastName.trim()}`,
         contactPhone: draft.phone.trim(),
         specialRequests: draft.specialRequests.trim() || undefined,
         hallName: venue.halls.length > 1 ? hall?.name[locale] : undefined,
       };
       addBooking(booking);
-      simulateVenueSide(booking.id, venue.name);
+      simulateVenueSide(booking.id, venue.name, booking.eventDateISO);
       haptic.success();
       router.replace({ pathname: '/booking/status', params: { bookingId: booking.id } });
-    }, 1400);
+    }, 900);
   };
 
   const inputStyle = {
@@ -244,8 +207,8 @@ export default function CheckoutScreen() {
   const ctaTitle =
     step === 3
       ? processing
-        ? t('checkout.processing')
-        : t('checkout.payKapar', { amount: formatMkd(kapar, locale) })
+        ? t('checkout.sending')
+        : t('checkout.sendRequest')
       : t('common.continue');
 
   return (
@@ -312,7 +275,7 @@ export default function CheckoutScreen() {
           <Ionicons name="chevron-forward" size={12} color={colors.textTertiary} />
           <StepMarker n={2} label={t('checkout.stepEvent')} />
           <Ionicons name="chevron-forward" size={12} color={colors.textTertiary} />
-          <StepMarker n={3} label={t('checkout.stepPayment')} />
+          <StepMarker n={3} label={t('checkout.stepReview')} />
         </View>
 
         {step === 1 ? (
@@ -426,94 +389,103 @@ export default function CheckoutScreen() {
           </View>
         ) : null}
 
-        {step === 3 ? (
+        {step === 3 && venue ? (
           <View style={{ gap: spacing(4) }}>
-            <AppText variant="title">{t('checkout.paymentTitle')}</AppText>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing(2.5),
-                borderWidth: 2,
-                borderColor: colors.text,
-                borderRadius: radius.md,
-                padding: spacing(3),
-              }}
-            >
-              <Ionicons name="radio-button-on" size={18} color={colors.primary} />
-              <Ionicons name="card-outline" size={20} color={colors.text} />
-              <AppText variant="bodyStrong">{t('checkout.cardMethod')}</AppText>
-            </View>
-            {renderField({
-              label: t('checkout.cardName'),
-              value: holderName,
-              onChange: setHolderName,
-              placeholder: 'ANA STOJANOVSKA',
-            })}
-            {renderField({
-              label: t('checkout.cardNumber'),
-              value: cardNumber,
-              onChange: (raw) => {
-                const digits = raw.replace(/\D/g, '').slice(0, 16);
-                setCardNumber(digits.replace(/(\d{4})(?=\d)/g, '$1 '));
-              },
-              placeholder: '1234 5678 9012 3456',
-              keyboardType: 'number-pad',
-              maxLength: 19,
-            })}
-            <View style={{ flexDirection: 'row', gap: spacing(3) }}>
-              {renderField({
-                label: t('checkout.expiry'),
-                value: expiry,
-                onChange: (raw) => {
-                  const digits = raw.replace(/\D/g, '').slice(0, 4);
-                  setExpiry(digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits);
-                },
-                placeholder: '09/27',
-                keyboardType: 'number-pad',
-                maxLength: 5,
-                flex: 1,
-              })}
-              {renderField({
-                label: t('checkout.cvc'),
-                value: cvc,
-                onChange: (v) => setCvc(v.replace(/\D/g, '').slice(0, 4)),
-                placeholder: '123',
-                keyboardType: 'number-pad',
-                secure: true,
-                maxLength: 4,
-                flex: 1,
-              })}
-            </View>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing(2.5),
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: radius.md,
-                padding: spacing(3),
-                opacity: 0.55,
-              }}
-            >
-              <Ionicons name="radio-button-off" size={18} color={colors.textTertiary} />
-              <Ionicons name="phone-portrait-outline" size={20} color={colors.textSecondary} />
-              <AppText variant="bodyStrong" color="secondary" style={{ flex: 1 }}>
-                {t('checkout.walletMethod')}
+            <AppText variant="title">{t('checkout.reviewTitle')}</AppText>
+
+            {/* Request summary with the money story in one card */}
+            <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing(3.5), gap: spacing(2) }}>
+              <AppText variant="subheading">
+                {venue.name}
+                {venue.halls.length > 1 && hall ? ` · ${hall.name[locale]}` : ''}
               </AppText>
-              <AppText variant="caption" color="tertiary">
-                {t('common.soon')}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
+                <Ionicons name="calendar-outline" size={15} color={colors.textSecondary} />
+                <AppText variant="bodySm" color="secondary">
+                  {formatLongDate(draft.dateISO, locale)}
+                </AppText>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
+                <Ionicons name="people-outline" size={15} color={colors.textSecondary} />
+                <AppText variant="bodySm" color="secondary">
+                  {t('bookings.guestCount', { count: draft.guestCount })} ·{' '}
+                  {venue.menuTiers.find((m) => m.id === draft.menuTierId)?.name[locale] ?? ''}
+                </AppText>
+              </View>
+              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing(1) }} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText variant="bodySm" color="secondary">
+                  {t('checkout.estimateLabel', { guests: draft.guestCount })}
+                </AppText>
+                <AppText variant="bodySmStrong">{formatMkd(estimate, locale)}</AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText variant="bodySm" color="secondary">
+                  {t('checkout.kaparAtVisit')}
+                </AppText>
+                <AppText variant="bodySmStrong" color="gold">
+                  {formatMkd(kapar, locale)}
+                </AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <AppText variant="bodySm" color="secondary">
+                  {t('checkout.balanceAtVenue')}
+                </AppText>
+                <AppText variant="bodySmStrong">{formatMkd(balance, locale)}</AppText>
+              </View>
+            </View>
+
+            {/* The commitment, stated honestly: nothing is paid online */}
+            <View style={{ backgroundColor: colors.mint, borderRadius: radius.md, padding: spacing(3.5), gap: spacing(1.5) }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
+                <Ionicons name="wallet-outline" size={16} color={colors.onMint} />
+                <AppText variant="bodySmStrong" style={{ color: colors.onMint }}>
+                  {t('checkout.noOnlinePayment')}
+                </AppText>
+              </View>
+              <AppText variant="bodySm" style={{ color: colors.onMint }}>
+                {t('checkout.noOnlinePaymentBody', { amount: formatMkd(kapar, locale) })}
               </AppText>
             </View>
-            <AppText variant="bodySm" color="tertiary">
-              {t('checkout.onlyKaparNote', { amount: formatMkd(balance, locale) })}
-            </AppText>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing(2) }}>
-              <Ionicons name="lock-closed" size={14} color={colors.textTertiary} style={{ marginTop: 2 }} />
-              <AppText variant="bodySm" color="tertiary" style={{ flex: 1 }}>
-                {t('checkout.secure')}
+
+            {/* How it works — 3 numbered steps */}
+            <View style={{ gap: spacing(2.5) }}>
+              <AppText variant="subheading">{t('checkout.howTitle')}</AppText>
+              {[
+                t('checkout.how1', { venue: venue.name }),
+                t('checkout.how2', { days: KAPAR_PAY_WINDOW_DAYS }),
+                t('checkout.how3'),
+              ].map((text, i) => (
+                <View key={i} style={{ flexDirection: 'row', gap: spacing(2.5), alignItems: 'flex-start' }}>
+                  <View
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      backgroundColor: colors.chip,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginTop: 1,
+                    }}
+                  >
+                    <AppText variant="caption" style={{ color: colors.onChip }}>
+                      {i + 1}
+                    </AppText>
+                  </View>
+                  <AppText variant="bodySm" color="secondary" style={{ flex: 1 }}>
+                    {text}
+                  </AppText>
+                </View>
+              ))}
+            </View>
+
+            {/* Cancellation ladder — the same terms shown on the venue page */}
+            <View style={{ gap: spacing(2.5) }}>
+              <AppText variant="subheading">{t('details.cancellationTerms')}</AppText>
+              <AppText variant="bodySm" color="secondary">
+                {t('checkout.freeCancelNote')}
               </AppText>
+              <RefundTimeline policy={venue.kaparPolicy} eventDateISO={draft.dateISO} />
             </View>
           </View>
         ) : null}
@@ -557,7 +529,7 @@ export default function CheckoutScreen() {
           title={ctaTitle}
           onPress={goNext}
           loading={processing}
-          iconLeft={step === 3 && !processing ? <Ionicons name="lock-closed" size={15} color={colors.onPrimary} /> : undefined}
+          iconLeft={step === 3 && !processing ? <Ionicons name="paper-plane-outline" size={15} color={colors.onPrimary} /> : undefined}
           fullWidth
         />
         {step === 3 ? (
