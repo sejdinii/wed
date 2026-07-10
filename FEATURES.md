@@ -22,15 +22,15 @@ on device/simulator without a crash.
 | Feature | Status | Verified how | Notes |
 |---|---|---|---|
 | Venue search + filters | PARTIAL | run-verified (web) 2026-07-10 | home → search → results built vs MockVenueApi (14 published seed venues — earlier "16" was wrong). Loading+empty+error states all present now; "Map view" pill is still a dead end |
-| Venue detail page (gallery, pricing, availability) | PARTIAL | run-verified (web) 2026-07-09b | Gallery, halls, reviews, map, 410-unpublished state built. `fullRefundDays` crash FIXED + verified on panorama-garden (multi-hall renders). Still no error state |
-| Booking flow (date select → request/confirm) | PARTIAL | run-verified (web) 2026-07-10 | REWORKED to pay-at-visit (decision 2026-07-09): card form deleted; checkout = Contact › Event › Review, submit creates a `pending_kapar` request, no money online. Full flow driven in browser. Still missing: availability re-check at submit, error state on the venue fetch, draft store in-memory |
+| Venue detail page (gallery, pricing, availability) | DONE | run-verified (web) 2026-07-10 | Gallery, halls, reviews, map, 410-unpublished state built; `fullRefundDays` crash fixed; error state + retry added and driven in browser (recovers). Loading/empty/error all present |
+| Booking flow (date select → request/confirm) | PARTIAL | run-verified (web) 2026-07-10 | REWORKED to pay-at-visit (decision 2026-07-09): card form deleted; checkout = Contact › Event › Review, submit creates a `pending_kapar` request, no money online. Full flow driven in browser. Still missing: availability re-check at submit, draft store in-memory (error state on the venue fetch added 2026-07-10) |
 | Double-booking prevention | MISSING | static code trace 2026-07-09 | Client-only filter on static `venue.bookedDates`; a completed booking NEVER writes back to bookedDates, so the same venue+date can be booked twice even on one device. Real fix is server-side |
 | Booking confirmation + status screen | PARTIAL | run-verified (web) 2026-07-10 | Now 3-phase (request sent → date held w/ payBy deadline → kapar received); all three verified live in browser. venueBot compresses the venue visit to 75s (documented fiction). Bot timers still die on restart, but the new lifecycle sweep expires stuck requests/holds on next launch. "Add to calendar" still a no-op |
 | Auth (signup/login, both user types) | STUB | static code trace 2026-07-09 | welcome (phone) + verify (OTP) screens exist, but ANY 6 digits pass (verify.tsx:33); no SMS, no sessions, no accounts. Wall only guards the (tabs) group — venue/booking routes reachable via deep link unauthenticated. No vendor auth at all |
 | Vendor: venue listing creation/edit | MISSING | static code trace 2026-07-09 | Zero vendor-facing code. "Become a Partner" button is a no-op (profile.tsx:87) |
 | Vendor: calendar/availability management | MISSING | static code trace 2026-07-09 | bookedDates are hardcoded in src/data/venues.ts |
 | Vendor: incoming booking requests | MISSING | static code trace 2026-07-09 | Faked by venueBot auto-confirm + hardcoded Macedonian chat messages |
-| Cancellation/refund flow | DONE | run-verified (web) 2026-07-10 | Platform policy decided + built (100/50/0 at 90/30 days, 7-day grace, venue-cancel always 100%). All 16 seed venues aligned to PLATFORM_REFUND_TIERS. Cancel entry on booking detail → dedicated confirm page with exact outcome preview ("{venue} returns €X (Y%)" — venue returns the money, platform holds none). Both paths verified in browser: free cancel before kapar, 100%-tier refund after confirmation; refund stamped on the booking. Venue-initiated cancel has no UI trigger yet (no vendor app) |
+| Cancellation/refund flow | DONE | run-verified (web) 2026-07-10 | Platform policy decided + built (100/50/0 at 90/30 days, 7-day grace, venue-cancel always 100%). All 14 seed venues aligned to PLATFORM_REFUND_TIERS. Cancel entry on booking detail → dedicated confirm page with exact outcome preview ("{venue} returns €X (Y%)" — venue returns the money, platform holds none). Both paths verified in browser: free cancel before kapar, 100%-tier refund after confirmation; refund stamped on the booking. Venue-initiated cancel has no UI trigger yet (no vendor app) |
 
 ## REQUIRED BUT NOT CORE (post-boot, pre-launch)
 | Feature | Status | Verified how | Notes |
@@ -41,7 +41,7 @@ on device/simulator without a crash.
 | Notifications (booking status changes) | MISSING | static code trace 2026-07-09 | Home notification bell is a no-op ((tabs)/index.tsx:112) |
 | Deposits/payments | DONE | run-verified (web) 2026-07-10 | DECIDED 2026-07-09: MVP has NO online payments — kapar is paid in person at the venue visit. Card form + fake gateway deleted (PCI risk gone); all "secure payment" claims reworded in en/mk/sq; profile "Payment methods" row removed. Online rails (CaSys/Stripe) become a post-launch feature |
 | Onboarding (first-run) | PARTIAL | static code trace 2026-07-09 | welcome → verify → tabs flow with redirect gate ((tabs)/_layout.tsx:26). Terms/Privacy links are no-ops |
-| Profile/settings | PARTIAL | static code trace 2026-07-09 | Profile tab + settings (language en/mk/sq, theme) work. Dead buttons: personal info, payment methods (profile.tsx:61,63), terms/privacy (settings.tsx:128,130), help (booking/[id].tsx:177) |
+| Profile/settings | PARTIAL | code trace 2026-07-10 | Profile tab + settings (language en/mk/sq, theme) work. Payment-methods row REMOVED (no online payments in MVP). Remaining dead buttons: personal info, terms/privacy, help, become-a-partner |
 
 ## DISCOVERED GAPS (agent appends here when it finds unstated requirements)
 - 2026-07-10: the design-research pass for the cancellation UI could not run
@@ -49,6 +49,12 @@ on device/simulator without a crash.
   Booking.com patterns this app already clones (dedicated confirm page,
   outcome preview, policy ladder) WITHOUT fresh 2025/26 references. Revisit
   with Mobbin research next session per Rule 2.
+- 2026-07-10: the booking chat is one-way theatre — the venueBot sends 3
+  scripted Macedonian messages on a timer and never replies to anything the
+  couple types. Embarrassing in a live demo if the investor types a question.
+- 2026-07-10: `checkout.confirmNote` promises "the venue confirms within 24
+  hours — if not, the hold lapses"; the sweep enforces the lapse only on next
+  app launch, not in the background. True enough for MVP, needs push/cron later.
 - 2026-07-10: cancelling does not release the date for other users — same root
   cause as the double-booking gap (bookedDates never written back client-side;
   real fix is server-side).
