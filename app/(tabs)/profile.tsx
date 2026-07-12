@@ -57,10 +57,9 @@ export default function ProfileScreen() {
           <AppText variant="caption" color="tertiary" style={{ marginBottom: spacing(1) }}>
             {t('profile.account').toUpperCase()}
           </AppText>
-          {/* PLACEHOLDER — personal info & payment methods open with accounts in v0.2. */}
+          {/* PLACEHOLDER — personal info opens with accounts in v0.2. No payment-
+              methods row: the MVP has no online payments (kapar is paid at the venue). */}
           <ListItemRow icon="person-outline" title={t('profile.personalInfo')} chevron onPress={() => {}} />
-          <Divider inset={12} />
-          <ListItemRow icon="card-outline" title={t('profile.paymentMethods')} chevron onPress={() => {}} />
           <Divider inset={12} />
           <ListItemRow
             icon="chatbubble-outline"

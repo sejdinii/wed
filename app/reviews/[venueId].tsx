@@ -6,6 +6,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppText } from '@/design/components/AppText';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
+import { EmptyState } from '@/design/components/EmptyState';
+import { ErrorState } from '@/design/components/ErrorState';
 import { Skeleton } from '@/design/components/Skeleton';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { useTheme } from '@/design/theme';
@@ -30,20 +32,29 @@ export default function ReviewsScreen() {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [reviews, setReviews] = useState<Review[] | null>(null);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+
   useEffect(() => {
     let cancelled = false;
     if (typeof venueId !== 'string') return;
+    setLoadFailed(false);
     (async () => {
-      const [v, r] = await Promise.all([venueApi.getVenue(venueId), venueApi.listReviews(venueId)]);
-      if (!cancelled) {
-        if (v) setVenue(v);
-        setReviews(r);
+      try {
+        const [v, r] = await Promise.all([venueApi.getVenue(venueId), venueApi.listReviews(venueId)]);
+        if (!cancelled) {
+          if (v) setVenue(v);
+          setReviews(r);
+        }
+      } catch {
+        if (!cancelled) setLoadFailed(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [venueId]);
+  }, [venueId, attempt]);
 
   const header = venue ? (
     <View style={{ gap: spacing(4), paddingBottom: spacing(4) }}>
@@ -99,6 +110,19 @@ export default function ReviewsScreen() {
         data={reviews ?? []}
         keyExtractor={(r) => r.id}
         ListHeaderComponent={header}
+        ListEmptyComponent={
+          loadFailed ? (
+            <ErrorState onRetry={retry} />
+          ) : reviews === null ? (
+            <View style={{ gap: spacing(3) }}>
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} height={120} radius={radius.lg} />
+              ))}
+            </View>
+          ) : (
+            <EmptyState icon="chatbox-ellipses-outline" title={t('reviews.emptyTitle')} body={t('reviews.emptyBody')} />
+          )
+        }
         contentContainerStyle={{ padding: spacing(4), gap: spacing(3), paddingBottom: spacing(8) }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (

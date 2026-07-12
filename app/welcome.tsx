@@ -142,10 +142,10 @@ export default function WelcomeScreen() {
             <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
           </View>
 
-          {/* Trust markers */}
+          {/* Trust markers — honest product facts, not invented social proof */}
           <View style={{ flexDirection: 'row', gap: spacing(3) }}>
-            <TrustItem icon="shield-outline" title={t('welcome.trust1Title')} body={t('welcome.trust1Body')} />
-            <TrustItem icon="ribbon-outline" title={t('welcome.trust2Title')} body={t('welcome.trust2Body')} />
+            <TrustItem icon="wallet-outline" title={t('welcome.trust1Title')} body={t('welcome.trust1Body')} />
+            <TrustItem icon="calendar-outline" title={t('welcome.trust2Title')} body={t('welcome.trust2Body')} />
             <TrustItem icon="flash-outline" title={t('welcome.trust3Title')} body={t('welcome.trust3Body')} />
           </View>
 

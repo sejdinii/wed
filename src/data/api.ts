@@ -33,8 +33,22 @@ export interface VenueApi {
 /** Simulated network latency keeps loading states honest during development. */
 const LATENCY_MS = 420;
 
+/**
+ * DEV switch — the mock can't fail on its own, which would leave every error
+ * state unexercisable. Set `globalThis.__KAPAR_API_FAIL__ = true` (in a dev
+ * console or test) and every call rejects like a dead network.
+ */
+function shouldFail(): boolean {
+  return (globalThis as { __KAPAR_API_FAIL__?: boolean }).__KAPAR_API_FAIL__ === true;
+}
+
 function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (shouldFail()) reject(new Error('Simulated network failure'));
+      else resolve();
+    }, ms);
+  });
 }
 
 class MockVenueApi implements VenueApi {

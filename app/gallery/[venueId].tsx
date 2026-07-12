@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/design/components/AppText';
 import { BrandedImage } from '@/components/BrandedImage';
+import { ErrorState } from '@/design/components/ErrorState';
 import { PressableScale } from '@/design/components/PressableScale';
 import { spacing } from '@/design/tokens';
 import type { Venue } from '@/domain/types';
@@ -27,21 +28,34 @@ export default function GalleryScreen() {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [index, setIndex] = useState(initialIndex);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+
   useEffect(() => {
     let cancelled = false;
     if (typeof venueId !== 'string') return;
+    setLoadFailed(false);
     (async () => {
-      const result = await venueApi.getVenue(venueId);
-      if (!cancelled && result) setVenue(result);
+      try {
+        const result = await venueApi.getVenue(venueId);
+        if (!cancelled && result) setVenue(result);
+      } catch {
+        if (!cancelled) setLoadFailed(true);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [venueId]);
+  }, [venueId, attempt]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000000' }}>
-      {venue ? (
+      {loadFailed ? (
+        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#FFFFFF' }}>
+          <ErrorState onRetry={retry} secondaryLabel={t('common.back')} onSecondary={() => router.back()} />
+        </View>
+      ) : venue ? (
         <FlatList
           data={venue.photos}
           keyExtractor={(uri) => uri}

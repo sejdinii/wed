@@ -8,6 +8,7 @@ import { AppText } from '@/design/components/AppText';
 import { Button } from '@/design/components/Button';
 import { Divider } from '@/design/components/Divider';
 import { EmptyState } from '@/design/components/EmptyState';
+import { ErrorState } from '@/design/components/ErrorState';
 import { ExpandableSection } from '@/design/components/ExpandableSection';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
@@ -20,7 +21,7 @@ import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMkd, formatMkdBare } from '@/lib/money';
-import { hallFor, minEstimateMkd } from '@/domain/kapar';
+import { hallFor, minEstimateMkd, sortedRefundTiers } from '@/domain/kapar';
 import type { AmenityKey, Review, Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { useFavorites } from '@/stores/favorites';
@@ -76,21 +77,38 @@ export default function VenueDetailScreen() {
   const toggleFavorite = useFavorites((s) => s.toggle);
   const startDraft = useBookingDraft((s) => s.start);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => setAttempt((n) => n + 1);
+
   useEffect(() => {
     let cancelled = false;
     if (typeof id !== 'string') return;
+    setLoadFailed(false);
     (async () => {
-      const [result, venueReviews] = await Promise.all([venueApi.getVenue(id), venueApi.listReviews(id)]);
-      if (!cancelled) {
-        setVenue(result ?? 'missing');
-        setReviews(venueReviews);
-        if (result) setHallId(result.halls[0]?.id ?? null);
+      try {
+        const [result, venueReviews] = await Promise.all([venueApi.getVenue(id), venueApi.listReviews(id)]);
+        if (!cancelled) {
+          setVenue(result ?? 'missing');
+          setReviews(venueReviews);
+          if (result) setHallId(result.halls[0]?.id ?? null);
+        }
+      } catch {
+        if (!cancelled) setLoadFailed(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
+
+  if (loadFailed) {
+    return (
+      <Screen>
+        <ErrorState onRetry={retry} secondaryLabel={t('common.back')} onSecondary={() => router.back()} />
+      </Screen>
+    );
+  }
 
   if (venue === 'missing') {
     return (
@@ -130,6 +148,8 @@ export default function VenueDetailScreen() {
 
   const hall = hallFor(venue, hallId);
   const fromPrice = minEstimateMkd(venue, hallId);
+  // Most generous rung of the cancellation ladder, for the "100% back until…" line.
+  const fullRefundTier = sortedRefundTiers(venue.kaparPolicy)[0];
 
   const share = () => {
     haptic.select();
@@ -286,9 +306,9 @@ export default function VenueDetailScreen() {
                         {h.capacityMin} – {h.capacityMax} {t('common.guests')} · {t('hall.area', { m2: h.areaM2 })} ·{' '}
                         {h.indoor ? t('venue.indoor') : t('venue.outdoor')}
                       </AppText>
-                      {fullRefundDays && fullRefundDays.refundPercent >= 100 ? (
+                      {fullRefundTier && fullRefundTier.refundPercent >= 100 ? (
                         <AppText variant="caption" color="success">
-                          ✓ {t('venue.kaparRefundableBody', { days: fullRefundDays.minDaysBeforeEvent })}
+                          ✓ {t('venue.kaparRefundableBody', { days: fullRefundTier.minDaysBeforeEvent })}
                         </AppText>
                       ) : null}
                       <AppText variant="caption" color="success">
