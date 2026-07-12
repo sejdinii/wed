@@ -35,7 +35,7 @@ with zero console errors, FEATURES.md updated, one commit per slice.
 ## nothing vendor-side is real until bookings live on a server)
 | Wave | Theme | Slices (parallel) | Exit criteria |
 |---|---|---|---|
-| 0 | Server foundation (FULLY LOCAL — deploy moved to Wave 1, Railway account pending) | monorepo split + domain package (orchestrator, SHARED) · Fastify+Drizzle+Postgres schema/migrations/seed · env+CI (docker-compose, cloud setup script, Actions) · app HTTP client behind flag | server boots; GET /v1/venues serves the 14 seeds from Postgres; app renders search/detail against it; CI green |
+| 0 ✅ DONE 2026-07-12 | Server foundation (fully local; deploy → Wave 1) | monorepo split + domain package (orchestrator, SHARED) · Fastify+Drizzle+Postgres schema/migrations/seed · env+CI (docker-compose, cloud setup script, Actions) · app HTTP client behind flag | server boots; GET /v1/venues serves the 14 seeds from Postgres; app renders search/detail against it; CI green |
 | 1 | Bookings on the server (trust core) + first deploy | lifecycle endpoints + audit trail + TTL worker · double-booking prevention (unique index + tx + submit re-check) · date release on cancel/expiry · app store server-backed, venueBot behind DEMO flag · Railway staging deploy | two devices cannot book the same venue+date; cancel frees the date; no client timers |
 | 2 | Real auth + mode switch | email-code auth + sessions + roles · guard all routes · Business-mode shell + switch · transactional email (en/mk/sq) | real accounts; deep links respect auth; vendor accounts exist |
 | 3 | Vendor extranet core (GATED: founder research pack, see BACKLOG) | listing editor (content ×3 locales, photos→R2) · halls/menus editor · availability calendar · onboarding funnel + admin publish | a vendor can create a listing a couple can find and book |
@@ -63,7 +63,7 @@ BACKLOG.md's gap queue at session end.
 | Vendor: venue listing creation/edit | MISSING | static code trace 2026-07-09 | Zero vendor-facing code. "Become a Partner" button is a no-op (profile.tsx:87) |
 | Vendor: calendar/availability management | MISSING | static code trace 2026-07-09 | bookedDates are hardcoded in src/data/venues.ts |
 | Vendor: incoming booking requests | MISSING | static code trace 2026-07-09 | Faked by venueBot auto-confirm + hardcoded Macedonian chat messages |
-| Backend API + PostgreSQL (bookings/venues/auth server-side) | MISSING | n/a (scoped 2026-07-10) | Wave 0–1. Everything below the UI is currently on-device mock/AsyncStorage |
+| Backend API + PostgreSQL (bookings/venues/auth server-side) | PARTIAL | run-verified 2026-07-12 | WAVE 0 SHIPPED: Fastify+Drizzle+Postgres monorepo serves the full venue catalogue (migrations, seed, 6 API smoke tests, CI w/ postgres service); app verified rendering FROM Postgres via EXPO_PUBLIC_API_URL (db-only marker name shown in UI). @kapar/domain shared package with 23 unit tests over the refund/lifecycle math. Bookings/auth still on-device → Waves 1–2. No deploy yet (Railway pending) |
 | Couple ⇄ Business mode switch | MISSING | n/a (scoped 2026-07-10) | Wave 2. No vendor-facing surface exists |
 | Real couple↔vendor chat | STUB | code trace 2026-07-10 | Wave 5. Scripted one-way bot messages, hardcoded Macedonian |
 | Cancellation/refund flow | DONE | run-verified (web) 2026-07-10 | Platform policy decided + built (100/50/0 at 90/30 days, 7-day grace, venue-cancel always 100%). All 14 seed venues aligned to PLATFORM_REFUND_TIERS. Cancel entry on booking detail → dedicated confirm page with exact outcome preview ("{venue} returns €X (Y%)" — venue returns the money, platform holds none). Both paths verified in browser: free cancel before kapar, 100%-tier refund after confirmation; refund stamped on the booking. Venue-initiated cancel has no UI trigger yet (no vendor app) |
@@ -135,7 +135,9 @@ BACKLOG.md's gap queue at session end.
   risk for production; BrandedImage fallback exists but offline behavior unverified.
 - 2026-07-09: venueBot chat messages hardcoded Macedonian regardless of locale.
 - 2026-07-09: zero tests, no CI; typecheck is the only gate and was NOT runnable
-  this session (see next line).
+  this session (see next line). RESOLVED 2026-07-12 (Wave 0): 23 domain tests +
+  6 server API tests + GitHub Actions CI (typecheck ×3 workspaces, tests,
+  migrate/seed, boot smoke). UI e2e tests still missing (Wave 6).
 - 2026-07-09 ENVIRONMENT: the remote session's network policy blocks
   registry.npmjs.org → npm ci fails → app cannot boot in cloud sessions.
   RESOLVED 2026-07-09b: registry is now allowlisted; npm install works. Two

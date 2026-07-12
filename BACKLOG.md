@@ -59,21 +59,23 @@
 - [ ] P2 — real venue photo plan (replace Unsplash hot-links before launch);
   licensing + photo requirements for venue onboarding.
 
-## WAVE 0 — server foundation
-- [ ] P0 — npm-workspaces monorepo: `server/` + `packages/domain` (shared kapar
+## WAVE 0 — server foundation — ✅ SHIPPED 2026-07-12 (executed inline by the
+## orchestrator: wave-implementer subagents were unavailable — session usage
+## limit killed spawns twice; the wave SYSTEM stays in place for Wave 1)
+- [x] P0 — npm-workspaces monorepo: `server/` + `packages/domain` (shared kapar
   math + types + zod schemas); Expo app stays the root package (metro
   watchFolders update). SHARED files — orchestrator does this slice itself.
-- [ ] P0 — Fastify + Drizzle + PostgreSQL 16 scaffold; schema v1 (users, venues,
+- [x] P0 — Fastify + Drizzle + PostgreSQL 16 scaffold; schema v1 (users, venues,
   halls, menu_tiers, reviews, bookings, booking_events, auth_codes, sessions);
   migrations; seed script importing the 14 seed venues.
-- [ ] P0 — env: docker-compose.postgres + cloud-session setup script (apt
+- [x] P0 — env: docker-compose.postgres + cloud-session setup script (apt
   postgres fallback — VERIFIED working in this environment 2026-07-12),
   DATABASE_URL convention; CI (GitHub Actions): typecheck app+server, domain
   unit tests, seed + boot smoke. NO deploy in Wave 0 (Railway account pending
   — deploy slice moved to Wave 1).
-- [ ] P0 — app HTTP client implementing VenueApi against the server behind a
+- [x] P0 — app HTTP client implementing VenueApi against the server behind a
   flag; MockVenueApi stays as offline/dev fallback.
-- [ ] P1 — port refund ladder/grace/payBy/lifecycle math to `packages/domain`
+- [x] P1 — port refund ladder/grace/payBy/lifecycle math to `packages/domain`
   with unit tests (single source for app + server). (gap: "zero tests, no CI")
 
 ## WAVE 1 — bookings on the server (trust core)
