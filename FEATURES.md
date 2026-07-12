@@ -35,12 +35,12 @@ with zero console errors, FEATURES.md updated, one commit per slice.
 ## nothing vendor-side is real until bookings live on a server)
 | Wave | Theme | Slices (parallel) | Exit criteria |
 |---|---|---|---|
-| 0 | Server foundation | monorepo split (orchestrator, SHARED) · Fastify+Drizzle+Postgres schema/migrations/seed · env+CI (docker-compose, cloud setup script, Actions) · app HTTP client behind flag · shared domain package w/ tests | server boots; GET /v1/venues serves the 14 seeds from Postgres; app renders search/detail against it; CI green |
-| 1 | Bookings on the server (trust core) | lifecycle endpoints + audit trail + TTL worker · double-booking prevention (unique index + tx + submit re-check) · date release on cancel/expiry · app store server-backed, venueBot behind DEMO flag | two devices cannot book the same venue+date; cancel frees the date; no client timers |
+| 0 | Server foundation (FULLY LOCAL — deploy moved to Wave 1, Railway account pending) | monorepo split + domain package (orchestrator, SHARED) · Fastify+Drizzle+Postgres schema/migrations/seed · env+CI (docker-compose, cloud setup script, Actions) · app HTTP client behind flag | server boots; GET /v1/venues serves the 14 seeds from Postgres; app renders search/detail against it; CI green |
+| 1 | Bookings on the server (trust core) + first deploy | lifecycle endpoints + audit trail + TTL worker · double-booking prevention (unique index + tx + submit re-check) · date release on cancel/expiry · app store server-backed, venueBot behind DEMO flag · Railway staging deploy | two devices cannot book the same venue+date; cancel frees the date; no client timers |
 | 2 | Real auth + mode switch | email-code auth + sessions + roles · guard all routes · Business-mode shell + switch · transactional email (en/mk/sq) | real accounts; deep links respect auth; vendor accounts exist |
 | 3 | Vendor extranet core (GATED: founder research pack, see BACKLOG) | listing editor (content ×3 locales, photos→R2) · halls/menus editor · availability calendar · onboarding funnel + admin publish | a vendor can create a listing a couple can find and book |
 | 4 | Vendor booking ops | request inbox confirm/decline · kapar-received flow · bookings dashboard · push notifications both sides | full two-sided loop with zero bots |
-| 5 | Couple completeness | map view + server filters · real chat (replaces bot) · reviews write path · dead-button/legal sweep · locale QA | no dead buttons; all locales complete |
+| 5 | Couple completeness | map view + server filters · real chat (replaces bot) · dead-button/legal sweep · locale QA (reviews write path CUT 2026-07-12) | no dead buttons; all locales complete |
 | 6 | Hardening & launch | design-critic pass + fixes · e2e suite + load smoke · prod deploy (backups, Sentry, rate limits) · photo/content plan executed | staging demo end-to-end on two phones; prod checklist green |
 
 Working agreement for waves: the loop runs via /next-wave under the
@@ -73,13 +73,17 @@ BACKLOG.md's gap queue at session end.
 |---|---|---|---|
 | Empty states (all list screens) | DONE | code + browser 2026-07-10 | All list screens have EmptyState incl. new home-rails and reviews-list ones. Caveat: the two new branches are unreachable with seed data (mock always returns venues/reviews), so they are render-guards verified by code, not driven |
 | Error states + retry (all network screens) | DONE | run-verified (web) 2026-07-10 | New ErrorState design component; all 8 previously-unguarded venueApi awaits wrapped with retry wiring. Every screen driven in browser with the new dev switch `globalThis.__KAPAR_API_FAIL__` (api.ts); home/results/venue-detail also verified to RECOVER on retry |
-| Reviews/ratings | STUB | static code trace 2026-07-09 | Deterministically generated fake reviews (src/data/reviews.ts), display-only; no write path |
+| Reviews/ratings | STUB | static code trace 2026-07-09 | CUT from MVP 2026-07-12 (no write path will be built). Fake generated reviews stay display-only for the demo phase — MUST be hidden or replaced before real users (see gap) |
 | Notifications (booking status changes) | MISSING | static code trace 2026-07-09 | Home notification bell is a no-op ((tabs)/index.tsx:112) |
 | Deposits/payments | DONE | run-verified (web) 2026-07-10 | DECIDED 2026-07-09: MVP has NO online payments — kapar is paid in person at the venue visit. Card form + fake gateway deleted (PCI risk gone); all "secure payment" claims reworded in en/mk/sq; profile "Payment methods" row removed. Online rails (CaSys/Stripe) become a post-launch feature |
 | Onboarding (first-run) | PARTIAL | static code trace 2026-07-09 | welcome → verify → tabs flow with redirect gate ((tabs)/_layout.tsx:26). Terms/Privacy links are no-ops |
 | Profile/settings | PARTIAL | code trace 2026-07-10 | Profile tab + settings (language en/mk/sq, theme) work. Payment-methods row REMOVED (no online payments in MVP). Remaining dead buttons: personal info, terms/privacy, help, become-a-partner |
 
 ## DISCOVERED GAPS (agent appends here when it finds unstated requirements)
+- 2026-07-12 LAUNCH-HONESTY: with the reviews write path cut, the seeded fake
+  reviews (deterministic, src/data/reviews.ts) will sit on a live marketplace
+  as if real. Before ANY real user: hide the reviews UI or seed real
+  testimonials. Consumer-protection risk, not just polish. (Wave 6 gate.)
 - 2026-07-10: the design-research pass for the cancellation UI could not run
   (subagent hit the session usage limit), so the cancel screen follows the
   Booking.com patterns this app already clones (dedicated confirm page,
@@ -141,7 +145,12 @@ BACKLOG.md's gap queue at session end.
   zustand to CJS (committed). Unsplash photo hosts are also blocked here, so
   venue photos show the BrandedImage fallback in cloud runs.
 
-## DECISIONS LOG
+## DECISIONS LOG (newest first)
+- 2026-07-12 DECIDED — auth: email 6-digit code, channel-pluggable (accepted
+  as recommended). Reviews write path CUT from MVP. Photo plan deferred to
+  Wave 6. Hosting = Railway, but account not yet created → Wave 0 is fully
+  local; the deploy slice moves to Wave 1.
+
 - (agent: record every product decision the user makes, with date, so future
   sessions don't re-ask)
 - 2026-07-09 DECIDED — cancellation policy, platform-wide for MVP (per-venue

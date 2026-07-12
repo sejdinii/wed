@@ -39,7 +39,9 @@
 - (market/competitor/category threats, with source)
 
 ## REJECTED (with reasons - do not re-propose without new evidence)
--
+- Reviews write path (was Wave 5 P1) — CUT from MVP by user 2026-07-12.
+  Display-only seeded reviews stay for now; see the launch-honesty gap in
+  FEATURES.md (fake reviews must be hidden or replaced before real users).
 
 ---
 
@@ -49,8 +51,8 @@
 # P2 = polish. Items graduate into frozen wave specs at checkpoints.
 
 ## USER DECISIONS NEEDED (humans, not agents)
-- [ ] P0 — hosting account + billing: Railway (proposed) vs Fly.io; who owns it.
-  Blocks Wave 0's deploy slice (local dev is not blocked).
+- [ ] P0 — create the Railway account (hosting DECIDED 2026-07-12: Railway).
+  Blocks the deploy slice, now moved to Wave 1; Wave 0 is fully local.
 - [ ] P2 — real venue photo plan (replace Unsplash hot-links before launch);
   licensing + photo requirements for venue onboarding.
 
@@ -62,8 +64,10 @@
   halls, menu_tiers, reviews, bookings, booking_events, auth_codes, sessions);
   migrations; seed script importing the 14 seed venues.
 - [ ] P0 — env: docker-compose.postgres + cloud-session setup script (apt
-  postgres fallback), DATABASE_URL convention; CI (GitHub Actions): typecheck
-  app+server, server unit tests, seed + boot smoke.
+  postgres fallback — VERIFIED working in this environment 2026-07-12),
+  DATABASE_URL convention; CI (GitHub Actions): typecheck app+server, domain
+  unit tests, seed + boot smoke. NO deploy in Wave 0 (Railway account pending
+  — deploy slice moved to Wave 1).
 - [ ] P0 — app HTTP client implementing VenueApi against the server behind a
   flag; MockVenueApi stays as offline/dev fallback.
 - [ ] P1 — port refund ladder/grace/payBy/lifecycle math to `packages/domain`
@@ -116,8 +120,6 @@
 - [ ] P0 — map view on results (VenueMap exists; the pill is a dead end).
 - [ ] P0 — real couple↔vendor chat replacing the scripted bot (gaps: "one-way
   theatre", "hardcoded Macedonian bot messages").
-- [ ] P1 — reviews write path after completed events; venue score recompute
-  (gap: "fake generated reviews, display-only").
 - [ ] P1 — dead-button elimination: terms/privacy static pages, help/support,
   add-to-calendar via expo-calendar; notification preferences wired to real
   push opt-ins.
