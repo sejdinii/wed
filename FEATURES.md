@@ -12,11 +12,44 @@
 # "run-verified (web)" below means: driven in headless Chromium against Metro this
 # session, zero console errors.
 
-## MVP Definition of Done
-An MVP is DONE when: the app boots with zero errors, every CORE flow below is
-DONE (not PARTIAL), every screen has loading/empty/error states, and the
-critical-path demo (search → view venue → book → confirmation) runs end-to-end
-on device/simulator without a crash.
+## STANDING OBJECTIVE (set 2026-07-10 — supersedes the old MVP definition)
+Kapar is DONE when it is a **two-sided marketplace at Booking.com-grade
+completeness and polish**:
+
+- **Couple side**: search with real filters, map view, venue detail, booking,
+  cancellation — every screen with loading/empty/error states, all three
+  locales (en/mk/sq), zero dead buttons.
+- **Venue side ("Business mode")**: vendor auth, listing management (photos,
+  halls, menus, pricing), availability calendar, booking-request inbox with
+  confirm/decline, kapar-received confirmation, bookings dashboard. Interaction
+  patterns are CLONED from Booking.com's extranet/Pulse, researched via
+  Mobbin/web per wave — never designed from memory (Rule 2).
+- **Backbone**: a real backend (Node.js + PostgreSQL — see DECISIONS LOG for
+  the proposed deployment stack), server-side double-booking prevention, real
+  auth, and the couple/business mode switch.
+
+Acceptance for any slice: typecheck green, run-verified in a browser/device
+with zero console errors, FEATURES.md updated, one commit per slice.
+
+## WAVE ROADMAP (ordered milestones of parallelizable slices — backend first;
+## nothing vendor-side is real until bookings live on a server)
+| Wave | Theme | Slices (parallel) | Exit criteria |
+|---|---|---|---|
+| 0 | Server foundation | monorepo split (orchestrator, SHARED) · Fastify+Drizzle+Postgres schema/migrations/seed · env+CI (docker-compose, cloud setup script, Actions) · app HTTP client behind flag · shared domain package w/ tests | server boots; GET /v1/venues serves the 14 seeds from Postgres; app renders search/detail against it; CI green |
+| 1 | Bookings on the server (trust core) | lifecycle endpoints + audit trail + TTL worker · double-booking prevention (unique index + tx + submit re-check) · date release on cancel/expiry · app store server-backed, venueBot behind DEMO flag | two devices cannot book the same venue+date; cancel frees the date; no client timers |
+| 2 | Real auth + mode switch | email-code auth + sessions + roles · guard all routes · Business-mode shell + switch · transactional email (en/mk/sq) | real accounts; deep links respect auth; vendor accounts exist |
+| 3 | Vendor extranet core (GATED: founder research pack, see BACKLOG) | listing editor (content ×3 locales, photos→R2) · halls/menus editor · availability calendar · onboarding funnel + admin publish | a vendor can create a listing a couple can find and book |
+| 4 | Vendor booking ops | request inbox confirm/decline · kapar-received flow · bookings dashboard · push notifications both sides | full two-sided loop with zero bots |
+| 5 | Couple completeness | map view + server filters · real chat (replaces bot) · reviews write path · dead-button/legal sweep · locale QA | no dead buttons; all locales complete |
+| 6 | Hardening & launch | design-critic pass + fixes · e2e suite + load smoke · prod deploy (backups, Sentry, rate limits) · photo/content plan executed | staging demo end-to-end on two phones; prod checklist green |
+
+Working agreement for waves: the loop runs via /next-wave under the
+/parallel-build protocol — frozen specs, worktree-isolated wave-implementers,
+the founder agent researching into BACKLOG.md in the background, and
+checkpoints where only the orchestrator touches SHARED files (see
+CONTRACTS.md). Every slice lands with run-verification and a FEATURES.md row
+update. DISCOVERED GAPS below stays the intake point and is triaged into
+BACKLOG.md's gap queue at session end.
 
 ## CORE FLOWS (MVP-blocking)
 | Feature | Status | Verified how | Notes |
@@ -30,6 +63,9 @@ on device/simulator without a crash.
 | Vendor: venue listing creation/edit | MISSING | static code trace 2026-07-09 | Zero vendor-facing code. "Become a Partner" button is a no-op (profile.tsx:87) |
 | Vendor: calendar/availability management | MISSING | static code trace 2026-07-09 | bookedDates are hardcoded in src/data/venues.ts |
 | Vendor: incoming booking requests | MISSING | static code trace 2026-07-09 | Faked by venueBot auto-confirm + hardcoded Macedonian chat messages |
+| Backend API + PostgreSQL (bookings/venues/auth server-side) | MISSING | n/a (scoped 2026-07-10) | Wave 0–1. Everything below the UI is currently on-device mock/AsyncStorage |
+| Couple ⇄ Business mode switch | MISSING | n/a (scoped 2026-07-10) | Wave 2. No vendor-facing surface exists |
+| Real couple↔vendor chat | STUB | code trace 2026-07-10 | Wave 5. Scripted one-way bot messages, hardcoded Macedonian |
 | Cancellation/refund flow | DONE | run-verified (web) 2026-07-10 | Platform policy decided + built (100/50/0 at 90/30 days, 7-day grace, venue-cancel always 100%). All 14 seed venues aligned to PLATFORM_REFUND_TIERS. Cancel entry on booking detail → dedicated confirm page with exact outcome preview ("{venue} returns €X (Y%)" — venue returns the money, platform holds none). Both paths verified in browser: free cancel before kapar, 100%-tier refund after confirmation; refund stamped on the booking. Venue-initiated cancel has no UI trigger yet (no vendor app) |
 
 ## REQUIRED BUT NOT CORE (post-boot, pre-launch)
@@ -120,3 +156,23 @@ on device/simulator without a crash.
   the venue visit within 7 days (KAPAR_PAY_WINDOW_DAYS) → confirmed. The
   platform holds no money; "refund" = the venue returns the kapar per the
   agreement. CaSys cPay vs Stripe is now a post-launch decision.
+- 2026-07-10 DECIDED — the vendor side IS in scope. Standing objective is the
+  two-sided marketplace (see STANDING OBJECTIVE above).
+- 2026-07-10 DECIDED — cancellation tiers stay exactly as built (incl. the two
+  agent amendments: venue-cancel = 100%, 7-day grace window).
+- 2026-07-10 DECIDED — auth for MVP: email-based verification, no SMS costs.
+  Agent adjustment within that decision (not a veto): use a 6-digit EMAIL CODE
+  rather than a magic link — links open in the phone's browser instead of the
+  app unless universal-links plumbing exists, while a code reuses the already-
+  built verify screen. Build the endpoint channel-pluggable
+  (`POST /v1/auth/otp {channel: 'email'|'sms'}`) because this market is
+  phone-first (Viber culture; venue owners live on their phones) and SMS OTP
+  should be a cheap fast-follow, not a rework. Phone number stays a required
+  profile field regardless — venues coordinate visits by phone.
+- 2026-07-10 PROPOSED (agent) — deployment stack for the backbone, pending
+  founder sign-off on hosting/billing: Node 22 + Fastify + Drizzle ORM +
+  PostgreSQL 16 in an npm-workspaces monorepo (`server/`, `packages/domain`);
+  Railway (EU region) for API + managed Postgres; Cloudflare R2 for venue
+  photos; Resend for transactional email; Expo Push for notifications; Sentry
+  free tier. Drizzle over Prisma partly because it needs no engine-binary
+  downloads (works within this environment's egress allowlist).
