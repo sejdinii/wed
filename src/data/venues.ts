@@ -1,5 +1,7 @@
-import type { CityKey, FoodOptionKey, Hall, IncludedKey, NearbyPlace, Venue, VenueScores } from '@/domain/types';
-import { PLATFORM_REFUND_TIERS } from '@/domain/kapar';
+// Direct package import (not the '@/' alias) so the server's seed script can
+// load this file under plain node/tsx resolution.
+import type { CityKey, FoodOptionKey, Hall, IncludedKey, NearbyPlace, Venue, VenueScores } from '@kapar/domain';
+import { PLATFORM_REFUND_TIERS } from '@kapar/domain';
 
 /**
  * Seed catalogue — realistic North Macedonian wedding venues.
