@@ -93,5 +93,6 @@ import { HttpVenueApi } from './httpApi';
  * to run against the real server; unset → the on-device mock. Baked at
  * bundle time by Expo's env inlining.
  */
-const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-export const venueApi: VenueApi = apiUrl ? new HttpVenueApi(apiUrl) : new MockVenueApi();
+export const API_URL = process.env.EXPO_PUBLIC_API_URL;
+export const API_MODE = Boolean(API_URL);
+export const venueApi: VenueApi = API_URL ? new HttpVenueApi(API_URL) : new MockVenueApi();

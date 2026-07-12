@@ -15,10 +15,10 @@ import { radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMkd, formatMkdBare } from '@/lib/money';
 import { formatLongDate } from '@/lib/dates';
-import { estimateTotalMkd, hallFor, kaparAmountMkd, KAPAR_PAY_WINDOW_DAYS, makeConfirmationCode } from '@/domain/kapar';
-import type { Booking, Venue } from '@/domain/types';
+import { estimateTotalMkd, hallFor, kaparAmountMkd, KAPAR_PAY_WINDOW_DAYS } from '@/domain/kapar';
+import type { Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
-import { simulateVenueSide } from '@/data/venueBot';
+import { bookingApi, DateTakenError } from '@/data/bookingApi';
 import { useBookingDraft } from '@/stores/bookingDraft';
 import { useBookings } from '@/stores/bookings';
 import { useI18n } from '@/i18n';
@@ -43,7 +43,7 @@ export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
 
   const draft = useBookingDraft();
-  const addBooking = useBookings((s) => s.addBooking);
+  const upsertBooking = useBookings((s) => s.upsert);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [step, setStep] = useState<Step>(1);
   const [error, setError] = useState<string | null>(null);
@@ -106,40 +106,32 @@ export default function CheckoutScreen() {
     sendRequest();
   };
 
-  const sendRequest = () => {
-    if (!venue) return;
+  const sendRequest = async () => {
+    if (!venue || processing) return;
     setError(null);
     setProcessing(true);
-
-    // PLACEHOLDER — stands in for the booking-request API call.
-    timeoutRef.current = setTimeout(() => {
-      const now = new Date().toISOString();
-      const booking: Booking = {
-        id: `bk_${Date.now().toString(36)}`,
-        confirmationCode: makeConfirmationCode(),
-        venueId: venue.id,
-        venueName: venue.name,
-        venuePhoto: venue.photos[0] ?? '',
-        city: venue.city,
+    try {
+      // The repository owns creation: the server computes money and enforces
+      // the double-booking guard (mock replicates the old local behavior).
+      const booking = await bookingApi.create({
+        venue,
         eventDateISO: draft.dateISO as string,
         guestCount: draft.guestCount,
         menuTierId: draft.menuTierId as string,
-        estimatedTotalMkd: estimate,
-        kaparMkd: kapar,
-        balanceDueMkd: balance,
-        status: 'pending_kapar',
-        createdAtISO: now,
-        timeline: [{ status: 'pending_kapar', at: now }],
+        hallId: draft.hallId,
         contactName: `${draft.firstName.trim()} ${draft.lastName.trim()}`,
         contactPhone: draft.phone.trim(),
         specialRequests: draft.specialRequests.trim() || undefined,
         hallName: venue.halls.length > 1 ? hall?.name[locale] : undefined,
-      };
-      addBooking(booking);
-      simulateVenueSide(booking.id, venue.name, booking.eventDateISO);
+      });
+      upsertBooking(booking);
       haptic.success();
       router.replace({ pathname: '/booking/status', params: { bookingId: booking.id } });
-    }, 900);
+    } catch (e) {
+      haptic.error();
+      setError(e instanceof DateTakenError ? t('checkout.dateTaken') : t('error.body'));
+      setProcessing(false);
+    }
   };
 
   const inputStyle = {

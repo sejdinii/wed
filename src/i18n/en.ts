@@ -148,6 +148,7 @@ export const en: Dict = {
   'checkout.confirmNote': 'The venue confirms within 24 hours — if not, the hold lapses and you owe nothing.',
   'checkout.reassure': 'No online payment — the kapar is paid in person',
   'checkout.invalidContact': 'Enter first name, last name and phone.',
+  'checkout.dateTaken': 'That date was just taken at this venue. Pick another date.',
   'checkout.sendRequest': 'Send booking request',
   'checkout.sending': 'Sending…',
 
