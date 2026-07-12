@@ -140,6 +140,8 @@ export const bookings = pgTable(
       .notNull()
       .references(() => venues.id),
     userId: uuid('user_id').references(() => users.id),
+    /** Pre-auth owner scoping (Wave 1). Wave 2 claims device bookings into accounts. */
+    deviceId: text('device_id'),
     eventDate: date('event_date').notNull(),
     guestCount: integer('guest_count').notNull(),
     menuTierId: text('menu_tier_id').notNull(),

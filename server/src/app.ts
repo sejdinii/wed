@@ -1,6 +1,7 @@
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
 
+import { bookingRoutes } from './routes/bookings.js';
 import { venueRoutes } from './routes/venues.js';
 
 /** App factory — shared by `src/index.ts` (listen) and tests (inject). */
@@ -13,6 +14,7 @@ export function buildApp() {
 
   app.get('/health', async () => ({ ok: true }));
   app.register(venueRoutes);
+  app.register(bookingRoutes);
 
   return app;
 }
