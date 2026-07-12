@@ -11,6 +11,9 @@
 (founder: only genuine wave-invalidating discoveries; otherwise leave empty)
 
 ## TASKED RESEARCH (orchestrator → founder, 2026-07-10 — highest priority)
+# NOTE 2026-07-12: founder launch failed AGAIN on the session usage limit
+# (second occurrence). Retry at next session start; if it fails a third time,
+# the human research pack (docs/research/) becomes the primary path.
 - [ ] **Booking.com extranet research pack (GATES Waves 3–4).** Vendor-side UI
   must be cloned from researched references, never memory (Rule 2). From
   Mobbin first, then web: extranet dashboard home; reservations list +

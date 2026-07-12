@@ -1,15 +1,22 @@
 {
   "name": "kapar",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "main": "expo-router/entry",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "server"
+  ],
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:domain": "npm run -w @kapar/domain test",
+    "typecheck:all": "npm run typecheck && npm run -w @kapar/domain typecheck"
   },
   "dependencies": {
+    "@kapar/domain": "*",
     "@expo-google-fonts/manrope": "^0.4.1",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "~2.2.0",
