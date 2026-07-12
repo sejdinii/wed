@@ -86,4 +86,12 @@ class MockVenueApi implements VenueApi {
   }
 }
 
-export const venueApi: VenueApi = new MockVenueApi();
+import { HttpVenueApi } from './httpApi';
+
+/**
+ * Repository selection: set EXPO_PUBLIC_API_URL (e.g. http://localhost:3000)
+ * to run against the real server; unset → the on-device mock. Baked at
+ * bundle time by Expo's env inlining.
+ */
+const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+export const venueApi: VenueApi = apiUrl ? new HttpVenueApi(apiUrl) : new MockVenueApi();
