@@ -21,6 +21,7 @@ import {
   sortedRefundTiers,
 } from '@/domain/kapar';
 import { VENUES } from '@/data/venues';
+import { bookingApi } from '@/data/bookingApi';
 import { useBookings } from '@/stores/bookings';
 import { useI18n } from '@/i18n';
 
@@ -42,8 +43,8 @@ export default function CancelBookingScreen() {
   const router = useRouter();
 
   const booking = useBookings((s) => s.bookings.find((b) => b.id === bookingId));
-  const transition = useBookings((s) => s.transition);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelFailed, setCancelFailed] = useState(false);
 
   const cancellable =
     booking && (booking.status === 'pending_kapar' || booking.status === 'reserved' || booking.status === 'confirmed');
@@ -78,18 +79,23 @@ export default function CancelBookingScreen() {
     refundPercentFor(venue.kaparPolicy, booking.eventDateISO, today, null) < 100;
   const noRefundBoundary = venue ? sortedRefundTiers(venue.kaparPolicy).find((tier) => tier.refundPercent > 0)?.minDaysBeforeEvent : undefined;
 
-  const confirmCancel = () => {
+  const confirmCancel = async () => {
     if (cancelling) return;
     setCancelling(true);
+    setCancelFailed(false);
     haptic.select();
-    const now = new Date().toISOString();
-    transition(
-      booking.id,
-      'cancelled_by_couple',
-      now,
-      percent !== null && refundMkd !== null ? { refund: { percent, amountMkd: refundMkd } } : undefined,
-    );
-    router.replace(`/booking/${booking.id}`);
+    try {
+      // The repository owns the transition; in API mode the SERVER computes
+      // and stamps the authoritative refund (this screen's numbers are the
+      // preview). Mock mode stamps the same math locally.
+      const updated = await bookingApi.cancel(booking.id);
+      if (updated) useBookings.getState().upsert(updated);
+      router.replace(`/booking/${booking.id}`);
+    } catch {
+      haptic.error();
+      setCancelFailed(true);
+      setCancelling(false);
+    }
   };
 
   return (
@@ -188,6 +194,12 @@ export default function CancelBookingScreen() {
         <AppText variant="bodySm" color="tertiary">
           {t('cancel.irreversible')}
         </AppText>
+
+        {cancelFailed ? (
+          <AppText variant="bodySm" color="danger">
+            {t('error.body')}
+          </AppText>
+        ) : null}
       </ScrollView>
 
       {/* Actions */}

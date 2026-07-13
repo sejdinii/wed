@@ -1,4 +1,4 @@
-import type { Review } from '@/domain/types';
+import type { Review } from '@kapar/domain';
 import { VENUES } from './venues';
 
 /**

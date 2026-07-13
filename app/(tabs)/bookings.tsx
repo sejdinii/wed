@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -13,6 +13,8 @@ import { useTheme } from '@/design/theme';
 import { radius, shadow, spacing } from '@/design/tokens';
 import { formatMediumDate, daysBetween, todayISO } from '@/lib/dates';
 import type { Booking, BookingStatus } from '@/domain/types';
+import { API_MODE } from '@/data/api';
+import { bookingApi } from '@/data/bookingApi';
 import { useBookings } from '@/stores/bookings';
 import { useI18n } from '@/i18n';
 
@@ -38,6 +40,20 @@ export default function BookingsScreen() {
   const router = useRouter();
   const bookings = useBookings((s) => s.bookings);
   const [segment, setSegment] = useState<'upcoming' | 'past'>('upcoming');
+
+  // API mode: the ledger is a cache — refresh it while the tab is open.
+  useEffect(() => {
+    if (!API_MODE) return;
+    const tick = () => {
+      bookingApi
+        .list()
+        .then((list) => useBookings.getState().replaceAll(list))
+        .catch(() => {});
+    };
+    tick();
+    const handle = setInterval(tick, 10_000);
+    return () => clearInterval(handle);
+  }, []);
 
   const today = todayISO();
   const isUpcoming = (b: Booking) => b.eventDateISO >= today && ACTIVE.includes(b.status);

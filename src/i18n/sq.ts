@@ -148,6 +148,7 @@ export const sq: Dict = {
   'checkout.confirmNote': 'Salla konfirmon brenda 24 orëve — përndryshe, rezervimi lirohet dhe nuk detyrohesh asgjë.',
   'checkout.reassure': 'Pa pagesë online — kapari lihet personalisht',
   'checkout.invalidContact': 'Shkruaj emrin, mbiemrin dhe telefonin.',
+  'checkout.dateTaken': 'Dikush sapo e zuri këtë datë në këtë sallë. Zgjidh një datë tjetër.',
   'checkout.sendRequest': 'Dërgo kërkesë rezervimi',
   'checkout.sending': 'Duke u dërguar…',
 

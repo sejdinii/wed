@@ -13,6 +13,8 @@ import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 import { formatMkd } from '@/lib/money';
 import { formatLongDate, formatMediumDate } from '@/lib/dates';
+import { bookingApi } from '@/data/bookingApi';
+import { API_MODE } from '@/data/api';
 import { useBookings } from '@/stores/bookings';
 import { useBookingDraft } from '@/stores/bookingDraft';
 import { useI18n } from '@/i18n';
@@ -38,6 +40,23 @@ export default function BookingStatusScreen() {
 
   const iconScale = useRef(new Animated.Value(0)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
+
+  // API mode: the server (and its demo bot) owns transitions — poll while
+  // the couple watches this screen so the phases flip live.
+  useEffect(() => {
+    if (!API_MODE || !bookingId) return;
+    const tick = () => {
+      bookingApi
+        .get(bookingId)
+        .then((b) => {
+          if (b) useBookings.getState().upsert(b);
+        })
+        .catch(() => {});
+    };
+    tick();
+    const handle = setInterval(tick, 4_000);
+    return () => clearInterval(handle);
+  }, [bookingId]);
 
   useEffect(() => {
     resetDraft();

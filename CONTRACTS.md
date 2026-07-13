@@ -30,10 +30,16 @@
   not remove) · headless verify: Playwright + `/opt/pw-browsers/chromium`
 - Dev switch `globalThis.__KAPAR_API_FAIL__ = true` makes every API call
   reject — use it to drive error states.
-- Planned backbone (Wave 0, per DECISIONS LOG): npm workspaces monorepo —
-  `server/` (Node 22 + Fastify + Drizzle + PostgreSQL 16) and
-  `packages/domain` (shared kapar math + zod schemas); Railway (EU) + R2 +
-  Resend + Expo Push proposed.
+- Backbone (LIVE since Wave 0): npm-workspaces monorepo — `server/` (Node 22 +
+  Fastify + Drizzle + PostgreSQL 16) and `packages/domain` (shared types +
+  kapar math, imported by app AND server; `src/domain/*` are re-export shims).
+  `bash scripts/setup-env.sh` = clean checkout → seeded db (docker or system
+  postgres) · `npm run -w server dev` (:3000) · `npm run -w server db:migrate |
+  db:seed | test` · `npm run test:domain` · `npm run typecheck:all` ·
+  app against the server: `EXPO_PUBLIC_API_URL=http://localhost:3000 npx expo
+  start --web --offline` (env is baked at bundle time — restart Metro with
+  --clear when changing it). Hosting: Railway (EU) + R2 + Resend + Expo Push,
+  account pending.
 
 ## FILE OWNERSHIP
 **SHARED — orchestrator-only (high contention / architectural):**
@@ -47,7 +53,7 @@
 | `src/data/venues.ts` (seed), `src/data/api.ts` (interface) | seed data + repository boundary |
 | `src/i18n/mk.ts`, `en.ts`, `sq.ts` | mk is the Dict source of truth; merged centrally (slices PROPOSE keys in their notes; orchestrator lands them) |
 | `FEATURES.md`, `CONTRACTS.md`, `BACKLOG.md` | project memory |
-| (Wave 0+) `server/db/schema.ts`, migrations, `packages/domain/*` | one schema, one law |
+| `server/src/db/schema.ts`, `server/drizzle/*` (migrations), `packages/domain/*` | one schema, one law |
 
 **Slice-ownable:** individual screens under `app/` (except _layouts), individual
 components under `src/components/` and `src/design/components/` (new ones

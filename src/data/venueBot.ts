@@ -1,4 +1,5 @@
 import { kaparPayByISO } from '@/domain/kapar';
+import { API_MODE } from '@/data/api';
 import { formatMediumDate } from '@/lib/dates';
 import { useBookings } from '@/stores/bookings';
 import { useMessages } from '@/stores/messages';
@@ -29,7 +30,9 @@ export function simulateVenueSide(bookingId: string, venueName: string, eventDat
   setTimeout(() => {
     const now = new Date().toISOString();
     const payBy = kaparPayByISO(now, eventDateISO);
-    useBookings.getState().transition(bookingId, 'reserved', now, { payByISO: payBy });
+    // API mode: the SERVER's demo bot owns the transition (restart-safe);
+    // this bot only narrates it in chat. Mock mode: transition locally.
+    if (!API_MODE) useBookings.getState().transition(bookingId, 'reserved', now, { payByISO: payBy });
     useMessages.getState().send({
       id: `m_${Date.now().toString(36)}r`,
       bookingId,
@@ -41,7 +44,7 @@ export function simulateVenueSide(bookingId: string, venueName: string, eventDat
 
   setTimeout(() => {
     const now = new Date().toISOString();
-    useBookings.getState().transition(bookingId, 'confirmed', now, { kaparPaidAtISO: now });
+    if (!API_MODE) useBookings.getState().transition(bookingId, 'confirmed', now, { kaparPaidAtISO: now });
     useMessages.getState().send({
       id: `m_${Date.now().toString(36)}c`,
       bookingId,
