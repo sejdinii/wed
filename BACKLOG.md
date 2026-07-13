@@ -327,22 +327,28 @@ appended here.
   flag (gaps: "venueBot compresses visit to 75s", "confirmed state is fiction").
 - [ ] P1 — booking draft store survives process death (currently in-memory).
 
-## WAVE 2 — real auth + business-mode switch
-- [ ] P0 — email 6-digit-code auth (channel-pluggable endpoint so SMS can be
+## WAVE 2 — real auth + business-mode switch — ✅ P0s SHIPPED 2026-07-13
+## (slice A built by a worktree wave-implementer — first successful parallel
+## slice; reviewed + merged by the orchestrator)
+- [x] P0 — email 6-digit-code auth (channel-pluggable endpoint so SMS can be
   added without rework — see DECISIONS LOG), sessions, roles couple|vendor
   (gap: "ANY 6 digits pass, no SMS, no sessions").
-- [ ] P0 — guard ALL protected routes, not just (tabs) (gap: "deep-linkable
+- [x] P0 — guard ALL protected routes, not just (tabs) (gap: "deep-linkable
   unauthenticated").
-- [ ] P0 — profile ⇄ Business mode switch scaffold + vendor shell.
+- [x] P0 — profile ⇄ Business mode switch scaffold + vendor shell.
   Design-intel cross-ref (2026-07-12): decide the vendor home-screen IA
   together with WAVE 4's bookings dashboard — see PROPOSED FEATURES "Vendor
   dashboard home = single 'today' action feed" — same screen, don't spec the
   two waves' home layout independently.
-- [ ] P1 — transactional email (Resend) templates in en/mk/sq; retire the
-  "we'll text you a code" copy (gap: "SMS-code copy overclaim").
+- [ ] P1 — wire Resend behind the existing sendCode() provider abstraction
+  (copy rework DONE 2026-07-13 — the SMS overclaim is retired in all locales;
+  dev provider logs codes + returns devCode outside production).
 - [ ] P1 — personal-info editor (dead button on profile).
 
 ## WAVE 3 — vendor extranet core (GATED on the extranet research pack)
+- [ ] P1 — logout row in settings (clearAuth exists, nothing calls it).
+- [ ] P2 — hygiene: uuid-derived test dates in bookings.test.ts; periodic
+  cleanup for sessions/auth_codes tables.
 # GATE CLEARED 2026-07-12 — see DESIGN INTEL "VENDOR EXTRANET" above for the
 # sourced reference pack this wave should design from.
 - [ ] P0 — listing editor: content ×3 locales, photos (upload → R2), amenities,

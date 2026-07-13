@@ -50,9 +50,11 @@ class HttpAuthApi implements AuthApi {
   }
 
   async becomeVendor(): Promise<AuthUser> {
+    // No body — and no content-type either: fastify 400s an empty
+    // application/json body.
     const res = await fetch(`${this.baseUrl}/v1/me/become-vendor`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', ...authHeaders() },
+      headers: authHeaders(),
     });
     if (!res.ok) throw new Error(`become-vendor failed: ${res.status}`);
     return ((await res.json()) as { user: AuthUser }).user;

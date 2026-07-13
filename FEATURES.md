@@ -37,7 +37,7 @@ with zero console errors, FEATURES.md updated, one commit per slice.
 |---|---|---|---|
 | 0 ✅ DONE 2026-07-12 | Server foundation (fully local; deploy → Wave 1) | monorepo split + domain package (orchestrator, SHARED) · Fastify+Drizzle+Postgres schema/migrations/seed · env+CI (docker-compose, cloud setup script, Actions) · app HTTP client behind flag | server boots; GET /v1/venues serves the 14 seeds from Postgres; app renders search/detail against it; CI green |
 | 1 ✅ SHIPPED 2026-07-12 (deploy pending Railway) | Bookings on the server (trust core) + first deploy | lifecycle endpoints + audit trail + TTL worker · double-booking prevention (unique index + tx + submit re-check) · date release on cancel/expiry · app store server-backed, venueBot behind DEMO flag · Railway staging deploy | two devices cannot book the same venue+date; cancel frees the date; no client timers |
-| 2 | Real auth + mode switch | email-code auth + sessions + roles · guard all routes · Business-mode shell + switch · transactional email (en/mk/sq) | real accounts; deep links respect auth; vendor accounts exist |
+| 2 ✅ SHIPPED 2026-07-13 (Resend + logout pending) | Real auth + mode switch | email-code auth + sessions + roles · guard all routes · Business-mode shell + switch · transactional email (en/mk/sq) | real accounts; deep links respect auth; vendor accounts exist |
 | 3 | Vendor extranet core (GATED: founder research pack, see BACKLOG) | listing editor (content ×3 locales, photos→R2) · halls/menus editor · availability calendar · onboarding funnel + admin publish | a vendor can create a listing a couple can find and book |
 | 4 | Vendor booking ops | request inbox confirm/decline · kapar-received flow · bookings dashboard · push notifications both sides | full two-sided loop with zero bots |
 | 5 | Couple completeness | map view + server filters · real chat (replaces bot) · dead-button/legal sweep · locale QA (reviews write path CUT 2026-07-12) | no dead buttons; all locales complete |
@@ -59,12 +59,12 @@ BACKLOG.md's gap queue at session end.
 | Booking flow (date select → request/confirm) | PARTIAL | run-verified (web+server) 2026-07-12 | Pay-at-visit checkout now creates bookings ON THE SERVER (money computed server-side, availability enforced at insert — the re-check gap is closed); 409 surfaces as user copy. Remaining: draft store in-memory |
 | Double-booking prevention | DONE | run-verified 2026-07-12 | Server-enforced: partial unique index on active (venue_id,event_date) + transactional insert. Verified in tests (cross-device 409) AND in the browser (duplicate surfaced as 'date just taken' copy; cancel released the date and rebooking succeeded). Requires API mode — the offline mock keeps the old client-only filter |
 | Booking confirmation + status screen | PARTIAL | run-verified (web+server) 2026-07-12 | 3-phase status now driven by the SERVER (demo bot + lifecycle worker are restart-safe, in Postgres); the screen polls while watched and phases flip live. App venueBot only narrates chat. "Add to calendar" still a no-op |
-| Auth (signup/login, both user types) | STUB | static code trace 2026-07-09 | welcome (phone) + verify (OTP) screens exist, but ANY 6 digits pass (verify.tsx:33); no SMS, no sessions, no accounts. Wall only guards the (tabs) group — venue/booking routes reachable via deep link unauthenticated. No vendor auth at all |
+| Auth (signup/login, both user types) | PARTIAL | run-verified (web+server) 2026-07-13 | REAL email-code auth in API mode: rate-limited 6-digit codes, wrong/expired rejection, 30-day sessions, roles couple/vendor/both, device-booking claim on login; ALL booking routes + chat now guarded (deep-link gap closed). Offline mock keeps any-code sign-in, honestly scoped. Remaining: no logout UI, Resend not wired (dev provider logs codes), personal-info editor |
 | Vendor: venue listing creation/edit | MISSING | static code trace 2026-07-09 | Zero vendor-facing code. "Become a Partner" button is a no-op (profile.tsx:87) |
 | Vendor: calendar/availability management | MISSING | static code trace 2026-07-09 | bookedDates are hardcoded in src/data/venues.ts |
 | Vendor: incoming booking requests | MISSING | static code trace 2026-07-09 | Faked by venueBot auto-confirm + hardcoded Macedonian chat messages |
 | Backend API + PostgreSQL (bookings/venues/auth server-side) | PARTIAL | run-verified 2026-07-12 | Waves 0+1 SHIPPED: catalogue AND the full booking lifecycle live on the server (create w/ server-side pricing, confirm w/ payBy, kapar-received, cancel w/ stamped refunds, audit trail, TTL worker, demo bot; 38 tests, CI). Device-scoped until auth. Remaining: auth (Wave 2), deploy (Railway pending) |
-| Couple ⇄ Business mode switch | MISSING | n/a (scoped 2026-07-10) | Wave 2. No vendor-facing surface exists |
+| Couple ⇄ Business mode switch | PARTIAL | run-verified (web+server) 2026-07-13 | 'Become a partner' grants the vendor role server-side and opens Business mode; (business) route group role-gated; Today feed shell per the accepted Pulse IA. Listing management (Wave 3) fills it |
 | Real couple↔vendor chat | STUB | code trace 2026-07-10 | Wave 5. Scripted one-way bot messages, hardcoded Macedonian |
 | Cancellation/refund flow | DONE | run-verified (web) 2026-07-10 | Platform policy decided + built (100/50/0 at 90/30 days, 7-day grace, venue-cancel always 100%). All 14 seed venues aligned to PLATFORM_REFUND_TIERS. Cancel entry on booking detail → dedicated confirm page with exact outcome preview ("{venue} returns €X (Y%)" — venue returns the money, platform holds none). Both paths verified in browser: free cancel before kapar, 100%-tier refund after confirmation; refund stamped on the booking. Venue-initiated cancel has no UI trigger yet (no vendor app) |
 
@@ -80,6 +80,14 @@ BACKLOG.md's gap queue at session end.
 | Profile/settings | PARTIAL | code trace 2026-07-10 | Profile tab + settings (language en/mk/sq, theme) work. Payment-methods row REMOVED (no online payments in MVP). Remaining dead buttons: personal info, terms/privacy, help, become-a-partner |
 
 ## DISCOVERED GAPS (agent appends here when it finds unstated requirements)
+- 2026-07-13: no logout — a signed-in session cannot be cleared from the UI
+  (clearAuth exists in the store, no button calls it). Wave 3 settings item.
+- 2026-07-13: sessions/auth_codes tables only grow (no cleanup job); and the
+  verify-attempt counter is in-memory (resets on server restart — documented,
+  acceptable: codes expire in 10min anyway).
+- 2026-07-13 (implementer finding): server/test/bookings.test.ts derives its
+  test date from Date.now()%27 — near-random collisions with leftover rows on
+  the shared dev db. Move to a uuid-derived unique date.
 - 2026-07-12 LAUNCH-HONESTY: with the reviews write path cut, the seeded fake
   reviews (deterministic, src/data/reviews.ts) will sit on a live marketplace
   as if real. Before ANY real user: hide the reviews UI or seed real

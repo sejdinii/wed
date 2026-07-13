@@ -8,9 +8,10 @@ import {
   type Booking,
   type BookingStatus,
 } from '@kapar/domain';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
+import { userFromRequest } from '../auth.js';
 import { db } from '../db/client.js';
 import { bookingEvents, bookings, halls, menuTiers, venues } from '../db/schema.js';
 
@@ -152,6 +153,9 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
     const estimate = estimateTotalMkd(domainVenue as Parameters<typeof estimateTotalMkd>[0], b.menuTierId, b.guestCount, b.hallId ?? null);
     const kapar = kaparAmountMkd(venueRow.kaparPolicy, estimate);
     const id = `bk_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    // Optional bearer auth: deviceId-only creation must keep working
+    // unchanged — this only additionally stamps an owner when logged in.
+    const authUser = await userFromRequest(req);
 
     try {
       await db.transaction(async (tx) => {
@@ -160,6 +164,7 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
           confirmationCode: makeConfirmationCode(),
           venueId: b.venueId,
           deviceId: b.deviceId,
+          ...(authUser ? { userId: authUser.id } : {}),
           eventDate: b.eventDateISO,
           guestCount: b.guestCount,
           menuTierId: b.menuTierId,
@@ -187,11 +192,21 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Querystring: { deviceId?: string } }>('/v1/bookings', async (req, reply) => {
     const { deviceId } = req.query;
-    if (!deviceId) return reply.code(400).send({ error: 'missing_device_id' });
+    const authUser = await userFromRequest(req);
+    if (!deviceId && !authUser) return reply.code(400).send({ error: 'missing_device_id' });
+
+    // Bearer + deviceId both present: union of the account's bookings and
+    // that device's bookings (covers a claimed device still browsing locally).
+    const conditions = [
+      ...(authUser ? [eq(bookings.userId, authUser.id)] : []),
+      ...(deviceId ? [eq(bookings.deviceId, deviceId)] : []),
+    ];
+    const where = conditions.length > 1 ? or(...conditions) : conditions[0];
+
     const rows = await db
       .select()
       .from(bookings)
-      .where(eq(bookings.deviceId, deviceId))
+      .where(where)
       .orderBy(desc(bookings.createdAt));
     if (rows.length === 0) return [];
     const ids = rows.map((r) => r.id);

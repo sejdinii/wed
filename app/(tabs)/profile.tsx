@@ -35,14 +35,14 @@ export default function ProfileScreen() {
   const openBusiness = async () => {
     if (becomingVendor) return;
     if (isVendor) {
-      router.push('/(business)/today');
+      router.push('/today');
       return;
     }
     setBecomingVendor(true);
     try {
       const user = await authApi.becomeVendor();
       setAuthUser(user);
-      router.push('/(business)/today');
+      router.push('/today');
     } catch {
       haptic.error();
     } finally {

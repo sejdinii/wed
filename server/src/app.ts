@@ -1,6 +1,7 @@
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
 
+import { authRoutes } from './routes/auth.js';
 import { bookingRoutes } from './routes/bookings.js';
 import { venueRoutes } from './routes/venues.js';
 
@@ -15,6 +16,7 @@ export function buildApp() {
   app.get('/health', async () => ({ ok: true }));
   app.register(venueRoutes);
   app.register(bookingRoutes);
+  app.register(authRoutes);
 
   return app;
 }
