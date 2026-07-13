@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { AppText } from '@/design/components/AppText';
 import { Button } from '@/design/components/Button';
@@ -23,6 +23,7 @@ import {
 import { VENUES } from '@/data/venues';
 import { bookingApi } from '@/data/bookingApi';
 import { useBookings } from '@/stores/bookings';
+import { useIsAuthenticated } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 /**
@@ -43,12 +44,14 @@ export default function CancelBookingScreen() {
   const router = useRouter();
 
   const booking = useBookings((s) => s.bookings.find((b) => b.id === bookingId));
+  const authed = useIsAuthenticated();
   const [cancelling, setCancelling] = useState(false);
   const [cancelFailed, setCancelFailed] = useState(false);
 
   const cancellable =
     booking && (booking.status === 'pending_kapar' || booking.status === 'reserved' || booking.status === 'confirmed');
 
+  if (!authed) return <Redirect href="/welcome" />;
   if (!booking || !cancellable) {
     return (
       <Screen>

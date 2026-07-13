@@ -20,6 +20,7 @@ import { estimateTotalMkd, hallFor, kaparAmountMkd, venueDayState } from '@/doma
 import type { Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
 import { useBookingDraft } from '@/stores/bookingDraft';
+import { useIsAuthenticated } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 /**
@@ -35,6 +36,7 @@ export default function AvailabilityScreen() {
   const insets = useSafeAreaInsets();
 
   const draft = useBookingDraft();
+  const authed = useIsAuthenticated();
   const [venue, setVenue] = useState<Venue | null>(null);
 
   const [loadFailed, setLoadFailed] = useState(false);
@@ -58,6 +60,8 @@ export default function AvailabilityScreen() {
     };
   }, [draft.venueId, attempt]);
 
+  // Booking requires an account (Wave 2) — venue browsing stays public.
+  if (!authed) return <Redirect href="/welcome" />;
   if (!draft.venueId) return <Redirect href="/(tabs)" />;
 
   // Kapar preview on the selected hall + default menu; firms up in checkout.

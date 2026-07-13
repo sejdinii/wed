@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/design/theme';
 import { fontFamily } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
-import { usePreferences } from '@/stores/preferences';
+import { useIsAuthenticated } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -20,10 +20,10 @@ function tabIcon(focused: IconName, unfocused: IconName) {
 export default function TabsLayout() {
   const { colors } = useTheme();
   const { t } = useI18n();
-  const phoneVerified = usePreferences((s) => s.phoneVerified);
+  const authed = useIsAuthenticated();
 
-  // First-launch gate: phone onboarding before the app (MOCK OTP for now).
-  if (!phoneVerified) return <Redirect href="/welcome" />;
+  // Auth gate: real session in API mode, the offline demo flag otherwise.
+  if (!authed) return <Redirect href="/welcome" />;
 
   return (
     <Tabs

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { AppText } from '@/design/components/AppText';
 import { Badge, type BadgeTone } from '@/design/components/Badge';
@@ -21,6 +21,7 @@ import { VENUES } from '@/data/venues';
 import { API_MODE } from '@/data/api';
 import { bookingApi } from '@/data/bookingApi';
 import { useBookings } from '@/stores/bookings';
+import { useIsAuthenticated } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
@@ -46,6 +47,7 @@ export default function BookingDetailsScreen() {
 
   const booking = useBookings((s) => s.bookings.find((b) => b.id === id));
   const venue = booking ? VENUES.find((v) => v.id === booking.venueId) : undefined;
+  const authed = useIsAuthenticated();
 
   useEffect(() => {
     if (!API_MODE || typeof id !== 'string') return;
@@ -57,6 +59,7 @@ export default function BookingDetailsScreen() {
       .catch(() => {});
   }, [id]);
 
+  if (!authed) return <Redirect href="/welcome" />;
   if (!booking) {
     return (
       <Screen>

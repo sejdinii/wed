@@ -29,6 +29,7 @@ function RootNavigator() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(business)" />
         <Stack.Screen name="welcome" options={{ gestureEnabled: false, animation: 'fade' }} />
         <Stack.Screen name="verify" />
         <Stack.Screen name="search" options={{ animation: 'fade_from_bottom' }} />

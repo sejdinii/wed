@@ -17,6 +17,7 @@ import { bookingApi } from '@/data/bookingApi';
 import { API_MODE } from '@/data/api';
 import { useBookings } from '@/stores/bookings';
 import { useBookingDraft } from '@/stores/bookingDraft';
+import { useIsAuthenticated } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 /**
@@ -37,6 +38,7 @@ export default function BookingStatusScreen() {
 
   const booking = useBookings((s) => s.bookings.find((b) => b.id === bookingId));
   const resetDraft = useBookingDraft((s) => s.reset);
+  const authed = useIsAuthenticated();
 
   const iconScale = useRef(new Animated.Value(0)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
@@ -66,6 +68,7 @@ export default function BookingStatusScreen() {
     ]).start();
   }, [iconScale, contentAnim, resetDraft]);
 
+  if (!authed) return <Redirect href="/welcome" />;
   if (!booking) return <Redirect href="/(tabs)" />;
 
   const phase =

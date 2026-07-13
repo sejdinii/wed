@@ -5,17 +5,28 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { Locale } from '@/i18n';
 import type { CityKey } from '@/domain/types';
+import { API_MODE } from '@/data/api';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: 'couple' | 'vendor' | 'both';
+  name?: string | null;
+}
 
 interface PreferencesState {
   /** null = follow device language (resolved via resolveLocale). */
   locale: Locale | null;
   themePreference: ThemePreference;
   recentCities: CityKey[];
-  /** MOCK auth — set after the (simulated) OTP; real phone auth lands with the backend. */
+  /** MOCK-mode auth gate — offline demo only; API mode uses the session below. */
   phoneVerified: boolean;
   phoneNumber: string;
+  /** Real session (API mode): bearer token + user, set by the verify screen. */
+  authToken: string | null;
+  authUser: AuthUser | null;
   notifConfirm: boolean;
   notifMessages: boolean;
   notifRefund: boolean;
@@ -24,6 +35,9 @@ interface PreferencesState {
   pushRecentCity: (city: CityKey) => void;
   setNotif: (key: 'notifConfirm' | 'notifMessages' | 'notifRefund', value: boolean) => void;
   setPhoneVerified: (phoneNumber: string) => void;
+  setAuth: (token: string, user: AuthUser) => void;
+  setAuthUser: (user: AuthUser) => void;
+  clearAuth: () => void;
 }
 
 export const usePreferences = create<PreferencesState>()(
@@ -34,6 +48,8 @@ export const usePreferences = create<PreferencesState>()(
       recentCities: [],
       phoneVerified: false,
       phoneNumber: '',
+      authToken: null,
+      authUser: null,
       notifConfirm: true,
       notifMessages: true,
       notifRefund: true,
@@ -45,13 +61,29 @@ export const usePreferences = create<PreferencesState>()(
         })),
       setNotif: (key, value) => set({ [key]: value }),
       setPhoneVerified: (phoneNumber) => set({ phoneVerified: true, phoneNumber }),
+      setAuth: (authToken, authUser) => set({ authToken, authUser }),
+      setAuthUser: (authUser) => set({ authUser }),
+      clearAuth: () => set({ authToken: null, authUser: null }),
     }),
     {
       name: 'kapar.preferences.v2',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 3,
+      // v2 → v3: session fields arrive; older payloads just gain the nulls.
+      migrate: (persisted) => persisted as PreferencesState,
     },
   ),
 );
+
+/**
+ * The single auth-gate predicate. API mode: a real session token. Mock mode:
+ * the offline demo's simulated OTP flag (unchanged pre-Wave-2 behavior).
+ */
+export function useIsAuthenticated(): boolean {
+  const phoneVerified = usePreferences((s) => s.phoneVerified);
+  const authToken = usePreferences((s) => s.authToken);
+  return API_MODE ? authToken !== null : phoneVerified;
+}
 
 const SUPPORTED: readonly Locale[] = ['mk', 'sq', 'en'];
 

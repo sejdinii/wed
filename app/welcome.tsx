@@ -11,20 +11,39 @@ import { Screen } from '@/design/components/Screen';
 import { useTheme } from '@/design/theme';
 import { brand, radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
+import { authApi } from '@/data/authApi';
 import { useI18n } from '@/i18n';
 
 /**
- * Welcome — phone-first onboarding. Logo, tagline, +389 phone input,
- * trust markers, and the 6-digit-code explainer. Real SMS OTP arrives with
- * the backend; for now /verify accepts any 6-digit code (marked MOCK).
+ * Welcome — email-first onboarding (decision 2026-07-12: email 6-digit code,
+ * channel-pluggable for SMS later). Logo, tagline, email input, trust
+ * markers. API mode emails a real code; the offline mock accepts any code.
  */
 export default function WelcomeScreen() {
   const { colors, mode } = useTheme();
   const { t } = useI18n();
   const router = useRouter();
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendFailed, setSendFailed] = useState(false);
 
-  const canContinue = phone.replace(/\D/g, '').length >= 6;
+  const canContinue = /.+@.+\..+/.test(email.trim());
+
+  const requestCode = async () => {
+    if (sending) return;
+    haptic.medium();
+    setSending(true);
+    setSendFailed(false);
+    try {
+      const { devCode } = await authApi.requestCode(email.trim());
+      router.push({ pathname: '/verify', params: { email: email.trim(), ...(devCode ? { devCode } : {}) } });
+    } catch {
+      haptic.error();
+      setSendFailed(true);
+    } finally {
+      setSending(false);
+    }
+  };
 
   const TrustItem = ({
     icon,
@@ -85,7 +104,7 @@ export default function WelcomeScreen() {
             </AppText>
           </View>
 
-          {/* Phone input: fixed +389 prefix */}
+          {/* Email input */}
           <View
             style={{
               flexDirection: 'row',
@@ -97,39 +116,34 @@ export default function WelcomeScreen() {
               height: 56,
             }}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing(1.5),
-                paddingHorizontal: spacing(3.5),
-                borderRightWidth: 1,
-                borderRightColor: colors.border,
-                height: '100%',
-              }}
-            >
-              <AppText variant="body">🇲🇰</AppText>
-              <AppText variant="bodyStrong">+389</AppText>
+            <View style={{ paddingLeft: spacing(3.5) }}>
+              <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
             </View>
             <TextInput
-              value={phone}
-              onChangeText={(v) => setPhone(v.replace(/[^\d ]/g, '').slice(0, 12))}
-              placeholder={t('welcome.phonePlaceholder')}
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t('welcome.emailPlaceholder')}
               placeholderTextColor={colors.textTertiary}
-              keyboardType="phone-pad"
-              accessibilityLabel={t('welcome.phonePlaceholder')}
-              style={{ flex: 1, paddingHorizontal: spacing(3.5), ...typeScale.body, color: colors.text }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              accessibilityLabel={t('welcome.emailPlaceholder')}
+              style={{ flex: 1, paddingHorizontal: spacing(3), ...typeScale.body, color: colors.text }}
             />
           </View>
 
+          {sendFailed ? (
+            <AppText variant="bodySm" color="danger" align="center">
+              {t('error.body')}
+            </AppText>
+          ) : null}
+
           <Button
             title={t('common.continue')}
-            onPress={() => {
-              haptic.medium();
-              router.push({ pathname: '/verify', params: { phone: `+389 ${phone.trim()}` } });
-            }}
+            onPress={requestCode}
             disabled={!canContinue}
-            iconLeft={<Ionicons name="arrow-forward" size={17} color={colors.onPrimary} />}
+            loading={sending}
+            iconLeft={!sending ? <Ionicons name="arrow-forward" size={17} color={colors.onPrimary} /> : undefined}
             fullWidth
           />
 

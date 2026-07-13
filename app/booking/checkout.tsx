@@ -21,6 +21,7 @@ import { venueApi } from '@/data/api';
 import { bookingApi, DateTakenError } from '@/data/bookingApi';
 import { useBookingDraft } from '@/stores/bookingDraft';
 import { useBookings } from '@/stores/bookings';
+import { useIsAuthenticated } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 type Step = 1 | 2 | 3;
@@ -43,6 +44,7 @@ export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
 
   const draft = useBookingDraft();
+  const authed = useIsAuthenticated();
   const upsertBooking = useBookings((s) => s.upsert);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [step, setStep] = useState<Step>(1);
@@ -72,6 +74,7 @@ export default function CheckoutScreen() {
     };
   }, [draft.venueId, attempt]);
 
+  if (!authed) return <Redirect href="/welcome" />;
   if (!draft.venueId || !draft.dateISO || !draft.menuTierId) return <Redirect href="/(tabs)" />;
 
   if (loadFailed) {

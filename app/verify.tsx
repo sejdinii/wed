@@ -9,34 +9,54 @@ import { Screen } from '@/design/components/Screen';
 import { useTheme } from '@/design/theme';
 import { radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
+import { authApi, BadCodeError } from '@/data/authApi';
+import { API_MODE } from '@/data/api';
 import { usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 const CODE_LENGTH = 6;
 
 /**
- * OTP entry — six boxes backed by one hidden input.
- * MOCK: any 6 digits verify successfully; real SMS OTP ships with the
- * backend behind this same screen.
+ * Code entry — six boxes backed by one hidden input. API mode exchanges the
+ * emailed code for a real session (and claims this device's bookings); the
+ * offline mock accepts any 6 digits, as before.
  */
 export default function VerifyScreen() {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { email, devCode } = useLocalSearchParams<{ email: string; devCode?: string }>();
   const { colors } = useTheme();
   const { t } = useI18n();
   const router = useRouter();
   const setPhoneVerified = usePreferences((s) => s.setPhoneVerified);
+  const setAuth = usePreferences((s) => s.setAuth);
 
   const [code, setCode] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [failure, setFailure] = useState<'bad_code' | 'network' | null>(null);
   const inputRef = useRef<TextInput>(null);
+
+  const submit = async (digits: string) => {
+    if (checking) return;
+    setChecking(true);
+    setFailure(null);
+    try {
+      const destination = typeof email === 'string' ? email : '';
+      const { token, user } = await authApi.verify(destination, digits);
+      setAuth(token, user);
+      if (!API_MODE) setPhoneVerified(destination); // keep the mock gate in sync offline
+      haptic.success();
+      router.replace('/(tabs)');
+    } catch (e) {
+      haptic.error();
+      setCode('');
+      setFailure(e instanceof BadCodeError ? 'bad_code' : 'network');
+      setChecking(false);
+    }
+  };
 
   const onChange = (raw: string) => {
     const digits = raw.replace(/\D/g, '').slice(0, CODE_LENGTH);
     setCode(digits);
-    if (digits.length === CODE_LENGTH) {
-      haptic.success();
-      setPhoneVerified(typeof phone === 'string' ? phone : '');
-      router.replace('/(tabs)');
-    }
+    if (digits.length === CODE_LENGTH) void submit(digits);
   };
 
   return (
@@ -65,8 +85,22 @@ export default function VerifyScreen() {
           {t('verify.title')}
         </AppText>
         <AppText variant="body" color="secondary" align="center">
-          {t('verify.body', { phone: typeof phone === 'string' ? phone : '' })}
+          {t('verify.body', { destination: typeof email === 'string' ? email : '' })}
         </AppText>
+
+        {typeof devCode === 'string' && devCode ? (
+          // Dev servers return the code so the demo needs no inbox. Never
+          // present in production responses.
+          <AppText variant="caption" color="tertiary" align="center">
+            {t('verify.devCode', { code: devCode })}
+          </AppText>
+        ) : null}
+
+        {failure ? (
+          <AppText variant="bodySm" color="danger" align="center">
+            {failure === 'bad_code' ? t('verify.badCode') : t('error.body')}
+          </AppText>
+        ) : null}
 
         {/* Code boxes over a hidden input */}
         <Pressable
@@ -107,8 +141,14 @@ export default function VerifyScreen() {
           style={{ position: 'absolute', opacity: 0, height: 1, width: 1, ...typeScale.body }}
         />
 
-        {/* MOCK — resend does nothing until real SMS lands. */}
-        <PressableScale onPress={() => haptic.select()} hapticFeedback={null} accessibilityRole="button">
+        <PressableScale
+          onPress={() => {
+            haptic.select();
+            if (typeof email === 'string') void authApi.requestCode(email).catch(() => {});
+          }}
+          hapticFeedback={null}
+          accessibilityRole="button"
+        >
           <AppText variant="bodyStrong" color="brand">
             {t('verify.resend')}
           </AppText>

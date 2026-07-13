@@ -12,6 +12,7 @@ import { API_MODE, API_URL, venueApi } from './api';
 import { simulateVenueSide } from './venueBot';
 import { getDeviceId } from '@/lib/deviceId';
 import { useBookings } from '@/stores/bookings';
+import { usePreferences } from '@/stores/preferences';
 
 /** The venue+date is already held by someone else (server 409). */
 export class DateTakenError extends Error {
@@ -56,8 +57,12 @@ class HttpBookingApi implements BookingApi {
 
   private async request<T>(path: string, init?: RequestInit): Promise<{ status: number; body: T }> {
     if (shouldFail()) throw new Error('Simulated network failure');
+    const token = usePreferences.getState().authToken;
     const res = await fetch(`${this.baseUrl}${path}`, {
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
       ...init,
     });
     const body = res.status === 204 ? (undefined as T) : ((await res.json()) as T);

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/design/components/AppText';
@@ -14,6 +14,7 @@ import { haptic } from '@/lib/haptics';
 import type { ChatMessage } from '@/domain/types';
 import { useBookings } from '@/stores/bookings';
 import { useMessages } from '@/stores/messages';
+import { useIsAuthenticated } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 /**
@@ -29,11 +30,13 @@ export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
 
   const booking = useBookings((s) => s.bookings.find((b) => b.id === bookingId));
+  const authed = useIsAuthenticated();
   const thread = useMessages((s) => s.messages.filter((m) => m.bookingId === bookingId));
   const send = useMessages((s) => s.send);
   const [text, setText] = useState('');
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
+  if (!authed) return <Redirect href="/welcome" />;
   if (!booking) {
     return (
       <Screen>

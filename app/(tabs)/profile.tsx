@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,7 +10,10 @@ import { ListItemRow } from '@/design/components/ListItemRow';
 import { Screen } from '@/design/components/Screen';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
+import { haptic } from '@/lib/haptics';
+import { authApi } from '@/data/authApi';
 import { useBookings } from '@/stores/bookings';
+import { usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 /**
@@ -22,6 +25,30 @@ export default function ProfileScreen() {
   const { t } = useI18n();
   const router = useRouter();
   const latestBooking = useBookings((s) => s.bookings[0]);
+  const authUser = usePreferences((s) => s.authUser);
+  const setAuthUser = usePreferences((s) => s.setAuthUser);
+  const [becomingVendor, setBecomingVendor] = useState(false);
+  const isVendor = authUser?.role === 'vendor' || authUser?.role === 'both';
+
+  // Self-serve for MVP: becoming a partner flips the role and opens Business
+  // mode; the real onboarding funnel (listing creation) is Wave 3.
+  const openBusiness = async () => {
+    if (becomingVendor) return;
+    if (isVendor) {
+      router.push('/(business)/today');
+      return;
+    }
+    setBecomingVendor(true);
+    try {
+      const user = await authApi.becomeVendor();
+      setAuthUser(user);
+      router.push('/(business)/today');
+    } catch {
+      haptic.error();
+    } finally {
+      setBecomingVendor(false);
+    }
+  };
 
   return (
     <Screen>
@@ -74,7 +101,7 @@ export default function ProfileScreen() {
           <ListItemRow icon="settings-outline" title={t('profile.settings')} chevron onPress={() => router.push('/settings')} />
         </View>
 
-        {/* Partner funnel */}
+        {/* Partner funnel → Business mode (Wave 2) */}
         <View style={{ backgroundColor: colors.mint, borderRadius: radius.lg, padding: spacing(4), gap: spacing(2) }}>
           <AppText variant="heading" style={{ color: colors.onMint }}>
             {t('profile.partnerTitle')}
@@ -82,8 +109,14 @@ export default function ProfileScreen() {
           <AppText variant="bodySm" style={{ color: colors.onMint }}>
             {t('profile.partnerBody')}
           </AppText>
-          {/* PLACEHOLDER — links to the partner onboarding funnel once the portal exists. */}
-          <Button title={t('profile.partnerCta')} onPress={() => {}} variant="dark" size="md" style={{ marginTop: spacing(1), alignSelf: 'flex-start' }} />
+          <Button
+            title={isVendor ? t('business.open') : t('profile.partnerCta')}
+            onPress={openBusiness}
+            loading={becomingVendor}
+            variant="dark"
+            size="md"
+            style={{ marginTop: spacing(1), alignSelf: 'flex-start' }}
+          />
         </View>
       </ScrollView>
     </Screen>
