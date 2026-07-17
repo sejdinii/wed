@@ -18,6 +18,8 @@ export default function BusinessLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="today" />
+      <Stack.Screen name="create-venue" />
+      <Stack.Screen name="calendar" />
     </Stack>
   );
 }

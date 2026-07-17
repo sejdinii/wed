@@ -8,7 +8,7 @@ import { haptic } from '@/lib/haptics';
 import { WEEKDAYS_SHORT, mondayIndex, toISODate } from '@/lib/dates';
 import type { Locale } from '@/i18n';
 
-export type DayState = 'available' | 'limited' | 'booked';
+export type DayState = 'available' | 'limited' | 'booked' | 'blocked';
 
 export interface CalendarMonthProps {
   /** Any date inside the month to render. */
@@ -19,10 +19,18 @@ export interface CalendarMonthProps {
   minISO: string;
   /**
    * Per-day availability driving the colored dot:
-   * green = available, amber = limited, red = booked (not selectable).
+   * green = available, amber = limited, red = booked, gray = blocked by the
+   * venue (3-state vendor calendar — booked ≠ blocked, accepted deviation
+   * from Booking.com's binary calendar).
    */
   stateFor: (iso: string) => DayState;
   onSelect: (iso: string) => void;
+  /**
+   * Couple mode (default false): booked days are not selectable. Vendor mode
+   * (true): every non-past day is tappable — the vendor toggles blocks and
+   * inspects bookings; the CALLER decides what a tap means per state.
+   */
+  allowSelectingAll?: boolean;
 }
 
 /**
@@ -30,7 +38,7 @@ export interface CalendarMonthProps {
  * solid violet circle for the selected day, per the v3 design.
  * Monday-first weeks; past days render muted with no dot.
  */
-export function CalendarMonth({ month, locale, selectedISO, minISO, stateFor, onSelect }: CalendarMonthProps) {
+export function CalendarMonth({ month, locale, selectedISO, minISO, stateFor, onSelect, allowSelectingAll = false }: CalendarMonthProps) {
   const { colors } = useTheme();
 
   const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -51,6 +59,7 @@ export function CalendarMonth({ month, locale, selectedISO, minISO, stateFor, on
     available: colors.success,
     limited: colors.amber,
     booked: colors.danger,
+    blocked: colors.textTertiary,
   };
 
   return (
@@ -72,7 +81,7 @@ export function CalendarMonth({ month, locale, selectedISO, minISO, stateFor, on
 
             const isPast = cell.iso < minISO;
             const state = stateFor(cell.iso);
-            const selectable = !isPast && state !== 'booked';
+            const selectable = !isPast && (allowSelectingAll || state !== 'booked');
             const selected = cell.iso === selectedISO;
 
             return (

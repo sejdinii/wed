@@ -16,10 +16,12 @@ export interface MonthPagerProps {
   minISO: string;
   stateFor: (iso: string) => DayState;
   onSelect: (iso: string) => void;
+  /** Vendor mode: every non-past day is tappable (see CalendarMonth). */
+  allowSelectingAll?: boolean;
 }
 
 /** Calendar with month navigation. Owns the visible-month state. */
-export function MonthPager({ locale, selectedISO, minISO, stateFor, onSelect }: MonthPagerProps) {
+export function MonthPager({ locale, selectedISO, minISO, stateFor, onSelect, allowSelectingAll }: MonthPagerProps) {
   const { colors } = useTheme();
   const { t } = useI18n();
   const [month, setMonth] = useState<Date>(() => {
@@ -70,6 +72,7 @@ export function MonthPager({ locale, selectedISO, minISO, stateFor, onSelect }: 
         minISO={minISO}
         stateFor={stateFor}
         onSelect={onSelect}
+        allowSelectingAll={allowSelectingAll}
       />
     </View>
   );

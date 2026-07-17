@@ -47,10 +47,29 @@ export const venues = pgTable('venues', {
   responseTimeHours: integer('response_time_hours').notNull().default(24),
   featured: boolean('featured').notNull().default(false),
   kaparPolicy: jsonb('kapar_policy').$type<KaparPolicy>().notNull(),
-  /** Wave 0 stopgap: seeded blocked dates. Wave 1 derives availability from bookings. */
+  /** Wave 0 stopgap: seeded blocked dates. Vendor-managed blocks live in
+   * blocked_dates (Wave 3); this jsonb remains only for seed venues. */
   bookedDates: jsonb('booked_dates').$type<string[]>().notNull().default([]),
+  /** Wave 3: vendor-created venues carry their owner; seeds stay unowned. */
+  ownerUserId: uuid('owner_user_id').references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Vendor-blocked dates — the "closed by the venue" third calendar state
+ * (accepted deviation from Booking.com's binary calendar: booked ≠ blocked).
+ * Booked dates come from the bookings table; these are manual closures.
+ */
+export const blockedDates = pgTable(
+  'blocked_dates',
+  {
+    venueId: text('venue_id')
+      .notNull()
+      .references(() => venues.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.venueId, t.date] })],
+);
 
 export const halls = pgTable(
   'halls',

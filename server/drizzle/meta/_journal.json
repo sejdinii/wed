@@ -15,6 +15,13 @@
       "when": 1783899095914,
       "tag": "0001_yellow_catseye",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784249277665,
+      "tag": "0002_chemical_gravity",
+      "breakpoints": true
     }
   ]
 }
