@@ -347,6 +347,8 @@ export const mk = {
   'verify.badCode': 'Кодот не е точен или е истечен. Обиди се повторно.',
   'verify.devCode': 'Дев-код: {code}',
   'verify.resend': 'Прати повторно',
+  'verify.resent': 'Пративме нов код.',
+  'verify.resendCooldown': 'Прати повторно за {s} с',
 
   'home.headline1': 'Најди ја совршената',
   'home.headline2': 'свадбена сала',

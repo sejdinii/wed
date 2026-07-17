@@ -345,6 +345,8 @@ export const sq: Dict = {
   'verify.badCode': 'Kodi është i gabuar ose ka skaduar. Provo përsëri.',
   'verify.devCode': 'Kodi dev: {code}',
   'verify.resend': 'Dërgo përsëri',
+  'verify.resent': 'Dërguam kod të ri.',
+  'verify.resendCooldown': 'Ridërgo pas {s} s',
 
   'home.headline1': 'Gjeje sallën perfekte',
   'home.headline2': 'të dasmës',

@@ -175,15 +175,17 @@ export default function CreateVenueScreen() {
         <AppText variant="caption" color="tertiary">
           {t('vendor.descHint')}
         </AppText>
+      </ScrollView>
 
+      {/* The error lives NEXT TO the pinned CTA — appended to the scroll
+          content it lands ~1200px below the fold and the failed submit reads
+          as a spinner that just stops (critic finding, 2026-07-17). */}
+      <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: spacing(4), gap: spacing(2.5), backgroundColor: colors.surface }}>
         {error ? (
-          <AppText variant="bodySm" color="danger">
+          <AppText variant="bodySm" color="danger" align="center">
             {error}
           </AppText>
         ) : null}
-      </ScrollView>
-
-      <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: spacing(4), backgroundColor: colors.surface }}>
         <Button title={t('vendor.createCta')} onPress={submit} disabled={!valid} loading={saving} fullWidth />
       </View>
     </Screen>

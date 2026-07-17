@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -32,7 +32,38 @@ export default function VerifyScreen() {
   const [code, setCode] = useState('');
   const [checking, setChecking] = useState(false);
   const [failure, setFailure] = useState<'bad_code' | 'network' | null>(null);
+  // The code on screen must always be the one the server will accept — a
+  // resend mints a NEW code, so the route param is only the initial value.
+  const [devCodeShown, setDevCodeShown] = useState(typeof devCode === 'string' ? devCode : '');
+  const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => setCooldown((s) => s - 1), 1000);
+    return () => clearInterval(timer);
+  }, [cooldown > 0]);
+
+  const resend = async () => {
+    if (resending || cooldown > 0 || typeof email !== 'string') return;
+    setResending(true);
+    setFailure(null);
+    try {
+      const { devCode: fresh } = await authApi.requestCode(email);
+      if (fresh) setDevCodeShown(fresh);
+      setResent(true);
+      setCooldown(30);
+      setCode('');
+      haptic.success();
+    } catch {
+      haptic.error();
+      setFailure('network');
+    } finally {
+      setResending(false);
+    }
+  };
 
   const submit = async (digits: string) => {
     if (checking) return;
@@ -88,11 +119,17 @@ export default function VerifyScreen() {
           {t('verify.body', { destination: typeof email === 'string' ? email : '' })}
         </AppText>
 
-        {typeof devCode === 'string' && devCode ? (
+        {devCodeShown ? (
           // Dev servers return the code so the demo needs no inbox. Never
           // present in production responses.
           <AppText variant="caption" color="tertiary" align="center">
-            {t('verify.devCode', { code: devCode })}
+            {t('verify.devCode', { code: devCodeShown })}
+          </AppText>
+        ) : null}
+
+        {resent && !failure ? (
+          <AppText variant="bodySm" color="success" align="center">
+            {t('verify.resent')}
           </AppText>
         ) : null}
 
@@ -142,15 +179,15 @@ export default function VerifyScreen() {
         />
 
         <PressableScale
-          onPress={() => {
-            haptic.select();
-            if (typeof email === 'string') void authApi.requestCode(email).catch(() => {});
-          }}
-          hapticFeedback={null}
+          onPress={() => void resend()}
+          disabled={resending || cooldown > 0}
+          hapticFeedback="select"
           accessibilityRole="button"
+          accessibilityState={{ disabled: resending || cooldown > 0, busy: resending }}
+          accessibilityLabel={t('verify.resend')}
         >
-          <AppText variant="bodyStrong" color="brand">
-            {t('verify.resend')}
+          <AppText variant="bodyStrong" color={cooldown > 0 || resending ? 'tertiary' : 'brand'}>
+            {cooldown > 0 ? t('verify.resendCooldown', { s: cooldown }) : t('verify.resend')}
           </AppText>
         </PressableScale>
       </View>

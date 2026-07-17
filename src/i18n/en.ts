@@ -345,6 +345,8 @@ export const en: Dict = {
   'verify.badCode': 'That code is wrong or expired. Try again.',
   'verify.devCode': 'Dev code: {code}',
   'verify.resend': 'Resend code',
+  'verify.resent': 'A new code is on its way.',
+  'verify.resendCooldown': 'Resend in {s}s',
 
   'home.headline1': 'Find your perfect',
   'home.headline2': 'wedding venue',
