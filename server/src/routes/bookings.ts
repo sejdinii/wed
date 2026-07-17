@@ -13,7 +13,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { userFromRequest } from '../auth.js';
 import { db } from '../db/client.js';
-import { bookingEvents, bookings, halls, menuTiers, venues } from '../db/schema.js';
+import { blockedDates, bookingEvents, bookings, halls, menuTiers, venues } from '../db/schema.js';
 
 type BookingRow = typeof bookings.$inferSelect;
 type EventRow = typeof bookingEvents.$inferSelect;
@@ -128,9 +128,16 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
 
     const venueRow = await db.select().from(venues).where(eq(venues.id, b.venueId)).limit(1).then((r) => r[0]);
     if (!venueRow || !venueRow.published) return reply.code(404).send({ error: 'venue_not_found' });
-    // Seeded blocks (legacy bookedDates) still count until Wave 3 gives venues
-    // a real availability editor.
+    // Seeded blocks (legacy bookedDates) still count.
     if (venueRow.bookedDates.includes(b.eventDateISO)) return reply.code(409).send({ error: 'date_taken' });
+    // Wave 3: vendor-blocked dates refuse a new booking the same as a seeded block.
+    const blockedRow = await db
+      .select()
+      .from(blockedDates)
+      .where(and(eq(blockedDates.venueId, b.venueId), eq(blockedDates.date, b.eventDateISO)))
+      .limit(1)
+      .then((r) => r[0]);
+    if (blockedRow) return reply.code(409).send({ error: 'date_taken' });
 
     const [hallRows, tierRows] = await Promise.all([
       db.select().from(halls).where(eq(halls.venueId, b.venueId)),
