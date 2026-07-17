@@ -9,9 +9,13 @@
 
 ## URGENT
 (founder: only genuine wave-invalidating discoveries; otherwise leave empty)
-Nothing wave-invalidating found in this pass (2026-07-12) — all three tasked
-items below are confirmatory/refining, not category-shift discoveries. Nothing
-appended here.
+Nothing wave-invalidating found in this pass (2026-07-17) — all three tasked
+items below (decline UX/SLA, notification-center patterns, direct-fetch retry)
+are refining/confirmatory for Wave 4 polish and the Wave 5 notification story,
+not category-shift discoveries. Nothing appended here.
+
+Nothing wave-invalidating found in the 2026-07-12 pass either — all three
+items completed that run were confirmatory/refining. Nothing appended then.
 
 ## TASKED RESEARCH (orchestrator → founder, 2026-07-10 — highest priority)
 # STATUS 2026-07-12: all three items completed this run. Full findings filed
@@ -43,6 +47,11 @@ appended here.
 | 3-state availability calendar (open / closed-by-vendor / booked-by-a-couple) instead of Booking.com's binary green(open)/red(closed) | Booking.com's Extranet calendar only distinguishes open (green) vs closed (red); a closed date is reopened by clicking the "Rooms to sell" row. There is no visually distinct third state for "unavailable because an existing reservation holds it" vs. "host chose to block it" — those are different actions for a vendor (can't just click to reopen a booked date) and must not be cloned as identical. Source: [Updating your rates and availability – Booking.com for Partners](https://partner.booking.com/en-us/help/rates-availability/extranet-calendar/updating-your-rates-and-availability), [Updating your availability calendar on the Extranet](https://partner.booking.com/en-us/help/rates-availability/extranet-calendar/setting-availability-planner), retrieved 2026-07-12. | blocking — WAVE 3 P0 "availability calendar: open/close dates, see booked dates" already lists this as a requirement; this finding is the deviation rationale to write into that wave spec (gap already tracked: "bookedDates hardcoded in venues.ts") | WAVE 3 availability calendar screen; WAVE 1 double-booking/availability domain logic (booked-date source of truth) | ACCEPTED 2026-07-12 — written into the Wave 3 calendar spec as the deviation rationale (3 states, booked ≠ closed) |
 | Per-venue rates/cancellation-policy editor, keyed to calendar date-ranges (seasonal), not one flat per-venue override | Booking.com lets hosts pick Fully-flexible vs. Customized per rate plan and bulk-apply across properties. Airbnb went further in March 2026 with a "Seasonal Cancellation Policy" letting hosts vary the policy by date range directly from the listing calendar. Source: [Setting up cancellation policies – Booking.com for Partners](https://partner.booking.com/en-us/help/policies-payments/policies/setting-cancellation-policies), [Can I set up the same policies for all of my properties at once?](https://partner.booking.com/en-us/help/policies-payments/policies/can-i-set-same-policies-all-my-properties-all-once), [Airbnb Cancellation Policy 2026: What Replaced Strict – BNBCalc](https://www.bnbcalc.com/blog/airbnb-business/how-to-start-airbnb/airbnb-cancellation-policy-2025-update), [Reducing Cancellations & Vacancies – RentLivePlay 2026 guide](https://www.rentliveplay.com/investor-and-owner-resources/reducing-cancellations-and-vacancies-smarter-airbnb-booking-policies), retrieved 2026-07-12. | later — refines the ALREADY-QUEUED WAVE 6 P2 "per-venue kapar policy editor" rather than adding new scope: build it keyed to a date range from day one so wedding-season vs. off-season policies don't require a second migration | WAVE 6 P2 item only — spec refinement, no new wave | ACCEPTED 2026-07-12 — Wave 6 P2 reworded: policy editor keyed to date ranges from day one |
 | Viber as an additive vendor-notification channel (not a replacement for Expo push) | Viber has claimed 90%+ phone penetration in several Balkan markets and is the dominant business-messaging channel regionally (order confirmations, booking receipts); North Macedonia is among the CEFTA markets where >90% of users use a messaging app like Viber/Messenger/WhatsApp, above the EU-27 average of 75%. An older or less tech-savvy venue owner in MK is more likely to reliably see a Viber message than to have the vendor app open. Source: [Viber for Business – messageflow.com](https://messageflow.com/blog/viber-for-business-multi-channel-marketing/), [Internet Activities – North Macedonia, ecommerce4all.mk](https://ecommerce4all.mk/en/ecommerce-data/internet-activities/), [Viber Market: An In-Depth Look — messaggio.com](https://messaggio.com/blog/viber-market-an-in-depth-look-at-messenger-impact-in-europe/), retrieved 2026-07-12. | later (post-MVP; Expo push is the correct WAVE 4 default) | WAVE 4 push notification service only — additive channel; the WAVE 2 auth endpoint is already specced "channel-pluggable" for SMS, the same principle should extend here with no rework | ACCEPTED-LATER 2026-07-12 — Wave 4 spec notes Viber as additive channel, post-MVP |
+| Decline requires a REQUIRED reason category (short fixed list) + optional free text — not a fully-optional reason, and not free-text-only | Booking.com's Request-to-Book (RtB) API — the product whose shape Kapar's request→24h-respond flow already clones (see DESIGN INTEL item 7, 2026-07-12) — mandates a reason code on every decline; choosing the `NOT_COMFORTABLE` code additionally REQUIRES a free-text field. Source: [Modifying booking requests – developers.booking.com](https://developers.booking.com/connectivity/docs/request-to-book/modifying-booking-requests) (WebSearch-indexed synthesis; direct WebFetch returned 403 — see RISKS retry note), retrieved 2026-07-17. By contrast Airbnb hosts are NOT required to give guests a reason at all, and Airbnb's own help center admits guests sometimes get no explanation. Source: [Why your home reservation request may have been declined by the host](https://www.airbnb.com/help/article/3592), [What happens if your home reservation request is declined or expires](https://www.airbnb.com/help/article/315), retrieved 2026-07-17. | blocking-adjacent — directly specifies the shape of Wave 4 P0 "request inbox: confirm / decline with reason", which is currently unspecified as required-vs-optional | Wave 4 request-inbox decline UI + the decline API payload/schema (already-queued item — this refines its shape, does not add new scope) | |
+| Kapar should clone Booking.com's Request-to-Book decline model, NOT the standard instant-book Extranet — the two Booking.com surfaces disagree on whether "decline" exists at all | Booking.com's standard Extranet/instant-book flow has NO reject mechanism for a legitimate reservation — bookings are "confirmed instantly" and "have to be honored by the property"; a partner can only cancel in narrow cases (suspected fraud, guest no-show, guest-initiated, payment failure), never a plain "no". Source: [Can I reject a reservation? – Booking.com for Partners](https://partner.booking.com/en-us/help/reservations/manage/can-i-reject-reservation), retrieved 2026-07-17 (WebSearch synthesis; direct WebFetch 403). This is the OPPOSITE of the RtB decline-with-reason-code model cited in the row above. Kapar's flow is inherently request-first (venue must accept before a hold becomes a confirmed booking), so RtB — not instant-book — is the correct reference product; conflating the two would risk designing a decline flow that Booking.com itself doesn't allow on its primary product. | valuable (risk-avoidance / clarifies which of two Booking.com surfaces Wave 4 should actually clone) | Wave 4 request-inbox spec — a clarifying note, no code impact beyond the row above | |
+| Vendor response-rate stat (not just a per-request countdown) reserved on the bookings dashboard from day one | Airbnb Superhost status requires a 90%+ response rate within 24h; response rate (% of inquiries/requests answered within 24h, trailing 30 days) is shown as a persistent percentage on the host's Performance/Insights dashboard and independently affects search-ranking placement, separate from the Superhost badge itself. Status is re-evaluated quarterly (Jan/Apr/Jul/Oct). Source: [Improve your response rate and response time – Airbnb Help Center](https://www.airbnb.com/help/article/430), [Airbnb Superhost Response Time Requirements (2026) – rapideyeinspections.com](https://rapideyeinspections.com/blog/airbnb-superhost-response-time-requirements/), [Airbnb Metrics: How to Read Your Host Dashboard – Hostfully](https://www.hostfully.com/blog/airbnb-metrics/), [Airbnb Superhost Requirements (June 2026) – Avantstay](https://avantstay.com/blog/airbnb-superhost-requirements/), retrieved 2026-07-17. | later (valuable, not Wave 4 P0-blocking) — but the data must start flowing NOW so a future search-ranking or "top responder" badge feature doesn't need a historical backfill | Wave 4 vendor bookings dashboard: log response timestamp per request into the existing `booking_events` audit trail (Wave 1) — cheap addition, no couple-side UI change | |
+| Server-backed in-app notification center — a real `notifications` table + unread count, not the current hardcoded client-side dot | Uber's push-notification architecture persists every notification server-side via a "Persistor" component writing to a sharded, per-user "Push Inbox" database — the in-app inbox is the durable source of truth, independent of whether a push was ever delivered; push is a delivery channel layered on top, not the storage layer. Source: [The Design of Uber's Push Notification System – blog.quastor.org](https://blog.quastor.org/p/design-ubers-push-notification-system), retrieved 2026-07-17. Generic notification-center guidance is explicit that unread badges "should be earned" — an unread indicator not backed by a real event is an attention-tax anti-pattern. Source: [How to Build a Notification Center for Web & Mobile Apps – Courier](https://www.courier.com/blog/how-to-build-a-notification-center-for-web-and-mobile-apps), [In-App Notification Center for SaaS: Design Patterns and Implementation Guide – SuprSend](https://www.suprsend.com/post/in-app-notification-center), retrieved 2026-07-17. | blocking-adjacent for the Wave 5 notification story — this is the direct fix for the already-flagged FEATURES.md gap "home bell with a HARDCODED unread dot ... fake signal — remove first", AND it is scoped to exactly what Kapar can build without push infra (Wave 5's constraint: no device to verify Expo push against) | Wave 5 notification-center slice: new server table + `GET /v1/notifications` + mark-read endpoint, reading off the SAME lifecycle events Wave 1/4 already emit (booking created/confirmed/declined/kapar-received/cancelled/expired — no new event taxonomy to invent); app: couple-home + Business-Today header bell. Does not block Wave 4 — Wave 4's confirm/decline/kapar-received actions become the first event producers, consumed later | |
+| Notification bell nests inside the existing home header — no standalone "Notifications" tab | Airbnb's 2025 host-app redesign ships exactly 5 tabs — Today, Calendar, Listings, Messages, Menu — with no dedicated Notifications tab; the guest-side Airbnb app also nests its bell icon INSIDE the Inbox tab rather than promoting it to top-level nav. Source: [What Airbnb's new Today host tab... says about the company's priorities – Rental Scale-Up](https://www.rentalscaleup.com/what-airbnbs-new-today-host-tab-and-price-comparison-tool-with-booking-com-say-the-companys-priorities/), retrieved 2026-07-17; bell-inside-Inbox placement per Airbnb Community/forum threads ([airbnbase.com](https://airbnbase.com/unread-inbox-messages/), [community.withairbnb.com](https://community.withairbnb.com/t5/Ask-about-your-listing/Iphone-app-notification-won-t-go-away/td-p/190675)), retrieved 2026-07-17 — lower-confidence, forum-sourced, not an official spec page, flagged as such. Booking.com Pulse likewise keeps notification preferences under "More → Notifications" rather than a top-level tab. Source: [How can I set up push notifications in Pulse? – Partner Help](https://partnerhelp.booking.com/hc/en-us/articles/115003802245-How-can-I-set-up-push-notifications-in-Pulse-), retrieved 2026-07-17. | valuable — settles an IA question before Wave 5 builds the notification-center screen, consistent with the already-ACCEPTED Pulse-style "today feed" pattern (2026-07-12 pass) | Wave 5 notification-center slice only: `app/(tabs)/index.tsx` header + Business Today header (both already exist — this is a placement decision, not a new screen/tab) | |
 
 ## DESIGN INTEL
 
@@ -131,7 +140,12 @@ appended here.
    This is the single strongest validating reference for the WAVE 1 P0 "24h
    request / payBy lapse" TTL design already in the gap queue — cite this
    pattern explicitly in that wave spec instead of re-deriving the SLA from
-   memory (Rule 2 compliance).
+   memory (Rule 2 compliance). UPGRADE 2026-07-17: this RtB product is also
+   where the decline-reason mechanism lives — see the new DESIGN INTEL
+   subsection "VENDOR DECLINE UX + RESPONSE-SLA PATTERNS" below, which
+   confirms RtB (not the standard instant-book Extranet, item 3 above's
+   "Can I reject a reservation?" source) is the correct decline-flow
+   reference for Kapar.
 
 8. **Pulse app home screen / notification model.** Home = a single "Today's
    activity" stream combining arrivals, departures, new bookings,
@@ -146,7 +160,10 @@ appended here.
    status change": this finding gives the exact event set to notify on —
    new request, confirm, decline, cancellation, message, review — and
    validates the single-stream "Today" home screen pattern (see PROPOSED
-   FEATURES row above).
+   FEATURES row above). UPGRADE 2026-07-17: notification PREFERENCES in
+   Pulse live under "More → Notifications" (settings screen, not a
+   top-level tab) — see the new "IN-APP NOTIFICATION CENTER PATTERNS"
+   subsection below. Source: [How can I set up push notifications in Pulse? – Partner Help](https://partnerhelp.booking.com/hc/en-us/articles/115003802245-How-can-I-set-up-push-notifications-in-Pulse-), retrieved 2026-07-17.
 
 ### CANCELLATION & PAY-AT-VISIT CHECKOUT PATTERNS, 2025/26 — retrieved 2026-07-12
 
@@ -200,6 +217,144 @@ appended here.
   from this research pass — both screens already clone the "dedicated
   outcome-preview page shown before the couple commits/cancels" pattern
   common to all three references above.
+
+### VENDOR DECLINE UX + RESPONSE-SLA PATTERNS — retrieved 2026-07-17
+### (WebSearch synthesis only — direct WebFetch to partner.booking.com and
+### developers.booking.com returned HTTP 403 again this session, same as
+### 2026-07-12; see RISKS retry note below)
+
+- **Booking.com has two genuinely different products with two different
+  decline models — do not conflate them.** (1) The standard instant-book
+  Extranet has NO reject mechanism for a legitimate reservation at all:
+  "Reservations can't be rejected... All bookings are confirmed instantly
+  and have to be honored by the property." A partner may only cancel in
+  narrow cases — suspected fraud, guest no-show, guest-initiated, payment
+  failure — never a plain "no". Source: [Can I reject a reservation? – Booking.com for Partners](https://partner.booking.com/en-us/help/reservations/manage/can-i-reject-reservation), retrieved 2026-07-17.
+  (2) The separate Request-to-Book (RtB) API/product — already Kapar's
+  validated reference for the 24h-response TTL shape (DESIGN INTEL item 7,
+  2026-07-12) — DOES have a formal decline: "Connectivity providers must
+  include an option for partners to select the reason for rejecting a
+  request. If a partner chooses the reason NOT_COMFORTABLE, they must also
+  provide an additional rejection reason text field." Rejection-reason
+  detail is kept private, used only to improve the product. Source:
+  [Modifying booking requests – developers.booking.com](https://developers.booking.com/connectivity/docs/request-to-book/modifying-booking-requests), retrieved 2026-07-17.
+  Kapar mapping: Kapar's request→24h-respond flow is RtB-shaped, not
+  instant-book-shaped, so RtB is the correct decline reference — a fixed,
+  required reason category (e.g. date no longer available / capacity
+  mismatch / budget mismatch / other) with mandatory free text only on the
+  "other"/ambiguous category, mirroring RtB's `NOT_COMFORTABLE` rule.
+
+- **Airbnb: reason disclosure to the guest is inconsistent, not a firm
+  requirement.** Hosts are not required to explain a decline; Airbnb's own
+  help center states a guest may get no explanation, e.g. when the host's
+  calendar is stale or the reason is otherwise undisclosed. When hosts do
+  explain, common categories are: guest has no reviews or negative reviews;
+  an unaccommodatable special request (early check-in, late checkout,
+  extra guests); dates that aren't actually available (stale calendar); or
+  unclear/incomplete guest communication. After a decline, the guest's
+  authorization hold is released or a charge is refunded automatically, the
+  guest is notified by email/app, and they are simply "free to book another
+  place" — no evidence was found of Airbnb automatically surfacing a
+  "similar listings" carousel specifically triggered by that decline (this
+  is an absence-of-evidence finding, not a confirmed non-feature). Source:
+  [Why your home reservation request may have been declined by the host](https://www.airbnb.com/help/article/3592), [What happens if your home reservation request is declined or expires](https://www.airbnb.com/help/article/315), retrieved 2026-07-17.
+  Kapar mapping: Kapar should be STRICTER than Airbnb here — ALWAYS require
+  and show a reason, never allow a silent decline. This is the opposite of
+  a Booking.com/Airbnb parity argument: it is a cold-start-trust argument
+  specific to Kapar's small MK market (see RISKS → "Instagram/Viber DM is
+  the real incumbent" from the 2026-07-12 pass — a personal, explained "no"
+  over DM is the norm couples already expect; an unexplained in-app decline
+  would read as worse than the free channel Kapar is trying to displace).
+  Do NOT build an automated "suggested alternative venues" feature off a
+  decline yet — no category leader was found doing this reliably, and it
+  would be new, unvalidated scope for Wave 4.
+
+- **Response-rate/response-time SLA surfacing (Airbnb).** Superhost status
+  requires a 90%+ response rate within 24 hours PLUS a 4.8+ overall rating,
+  evaluated quarterly (January/April/July/October). "Response rate" (%% of
+  new inquiries/requests answered within 24h, trailing 30 days) is shown as
+  a persistent percentage on the host's Performance/Insights dashboard and
+  independently affects search-ranking placement — a host below 90% loses
+  Superhost eligibility, gets suppressed in search, and erodes guest trust,
+  regardless of whether they keep Superhost status at all. "Response time"
+  (how fast, once inside the 24h window) matters less to official status
+  but still nudges algorithmic ranking. Source: [Improve your response rate and response time – Airbnb Help Center](https://www.airbnb.com/help/article/430), [Airbnb Superhost Response Time Requirements (2026) – rapideyeinspections.com](https://rapideyeinspections.com/blog/airbnb-superhost-response-time-requirements/), [Airbnb Metrics: How to Read Your Host Dashboard – Hostfully](https://www.hostfully.com/blog/airbnb-metrics/), [Airbnb Superhost Requirements (June 2026) – Avantstay](https://avantstay.com/blog/airbnb-superhost-requirements/), retrieved 2026-07-17.
+  No evidence was found of a live per-request "countdown chip" UI on
+  Airbnb's or Booking.com Pulse's request screens specifically (searched
+  directly, came up empty) — the SLA is enforced by the 24h TTL mechanism
+  already built (Wave 1) and disclosed as a trailing aggregate stat, not a
+  ticking on-screen clock. Kapar mapping: keep the existing 24h TTL as the
+  hard enforcement mechanism (already Wave-1-shipped); ADD a trailing
+  response-rate percentage to the Wave 4 vendor dashboard fed by the
+  already-existing `booking_events` audit trail, rather than inventing a
+  per-card countdown-timer widget with no strong reference basis.
+
+- **OpenTable: diner-side no-show enforcement is well-documented, restaurant-
+  side decline-reason UI is not.** Confirmed: 4 no-shows in 12 months
+  auto-deactivates a diner's OpenTable account; OpenTable itself layered on
+  a 2% service fee on no-show/cancellation charges through H2 2025–early
+  2026 (cross-ref the 2026-07-12 pass). No public documentation was found
+  describing canned decline-reason categories a restaurant selects when
+  turning down a reservation or waitlist request — flagging this as a gap
+  in the OpenTable reference pack rather than evidence that no such UI
+  exists. Source: [OpenTable no-show policy](https://help.opentable.com/s/article/What-is-your-no-show-policy-1505261059461?language=en_US), [OpenTable 2% service fee rollout — The Inquirer, Jan 2026](https://www.inquirer.com/food/restaurants/opentable-service-fee-no-show-restaurant-reservation-20260114.html), retrieved 2026-07-17 (re-confirmed from 2026-07-12).
+
+### IN-APP NOTIFICATION CENTER PATTERNS (TWO-SIDED MARKETPLACES) — retrieved
+### 2026-07-17. Scoped deliberately to what Kapar can build now: an in-app
+### center backed by a real server table, no push infra yet (Wave 5's Expo-
+### push slice is deferred — no device to verify against in this environment,
+### per the orchestrator's framing of this pass).
+
+- **Neither Airbnb nor Booking.com Pulse promotes notifications to a
+  standalone top-level tab.** Airbnb's 2025 host-app redesign ships exactly
+  5 tabs — Today, Calendar, Listings, Messages, Menu — with no dedicated
+  Notifications tab; daily action items surface inside "Today" and
+  messages inside "Messages". Source: [What Airbnb's new Today host tab and price comparison tool with Booking.com say about the company's priorities – Rental Scale-Up](https://www.rentalscaleup.com/what-airbnbs-new-today-host-tab-and-price-comparison-tool-with-booking-com-say-the-companys-priorities/), retrieved 2026-07-17. On the guest side, the bell icon lives INSIDE the Inbox tab rather than
+  being promoted to top-level nav (lower-confidence: sourced from Airbnb
+  Community/forum threads and a third-party how-to page, not an official
+  Airbnb spec page — flagged as such). Source: [Airbnb Community – notification won't go away](https://community.withairbnb.com/t5/Ask-about-your-listing/Iphone-app-notification-won-t-go-away/td-p/190675), [How to remove unread message notification from Airbnb inbox – airbnbase.com](https://airbnbase.com/unread-inbox-messages/), retrieved 2026-07-17. Booking.com Pulse keeps notification preferences under "More →
+  Notifications" (a settings screen), not a top-level tab either. Source:
+  [How can I set up push notifications in Pulse? – Partner Help](https://partnerhelp.booking.com/hc/en-us/articles/115003802245-How-can-I-set-up-push-notifications-in-Pulse-), retrieved 2026-07-17.
+  Kapar mapping: put the bell inside the existing couple-home header and
+  the Business-Today header — both screens already exist and already
+  follow the ACCEPTED Pulse-style "today feed" IA (2026-07-12 pass) — do
+  NOT add a 6th bottom tab for this.
+
+- **Pulse's notification event set (cross-referenced from the 2026-07-12
+  pass, item 8, now confirmed with the settings-location detail added):**
+  new bookings, cancellations, guest queries/messages, and reviews are the
+  opt-in push categories, configured under More → Notifications. Source:
+  [How can I set up push notifications in Pulse? – Partner Help](https://partnerhelp.booking.com/hc/en-us/articles/115003802245-How-can-I-set-up-push-notifications-in-Pulse-), [Everything you need to know about the Pulse app](https://partner.booking.com/en-us/help/account-and-log/extranet-pulse/everything-you-need-know-about-pulse-app), retrieved 2026-07-17 / 2026-07-12.
+  Kapar mapping: this is the same event set Kapar's booking lifecycle
+  already produces into `booking_events` — no new taxonomy needs inventing
+  for the notification center's content.
+
+- **General notification-center architecture (Courier, SuprSend, PatternFly,
+  Uber engineering).** Standard interface pattern across products: a bell
+  icon with a count/dot badge in the header/nav, opening a reverse-
+  chronological panel or full screen; each item shows content + a relative
+  timestamp + read/unread state and deep-links to its source object;
+  read/unread state is persisted server-side, not just client-locally, so
+  it's consistent across sessions and devices. Guidance is explicit that
+  "badges should be earned" — an unread indicator not tied to a genuine
+  event is an attention-tax anti-pattern to avoid. Source: [How to Build a Notification Center for Web & Mobile Apps – Courier](https://www.courier.com/blog/how-to-build-a-notification-center-for-web-and-mobile-apps), [In-App Notification Center for SaaS: Design Patterns and Implementation Guide – SuprSend](https://www.suprsend.com/post/in-app-notification-center), [PatternFly – Notification badge design guidelines](https://www.patternfly.org/components/notification-badge/design-guidelines/), retrieved 2026-07-17.
+  Uber's production architecture is the most directly useful reference for
+  Kapar's specific constraint (in-app now, push later): a "Persistor"
+  component writes every notification to a durable, per-user "Push Inbox"
+  database FIRST, regardless of whether/how it's delivered; push is a
+  delivery channel added on top of that storage layer, not the thing that
+  defines whether a notification "happened." Source: [The Design of Uber's Push Notification System – blog.quastor.org](https://blog.quastor.org/p/design-ubers-push-notification-system), retrieved 2026-07-17.
+  Kapar mapping (direct build recommendation for whichever wave picks this
+  up): a `notifications` table (recipient_user_id, type, payload, read_at,
+  created_at) written by the SAME server-side lifecycle events that already
+  exist or are landing in Wave 4 (booking created/confirmed/declined/
+  kapar-received/cancelled/expired); `GET /v1/notifications` (paginated,
+  read/unread) + a mark-read endpoint; app polls/refetches on screen focus
+  (no websocket — nothing here needs true real-time, and there's no push
+  infra yet to justify the complexity). When Expo push ships later, it
+  becomes an additive delivery channel reading the SAME table — zero
+  rearchitecture, directly resolving the FEATURES.md gap "home bell with a
+  HARDCODED unread dot ... Bell dot is a fake signal — remove first."
 
 ## RISKS
 
@@ -270,6 +425,24 @@ appended here.
   MCP access restored before the WAVE 6 design-critic visual lock, to catch
   any pixel-level layout details (exact spacing, iconography, copy strings)
   that snippet-level search synthesis cannot surface.
+  RETRY 2026-07-17 (as tasked): re-tested both a neutral control (WebFetch
+  on en.wikipedia.org/wiki/Booking.com) and a direct target
+  (partner.booking.com/.../reviewing-information-about-reservations-made-your-property)
+  — both returned HTTP 403 again, same proxy-level signature as 2026-07-12.
+  Additionally: no `mcp__Mobbin__*` tools (e.g. search_flows, search_screens)
+  were present in this session's available toolset at all — this isn't a
+  403/permission block to work around, the Mobbin MCP server simply isn't
+  wired into this environment this session, so there was nothing to retry
+  against for that specific channel. No DESIGN INTEL items could be
+  upgraded to screenshot-level fidelity this pass; all three tasked items
+  for 2026-07-17 (decline UX/SLA, notification-center patterns, this retry)
+  are filed as WebSearch-synthesis-only, same confidence tier as 2026-07-12.
+  Per the orchestrator's instruction, NOT retrying again this pass — this
+  is now confirmed twice (2026-07-12, 2026-07-17) as a standing environment
+  limitation, not a transient blip. If a THIRD pass is scheduled before
+  Wave 6's visual lock, check first whether the environment has changed
+  (Mobbin MCP tools present in the toolset, or a non-403 response on the
+  Wikipedia control) before spending budget on the same retry again.
 
 ## REJECTED (with reasons - do not re-propose without new evidence)
 - Reviews write path (was Wave 5 P1) — CUT from MVP by user 2026-07-12.
@@ -347,7 +520,7 @@ appended here.
 
 ## WAVE 3 — vendor extranet core — ✅ CORE SHIPPED 2026-07-17 (server slice by
 ## a worktree wave-implementer, reviewed + merged; app slice by orchestrator;
-## exit criteria met: vendor created a listing a couple found AND booked)
+## exit criteria met: vendor created a listing a couple could find and book)
 - [ ] P1 — logout row in settings (clearAuth exists, nothing calls it).
   CARRY-OVER → Wave 4 (critic re-flagged 2026-07-17, see profile-honesty item).
 - [ ] P2 — hygiene: uuid-derived test dates in bookings.test.ts; periodic
@@ -386,15 +559,28 @@ appended here.
   incl. hallAdj, or drop the inline multiplication).
 - [ ] P0 — request inbox: confirm (sets payBy) / decline with reason.
   Design-intel cross-ref: field/column set validated against Booking.com's
-  reservation list + detail — see DESIGN INTEL item 2.
+  reservation list + detail — see DESIGN INTEL item 2. UPGRADE 2026-07-17:
+  decline reason must be a REQUIRED fixed category (not optional, not
+  free-text-only) per the new "VENDOR DECLINE UX + RESPONSE-SLA PATTERNS"
+  DESIGN INTEL — clone Booking.com's Request-to-Book decline-reason-code
+  model, NOT the standard Extranet (which has no decline at all) — see the
+  two matching PROPOSED FEATURES rows filed 2026-07-17.
 - [ ] P0 — "kapar received" confirmation at the visit (venue side) — makes the
   `confirmed` state real for the first time.
 - [ ] P0 — vendor bookings dashboard (upcoming, cancellations with refund owed
-  per the platform ladder).
+  per the platform ladder). ADDITION 2026-07-17: reserve a slot for a
+  trailing response-rate stat fed by `booking_events` timestamps (Airbnb
+  Superhost-style %, see DESIGN INTEL) — cheap to log now, expensive to
+  backfill later; not P0, but land the timestamp logging in this wave's
+  server work regardless.
 - [ ] P0 — Expo push notifications both sides for every status change (gap:
   "notification bell is a no-op"; gap: "24h lapse needs background enforcement").
   Design-intel cross-ref: Pulse app's event set (new request, confirm,
   decline, cancellation, message, review) — see DESIGN INTEL item 8.
+  NOTE 2026-07-17 (per orchestrator's Wave 5 framing): this P0 line covers
+  ONLY the push-delivery layer once device verification is possible; the
+  server-backed `notifications` table + in-app center is scoped as its own
+  Wave 5 item below so the notification STORY isn't blocked on push infra.
 - [ ] P1 — venue-initiated cancellation UI (domain already enforces 100% back).
 
 ## WAVE 5 — couple-side completeness (Booking.com-grade)
@@ -409,6 +595,15 @@ appended here.
 - [ ] P0 — map view on results (VenueMap exists; the pill is a dead end).
 - [ ] P0 — real couple↔vendor chat replacing the scripted bot (gaps: "one-way
   theatre", "hardcoded Macedonian bot messages").
+- [ ] P0 — NEW 2026-07-17: server-backed in-app notification center (real
+  `notifications` table + unread count) to replace the hardcoded bell dot —
+  directly resolves the FEATURES.md gap "Bell dot is a fake signal — remove
+  first." See DESIGN INTEL "IN-APP NOTIFICATION CENTER PATTERNS" and the two
+  matching PROPOSED FEATURES rows filed 2026-07-17. Scope note: this is the
+  in-app/server half of "the notification story" only — Expo push (device-
+  verified delivery) stays a separate Wave 4/later line item per the
+  orchestrator's framing; build the table + endpoints so push is additive
+  later with zero rearchitecture (Uber Push-Inbox reference).
 - [ ] P1 — dead-button elimination: terms/privacy static pages, help/support,
   add-to-calendar via expo-calendar; notification preferences wired to real
   push opt-ins.
@@ -418,8 +613,10 @@ appended here.
 - [ ] P0 — design-critic full pass (both modes, light/dark, all locales) + fix
   round, incorporating the founder's verified references. Re-run a founder
   research pass with direct WebFetch/Mobbin MCP before this pass locks visual
-  detail — see RISKS → "RESEARCH-PROCESS RISK" (2026-07-12): this round's
-  extranet/Pulse findings are sourced from search snippets, not screenshots.
+  detail — see RISKS → "RESEARCH-PROCESS RISK": confirmed BLOCKED on TWO
+  separate passes now (2026-07-12 and 2026-07-17) — treat as a standing
+  environment limitation, not a transient blip, and check whether the
+  environment has changed before scheduling a third identical retry.
 - [ ] P0 — e2e critical-path suite (Playwright web now, native later) + server
   load smoke; CI-gated.
 - [ ] P0 — production deploy: EU region, backups, Sentry, rate limiting,
