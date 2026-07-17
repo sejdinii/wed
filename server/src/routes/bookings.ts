@@ -53,6 +53,7 @@ function toBooking(row: BookingRow, events: EventRow[], venue: Pick<VenueRow, 'n
     ...(row.refundPercent !== null && row.refundAmountMkd !== null
       ? { refund: { percent: row.refundPercent, amountMkd: row.refundAmountMkd } }
       : {}),
+    ...(row.cancelReason ? { cancelReason: row.cancelReason } : {}),
     timeline: events
       .sort((a, b) => a.at.getTime() - b.at.getTime())
       .map((e) => ({ status: e.status as BookingStatus, at: e.at.toISOString() })),
@@ -63,7 +64,8 @@ function toBooking(row: BookingRow, events: EventRow[], venue: Pick<VenueRow, 'n
   };
 }
 
-async function loadBooking(id: string): Promise<Booking | undefined> {
+/** Exported for the vendor routes (Wave 4) — single serialization path. */
+export async function loadBooking(id: string): Promise<Booking | undefined> {
   const row = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1).then((r) => r[0]);
   if (!row) return undefined;
   const [events, venue] = await Promise.all([
@@ -88,8 +90,10 @@ async function loadBooking(id: string): Promise<Booking | undefined> {
 /**
  * The transition writer — THE only way a booking changes state. Enforces the
  * domain state machine and appends the audit event in one transaction.
+ * Exported for the vendor routes (Wave 4); route modules NEVER update
+ * bookings.status directly.
  */
-async function applyTransition(
+export async function applyTransition(
   id: string,
   to: BookingStatus,
   patch: Partial<typeof bookings.$inferInsert> = {},

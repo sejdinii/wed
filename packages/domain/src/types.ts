@@ -239,6 +239,8 @@ export interface Booking {
   kaparPaidAtISO?: string;
   /** Stamped at cancellation so the outcome stays stable in the UI. */
   refund?: { percent: number; amountMkd: number };
+  /** Vendor-supplied reason on decline/venue-cancel (Wave 4); shown to the couple verbatim. */
+  cancelReason?: string;
   timeline: BookingTimelineEvent[];
   /** Sent to the venue for confirmation and the contract. */
   contactName: string;

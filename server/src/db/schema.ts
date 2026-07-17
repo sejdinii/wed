@@ -176,6 +176,9 @@ export const bookings = pgTable(
     kaparPaidAt: timestamp('kapar_paid_at', { withTimezone: true }),
     refundPercent: integer('refund_percent'),
     refundAmountMkd: integer('refund_amount_mkd'),
+    // Wave 4: optional vendor-supplied reason on decline/cancel — shown to the
+    // couple; free text, never parsed.
+    cancelReason: text('cancel_reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
