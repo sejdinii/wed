@@ -345,25 +345,45 @@ appended here.
   dev provider logs codes + returns devCode outside production).
 - [ ] P1 — personal-info editor (dead button on profile).
 
-## WAVE 3 — vendor extranet core (GATED on the extranet research pack)
+## WAVE 3 — vendor extranet core — ✅ CORE SHIPPED 2026-07-17 (server slice by
+## a worktree wave-implementer, reviewed + merged; app slice by orchestrator;
+## exit criteria met: vendor created a listing a couple found AND booked)
 - [ ] P1 — logout row in settings (clearAuth exists, nothing calls it).
+  CARRY-OVER → Wave 4 (critic re-flagged 2026-07-17, see profile-honesty item).
 - [ ] P2 — hygiene: uuid-derived test dates in bookings.test.ts; periodic
   cleanup for sessions/auth_codes tables.
 # GATE CLEARED 2026-07-12 — see DESIGN INTEL "VENDOR EXTRANET" above for the
 # sourced reference pack this wave should design from.
-- [ ] P0 — listing editor: content ×3 locales, photos (upload → R2), amenities,
-  house rules; draft → submit → published flow ("Become a partner" dead button).
-  Design-intel cross-ref: Booking.com's property-content editor is a single
-  auto-generated description (not multi-locale) — Kapar's locale-tab
-  deviation from that pattern is deliberate, see DESIGN INTEL item 4.
-- [ ] P0 — halls & menus editor (per-guest pricing, hall adjustments).
-- [ ] P0 — availability calendar: open/close dates, see booked dates
-  (gap: "bookedDates hardcoded in venues.ts"). Design-intel cross-ref: build
-  3 states (open/closed-by-vendor/booked), NOT Booking.com's binary green/red
-  — see DESIGN INTEL item 3 and the matching PROPOSED FEATURES row.
-- [ ] P1 — admin approve/publish flag + minimal review tooling.
+- [x] P0 — listing CREATION shipped 2026-07-17: one-form funnel → unpublished
+  draft → self-serve publish (deviation logged in FEATURES DECISIONS) →
+  publicly findable + bookable. NOT YET: edit UI, photos→R2 (blocked on R2
+  account), locale-tab content editing — carry-over below.
+- [ ] P0 CARRY-OVER → Wave 4 — halls & menus editor (per-guest pricing, hall
+  adjustments); listing edit UI (PATCH endpoint exists, no screen); locale-tab
+  content editing (DESIGN INTEL item 4).
+- [x] P0 — availability calendar SHIPPED 2026-07-17 with the 3-state deviation
+  (open/blocked-by-vendor/booked); blocks enforced server-side on the booking
+  path; public bookedDates = seed ∪ active bookings ∪ vendor blocks.
+- [ ] P1 CARRY-OVER → Wave 6 — admin approve/publish flag + minimal review
+  tooling (publishing is self-serve until then, deviation 2026-07-17).
 
 ## WAVE 4 — vendor booking operations
+# CRITIC INTAKE 2026-07-17 (verdict FIX FIRST; demo-breakers fixed in-session,
+# these are the correctness/honesty items that must not wait past next wave):
+- [ ] P0 — refund-preview repository violation: cancel.tsx + booking/[id].tsx
+  read the static VENUES seed → wrong/opposite refund copy for vendor-created
+  venues. Fetch via venueApi (or return the preview from the server).
+- [ ] P0 — profile honesty + logout: show authUser.email (not "Guest /
+  accounts coming soon / stored on this device"), sign-out row (absorbs the
+  Wave-3 carry-over), visible error when becomeVendor fails.
+- [ ] P1 — HeartButton out of the card pressables (nested <button> hydration
+  errors ×3 VenueCard variants; zero-console-error standard).
+- [ ] P1 — settings honesty: notification toggles labelled "arrives with push"
+  (or cut until the push slice ships), currency row truthful about EUR
+  display, Terms/Privacy either static pages or de-affordanced (also on
+  /welcome's consent line).
+- [ ] P1 — booking-detail estimate line arithmetic (show exact per-guest EUR
+  incl. hallAdj, or drop the inline multiplication).
 - [ ] P0 — request inbox: confirm (sets payBy) / decline with reason.
   Design-intel cross-ref: field/column set validated against Booking.com's
   reservation list + detail — see DESIGN INTEL item 2.
@@ -378,6 +398,14 @@ appended here.
 - [ ] P1 — venue-initiated cancellation UI (domain already enforces 100% back).
 
 ## WAVE 5 — couple-side completeness (Booking.com-grade)
+# CRITIC INTAKE 2026-07-17 — polish batch for the dead-button/honesty sweep:
+# home bell's hardcoded unread dot (fake signal — first to go), verify checking
+# state + mail icon + back hitSlop + "******" width, RefundTimeline today-marker
+# with applicable-rung highlight (pairs with the ACCEPTED grace-row item),
+# Badge success → green tokens, inline fontSize/color token violations,
+# localized a11y labels replacing "♥ ↥ 🔔", checkout title de-piping +
+# reassurance-copy dedupe (×4 → ×2) + kapar-bar skeleton instead of "€0",
+# per-section edit links on the review step.
 - [ ] P0 — map view on results (VenueMap exists; the pill is a dead end).
 - [ ] P0 — real couple↔vendor chat replacing the scripted bot (gaps: "one-way
   theatre", "hardcoded Macedonian bot messages").
