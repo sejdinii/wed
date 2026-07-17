@@ -63,7 +63,9 @@ export const usePreferences = create<PreferencesState>()(
       setPhoneVerified: (phoneNumber) => set({ phoneVerified: true, phoneNumber }),
       setAuth: (authToken, authUser) => set({ authToken, authUser }),
       setAuthUser: (authUser) => set({ authUser }),
-      clearAuth: () => set({ authToken: null, authUser: null }),
+      // Also drops the mock-mode gate (phoneVerified) so sign-out actually
+      // signs out in BOTH modes — useIsAuthenticated reads one or the other.
+      clearAuth: () => set({ authToken: null, authUser: null, phoneVerified: false, phoneNumber: '' }),
     }),
     {
       name: 'kapar.preferences.v2',

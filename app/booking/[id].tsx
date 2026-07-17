@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,11 +14,10 @@ import { Screen } from '@/design/components/Screen';
 import { RefundTimeline } from '@/components/RefundTimeline';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
-import { formatMkd, formatMkdBare } from '@/lib/money';
+import { formatMkd } from '@/lib/money';
 import { formatLongDate, formatMediumDate } from '@/lib/dates';
-import type { BookingStatus } from '@/domain/types';
-import { VENUES } from '@/data/venues';
-import { API_MODE } from '@/data/api';
+import type { BookingStatus, Venue } from '@/domain/types';
+import { API_MODE, venueApi } from '@/data/api';
 import { bookingApi } from '@/data/bookingApi';
 import { useBookings } from '@/stores/bookings';
 import { useIsAuthenticated } from '@/stores/preferences';
@@ -46,8 +45,11 @@ export default function BookingDetailsScreen() {
   const router = useRouter();
 
   const booking = useBookings((s) => s.bookings.find((b) => b.id === id));
-  const venue = booking ? VENUES.find((v) => v.id === booking.venueId) : undefined;
   const authed = useIsAuthenticated();
+  // Repository, not the seed file — vendor-created venues exist only on the
+  // server. The screen degrades gracefully (no ladder, tier '—') if missing.
+  const [venue, setVenue] = useState<Venue | undefined>(undefined);
+  const venueId = booking?.venueId;
 
   useEffect(() => {
     if (!API_MODE || typeof id !== 'string') return;
@@ -58,6 +60,20 @@ export default function BookingDetailsScreen() {
       })
       .catch(() => {});
   }, [id]);
+
+  useEffect(() => {
+    if (!venueId) return;
+    let cancelled = false;
+    venueApi
+      .getVenue(venueId)
+      .then((v) => {
+        if (!cancelled) setVenue(v);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [venueId]);
 
   if (!authed) return <Redirect href="/welcome" />;
   if (!booking) {
@@ -180,11 +196,11 @@ export default function BookingDetailsScreen() {
           {t('details.payment')}
         </AppText>
         <View style={{ backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing(3.5) }}>
+          {/* No inline "guests × price" multiplication: the total is server-
+              computed (incl. hall adjustment) and per-guest EUR rounding made
+              the arithmetic visibly not add up (critic finding). */}
           <PayRow
-            label={t('details.estimateLine', {
-              guests: booking.guestCount,
-              price: tier ? formatMkdBare(tier.pricePerGuestMkd, locale) : '—',
-            })}
+            label={t('details.estimateLine', { guests: booking.guestCount })}
             value={formatMkd(booking.estimatedTotalMkd, locale)}
           />
           <PayRow

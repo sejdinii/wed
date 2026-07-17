@@ -28,7 +28,18 @@ export default function ProfileScreen() {
   const authUser = usePreferences((s) => s.authUser);
   const setAuthUser = usePreferences((s) => s.setAuthUser);
   const [becomingVendor, setBecomingVendor] = useState(false);
+  const [partnerFailed, setPartnerFailed] = useState(false);
   const isVendor = authUser?.role === 'vendor' || authUser?.role === 'both';
+
+  // Identity is the signed-in account, not booking guesswork: name when a
+  // booking supplied one, the account email as the always-true second line.
+  const displayName = latestBooking?.contactName ?? authUser?.email ?? t('profile.guest');
+
+  const signOut = () => {
+    haptic.select();
+    usePreferences.getState().clearAuth();
+    router.replace('/welcome');
+  };
 
   // Self-serve for MVP: becoming a partner flips the role and opens Business
   // mode; the real onboarding funnel (listing creation) is Wave 3.
@@ -39,12 +50,14 @@ export default function ProfileScreen() {
       return;
     }
     setBecomingVendor(true);
+    setPartnerFailed(false);
     try {
       const user = await authApi.becomeVendor();
       setAuthUser(user);
       router.push('/today');
     } catch {
       haptic.error();
+      setPartnerFailed(true);
     } finally {
       setBecomingVendor(false);
     }
@@ -72,10 +85,19 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={24} color={colors.onMint} />
           </View>
           <View style={{ flex: 1, gap: 2 }}>
-            <AppText variant="heading">{latestBooking?.contactName ?? t('profile.guest')}</AppText>
-            <AppText variant="bodySm" color="secondary">
-              {t('profile.guestHint')}
+            <AppText variant="heading" numberOfLines={1}>
+              {displayName}
             </AppText>
+            {/* Signed-in truth beats the retired "accounts coming soon" copy. */}
+            {authUser && displayName !== authUser.email ? (
+              <AppText variant="bodySm" color="secondary" numberOfLines={1}>
+                {authUser.email}
+              </AppText>
+            ) : !authUser ? (
+              <AppText variant="bodySm" color="secondary">
+                {t('profile.guestHint')}
+              </AppText>
+            ) : null}
           </View>
         </View>
 
@@ -99,6 +121,12 @@ export default function ProfileScreen() {
           />
           <Divider inset={12} />
           <ListItemRow icon="settings-outline" title={t('profile.settings')} chevron onPress={() => router.push('/settings')} />
+          {authUser ? (
+            <>
+              <Divider inset={12} />
+              <ListItemRow icon="log-out-outline" title={t('profile.signOut')} onPress={signOut} />
+            </>
+          ) : null}
         </View>
 
         {/* Partner funnel → Business mode (Wave 2) */}
@@ -117,6 +145,11 @@ export default function ProfileScreen() {
             size="md"
             style={{ marginTop: spacing(1), alignSelf: 'flex-start' }}
           />
+          {partnerFailed ? (
+            <AppText variant="bodySm" color="danger">
+              {t('error.body')}
+            </AppText>
+          ) : null}
         </View>
       </ScrollView>
     </Screen>

@@ -229,7 +229,7 @@ export const sq: Dict = {
   'details.whatsIncluded': 'Çfarë përfshin kuverti',
   'details.cancellationTerms': 'Kushtet e anulimit',
   'details.payment': 'Pagesa',
-  'details.estimateLine': 'Vlerësimi ({guests} × {price})',
+  'details.estimateLine': 'Vlerësimi për {guests} mysafirë',
   'details.kaparDue': 'Kapari — gjatë vizitës',
   'details.kaparDueBy': 'Kapari — gjatë vizitës deri më {date}',
   'details.kaparPaidAtVenue': 'Kapari — paguar në sallë',
@@ -265,7 +265,8 @@ export const sq: Dict = {
 
   'profile.title': 'Profili',
   'profile.guest': 'Vizitor',
-  'profile.guestHint': 'Llogaritë me hyrje vijnë së shpejti — gjithçka ruhet në këtë pajisje.',
+  'profile.guestHint': 'Hyr për t’i parë rezervimet e tua në çdo pajisje.',
+  'profile.signOut': 'Dilni',
   'profile.account': 'Llogaria',
   'profile.personalInfo': 'Të dhënat personale',
   'profile.messages': 'Mesazhet',

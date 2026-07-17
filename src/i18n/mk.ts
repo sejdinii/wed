@@ -231,7 +231,7 @@ export const mk = {
   'details.whatsIncluded': 'Што вклучува кувертот',
   'details.cancellationTerms': 'Услови за откажување',
   'details.payment': 'Плаќање',
-  'details.estimateLine': 'Проценка ({guests} × {price})',
+  'details.estimateLine': 'Проценка за {guests} гости',
   'details.kaparDue': 'Капар — при посета',
   'details.kaparDueBy': 'Капар — при посета до {date}',
   'details.kaparPaidAtVenue': 'Капар — платен во салата',
@@ -267,7 +267,8 @@ export const mk = {
 
   'profile.title': 'Профил',
   'profile.guest': 'Гостин',
-  'profile.guestHint': 'Профили со најава доаѓаат наскоро — сè се чува на уредов.',
+  'profile.guestHint': 'Најави се за да ги гледаш твоите резервации на секој уред.',
+  'profile.signOut': 'Одјави се',
   'profile.account': 'Сметка',
   'profile.personalInfo': 'Лични податоци',
   'profile.messages': 'Пораки',

@@ -119,23 +119,8 @@ export default function HomeScreen() {
             </AppText>
             <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
           </PressableScale>
-          {/* PLACEHOLDER — notification center lands with push in v0.3. */}
-          <PressableScale onPress={() => {}} hapticFeedback="select" accessibilityRole="button" accessibilityLabel="🔔">
-            <View>
-              <Ionicons name="notifications-outline" size={22} color={colors.text} />
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 1,
-                  right: 1,
-                  width: 7,
-                  height: 7,
-                  borderRadius: 4,
-                  backgroundColor: colors.primary,
-                }}
-              />
-            </View>
-          </PressableScale>
+          {/* The bell returns WITH the notification center (Wave 5) — a dead
+              pressable with a hardcoded unread dot was a fake signal. */}
         </View>
 
         {/* Headline: ink first line, violet second line + heart */}

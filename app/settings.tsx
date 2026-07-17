@@ -104,7 +104,9 @@ export default function SettingsScreen() {
             value={prefs.themePreference}
             onChange={prefs.setThemePreference}
           />
-          <ListItemRow icon="cash-outline" title={t('settings.currency')} value="МКД (ден.)" />
+          {/* Honest value: every price in the app renders in EUR (the quoting
+              currency MK venues use with couples) — see src/lib/money.ts. */}
+          <ListItemRow icon="cash-outline" title={t('settings.currency')} value="EUR (€)" />
         </View>
 
         {/* Notifications — refund-window reminders are a trust feature, not spam. */}

@@ -229,7 +229,7 @@ export const en: Dict = {
   'details.whatsIncluded': 'What the menu includes',
   'details.cancellationTerms': 'Cancellation terms',
   'details.payment': 'Payment',
-  'details.estimateLine': 'Estimate ({guests} × {price})',
+  'details.estimateLine': 'Estimate for {guests} guests',
   'details.kaparDue': 'Kapar — at your visit',
   'details.kaparDueBy': 'Kapar — at your visit by {date}',
   'details.kaparPaidAtVenue': 'Kapar — paid at the venue',
@@ -265,7 +265,8 @@ export const en: Dict = {
 
   'profile.title': 'Profile',
   'profile.guest': 'Guest',
-  'profile.guestHint': 'Accounts are coming soon — everything is stored on this device.',
+  'profile.guestHint': 'Sign in to see your bookings on any device.',
+  'profile.signOut': 'Sign out',
   'profile.account': 'Account',
   'profile.personalInfo': 'Personal information',
   'profile.messages': 'Messages',

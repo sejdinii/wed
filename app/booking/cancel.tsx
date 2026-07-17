@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { Button } from '@/design/components/Button';
 import { EmptyState } from '@/design/components/EmptyState';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
+import { Skeleton } from '@/design/components/Skeleton';
 import { RefundTimeline } from '@/components/RefundTimeline';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
@@ -20,7 +21,8 @@ import {
   REFUND_GRACE_MIN_DAYS_BEFORE_EVENT,
   sortedRefundTiers,
 } from '@/domain/kapar';
-import { VENUES } from '@/data/venues';
+import type { Venue } from '@/domain/types';
+import { venueApi } from '@/data/api';
 import { bookingApi } from '@/data/bookingApi';
 import { useBookings } from '@/stores/bookings';
 import { useIsAuthenticated } from '@/stores/preferences';
@@ -47,6 +49,30 @@ export default function CancelBookingScreen() {
   const authed = useIsAuthenticated();
   const [cancelling, setCancelling] = useState(false);
   const [cancelFailed, setCancelFailed] = useState(false);
+  // The venue comes from the REPOSITORY, never the static seed file: for
+  // vendor-created venues the seed knows nothing and a seed-based preview
+  // could assert the opposite of the server's refund math (critic finding).
+  // undefined = loading · null = fetch failed · Venue = loaded.
+  const [venue, setVenue] = useState<Venue | null | undefined>(undefined);
+  const [venueAttempt, setVenueAttempt] = useState(0);
+  const venueId = booking?.venueId;
+
+  useEffect(() => {
+    if (!venueId) return;
+    let cancelled = false;
+    setVenue(undefined);
+    venueApi
+      .getVenue(venueId)
+      .then((v) => {
+        if (!cancelled) setVenue(v ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setVenue(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [venueId, venueAttempt]);
 
   const cancellable =
     booking && (booking.status === 'pending_kapar' || booking.status === 'reserved' || booking.status === 'confirmed');
@@ -66,7 +92,6 @@ export default function CancelBookingScreen() {
     );
   }
 
-  const venue = VENUES.find((v) => v.id === booking.venueId);
   const kaparPaid = Boolean(booking.kaparPaidAtISO);
   const today = todayISO();
 
@@ -76,7 +101,7 @@ export default function CancelBookingScreen() {
   const refundMkd = percent !== null ? Math.round((booking.kaparMkd * percent) / 100) : null;
   const graceApplies =
     percent === 100 &&
-    venue !== undefined &&
+    !!venue &&
     booking.kaparPaidAtISO !== undefined &&
     // Would the ladder alone have given less? Then it was the grace window.
     refundPercentFor(venue.kaparPolicy, booking.eventDateISO, today, null) < 100;
@@ -132,8 +157,22 @@ export default function CancelBookingScreen() {
           </AppText>
         </View>
 
-        {/* Outcome preview */}
-        {!kaparPaid ? (
+        {/* Outcome preview. With kapar paid, the numbers REQUIRE the venue's
+            policy from the repository — never render a guessed outcome. */}
+        {kaparPaid && venue === undefined ? (
+          <Skeleton height={92} radius={radius.md} />
+        ) : kaparPaid && venue === null ? (
+          <View style={{ backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing(3.5), gap: spacing(2) }}>
+            <AppText variant="bodySm" color="secondary">
+              {t('error.body')}
+            </AppText>
+            <PressableScale onPress={() => setVenueAttempt((n) => n + 1)} hapticFeedback="select" accessibilityRole="button">
+              <AppText variant="bodyStrong" color="brand">
+                {t('common.retry')}
+              </AppText>
+            </PressableScale>
+          </View>
+        ) : !kaparPaid ? (
           <View style={{ backgroundColor: colors.mint, borderRadius: radius.md, padding: spacing(3.5), gap: spacing(1.5) }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
               <Ionicons name="checkmark-circle" size={17} color={colors.success} />
@@ -215,7 +254,16 @@ export default function CancelBookingScreen() {
           backgroundColor: colors.surface,
         }}
       >
-        <Button title={t('cancel.confirmCta')} onPress={confirmCancel} loading={cancelling} variant="danger" fullWidth />
+        {/* With kapar paid, committing is blocked until the authoritative
+            policy loaded — the couple must never cancel on unknown terms. */}
+        <Button
+          title={t('cancel.confirmCta')}
+          onPress={confirmCancel}
+          loading={cancelling}
+          disabled={kaparPaid && !venue}
+          variant="danger"
+          fullWidth
+        />
         <Button title={t('cancel.keepCta')} onPress={() => router.back()} variant="ghost" fullWidth />
       </View>
     </Screen>
