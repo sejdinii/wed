@@ -279,3 +279,133 @@ describe('vendor venue management + calendar', () => {
     expect(unblock.json().blocked).not.toContain(blockedOnlyDate);
   });
 });
+
+// Wave 4: server-side vendor booking actions (confirm/decline/kapar-received/cancel).
+// Date namespace derived from a fresh UUID's char codes (not Date.now()%n) so
+// repeated runs never collide — each test also gets its own freshly-created
+// venue, so cross-test collisions are impossible regardless, but the spec
+// asks for uuid-derived hygiene explicitly.
+function uuidDay(): string {
+  const u = randomUUID();
+  let sum = 0;
+  for (let i = 0; i < 8; i++) sum += u.charCodeAt(i);
+  return String((sum % 27) + 1).padStart(2, '0');
+}
+
+async function signUpVendorWithPublishedVenue(): Promise<{ token: string; venueId: string }> {
+  const token = await signUpVendor();
+  const created = await app.inject({ method: 'POST', url: '/v1/vendor/venues', headers: authHeaders(token), payload: venueBody() });
+  const venue = created.json();
+  await app.inject({ method: 'POST', url: '/v1/vendor/my-venue/publish', headers: authHeaders(token), payload: { published: true } });
+  return { token, venueId: venue.id };
+}
+
+describe('vendor booking actions (Wave 4)', () => {
+  it('confirm → kapar-received → cancel: payBy set, 100% refund stamped, cancelReason trimmed', async () => {
+    const { token, venueId } = await signUpVendorWithPublishedVenue();
+    const booking = (await bookVenue(venueId, `2027-09-${uuidDay()}`)).json();
+
+    const confirmed = await app.inject({
+      method: 'POST',
+      url: `/v1/vendor/bookings/${booking.id}/confirm`,
+      headers: authHeaders(token),
+    });
+    expect(confirmed.statusCode).toBe(200);
+    const confirmedBody = confirmed.json();
+    expect(confirmedBody.status).toBe('reserved');
+    expect(confirmedBody.payByISO).toBeTruthy();
+
+    const kaparReceived = await app.inject({
+      method: 'POST',
+      url: `/v1/vendor/bookings/${booking.id}/kapar-received`,
+      headers: authHeaders(token),
+    });
+    expect(kaparReceived.statusCode).toBe(200);
+    const kaparBody = kaparReceived.json();
+    expect(kaparBody.status).toBe('confirmed');
+    expect(kaparBody.kaparPaidAtISO).toBeTruthy();
+
+    const cancelled = await app.inject({
+      method: 'POST',
+      url: `/v1/vendor/bookings/${booking.id}/cancel`,
+      headers: authHeaders(token),
+      payload: { reason: '  Double booked by mistake  ' },
+    });
+    expect(cancelled.statusCode).toBe(200);
+    const cancelledBody = cancelled.json();
+    expect(cancelledBody.status).toBe('cancelled_by_venue');
+    expect(cancelledBody.refund).toEqual({ percent: 100, amountMkd: kaparBody.kaparMkd });
+    expect(cancelledBody.cancelReason).toBe('Double booked by mistake');
+  });
+
+  it('decline is only legal from pending_kapar, stores no reason when empty, and needs no refund patch', async () => {
+    const { token, venueId } = await signUpVendorWithPublishedVenue();
+    const booking = (await bookVenue(venueId, `2027-09-${uuidDay()}`)).json();
+
+    const declined = await app.inject({
+      method: 'POST',
+      url: `/v1/vendor/bookings/${booking.id}/decline`,
+      headers: authHeaders(token),
+      payload: { reason: '' },
+    });
+    expect(declined.statusCode).toBe(200);
+    const declinedBody = declined.json();
+    expect(declinedBody.status).toBe('cancelled_by_venue');
+    expect(declinedBody.refund).toBeUndefined();
+    expect(declinedBody.cancelReason).toBeUndefined();
+  });
+
+  it('caps an overlong decline reason at 500 chars', async () => {
+    const { token, venueId } = await signUpVendorWithPublishedVenue();
+    const booking = (await bookVenue(venueId, `2027-09-${uuidDay()}`)).json();
+
+    const declined = await app.inject({
+      method: 'POST',
+      url: `/v1/vendor/bookings/${booking.id}/decline`,
+      headers: authHeaders(token),
+      payload: { reason: 'x'.repeat(600) },
+    });
+    expect(declined.statusCode).toBe(200);
+    expect(declined.json().cancelReason).toHaveLength(500);
+  });
+
+  it('409s a decline once the request is past pending_kapar (already reserved)', async () => {
+    const { token, venueId } = await signUpVendorWithPublishedVenue();
+    const booking = (await bookVenue(venueId, `2027-09-${uuidDay()}`)).json();
+    await app.inject({ method: 'POST', url: `/v1/vendor/bookings/${booking.id}/confirm`, headers: authHeaders(token) });
+
+    const declined = await app.inject({
+      method: 'POST',
+      url: `/v1/vendor/bookings/${booking.id}/decline`,
+      headers: authHeaders(token),
+    });
+    expect(declined.statusCode).toBe(409);
+    expect(declined.json().error).toBe('illegal_transition:reserved->cancelled_by_venue');
+  });
+
+  it('401s with no bearer, 403s a vendor who owns a different venue, 404s an unknown booking', async () => {
+    const { token: ownerToken, venueId } = await signUpVendorWithPublishedVenue();
+    const booking = (await bookVenue(venueId, `2027-09-${uuidDay()}`)).json();
+
+    const noAuth = await app.inject({ method: 'POST', url: `/v1/vendor/bookings/${booking.id}/confirm` });
+    expect(noAuth.statusCode).toBe(401);
+    expect(noAuth.json().error).toBe('unauthorized');
+
+    const otherVendorToken = await signUpVendor();
+    const wrongVendor = await app.inject({
+      method: 'POST',
+      url: `/v1/vendor/bookings/${booking.id}/confirm`,
+      headers: authHeaders(otherVendorToken),
+    });
+    expect(wrongVendor.statusCode).toBe(403);
+    expect(wrongVendor.json().error).toBe('not_your_venue');
+
+    const unknownBooking = await app.inject({
+      method: 'POST',
+      url: '/v1/vendor/bookings/ghost-booking/confirm',
+      headers: authHeaders(ownerToken),
+    });
+    expect(unknownBooking.statusCode).toBe(404);
+    expect(unknownBooking.json().error).toBe('booking_not_found');
+  });
+});

@@ -1,8 +1,8 @@
 import { kaparPayByISO } from '@kapar/domain';
-import { and, eq, lt, sql } from 'drizzle-orm';
+import { and, eq, isNull, lt, sql } from 'drizzle-orm';
 
 import { db } from './db/client.js';
-import { bookingEvents, bookings } from './db/schema.js';
+import { bookingEvents, bookings, venues } from './db/schema.js';
 
 /**
  * Lifecycle worker — the server-side replacement for the app's on-launch
@@ -35,6 +35,11 @@ export function startLifecycleWorker(intervalMs = 30_000): NodeJS.Timeout {
  * setTimeout venueBot (compressed demo timescale; real venues replace this in
  * Wave 4): confirms holds ~20s after the request, marks the kapar received
  * ~50s after the hold. Runs unless DEMO_MODE=false or production.
+ *
+ * Wave 4 scoping: real vendors now answer their own requests through the
+ * /v1/vendor endpoints, so the bot must ONLY touch bookings whose venue is
+ * ownerless (owner_user_id IS NULL — the seeded demo venues) — otherwise it
+ * would race a real vendor's own confirm/decline.
  */
 export function startDemoVenueBot(intervalMs = 5_000): NodeJS.Timeout {
   const tick = async () => {
@@ -42,7 +47,14 @@ export function startDemoVenueBot(intervalMs = 5_000): NodeJS.Timeout {
     const pending = await db
       .select({ id: bookings.id, eventDate: bookings.eventDate })
       .from(bookings)
-      .where(and(eq(bookings.status, 'pending_kapar'), lt(bookings.createdAt, sql`now() - interval '20 seconds'`)));
+      .innerJoin(venues, eq(venues.id, bookings.venueId))
+      .where(
+        and(
+          eq(bookings.status, 'pending_kapar'),
+          lt(bookings.createdAt, sql`now() - interval '20 seconds'`),
+          isNull(venues.ownerUserId),
+        ),
+      );
     for (const row of pending) {
       await db.transaction(async (tx) => {
         await tx
@@ -57,9 +69,11 @@ export function startDemoVenueBot(intervalMs = 5_000): NodeJS.Timeout {
     const held = await db
       .select({ id: bookings.id })
       .from(bookings)
+      .innerJoin(venues, eq(venues.id, bookings.venueId))
       .where(
         and(
           eq(bookings.status, 'reserved'),
+          isNull(venues.ownerUserId),
           sql`(SELECT max(at) FROM booking_events e WHERE e.booking_id = ${bookings.id} AND e.status = 'reserved') < now() - interval '50 seconds'`,
         ),
       );

@@ -144,3 +144,149 @@ describe('GET /v1/bookings?deviceId=', () => {
     expect(other.length).toBeLessThan(list.length + 5);
   });
 });
+
+// Wave 4: authorization lockdown on the legacy /v1/bookings/:id/* actions.
+// Dates are derived from a fresh UUID's char codes (not Date.now()%n) so
+// reruns of this suite never collide with each other or with the 03–08
+// month range the tests above already claim.
+function uuidDay(): string {
+  const u = randomUUID();
+  let sum = 0;
+  for (let i = 0; i < 8; i++) sum += u.charCodeAt(i);
+  return String((sum % 27) + 1).padStart(2, '0');
+}
+
+function authHeaders(token: string) {
+  return { authorization: `Bearer ${token}` };
+}
+
+async function signUp(email: string): Promise<string> {
+  const { devCode } = (
+    await app.inject({ method: 'POST', url: '/v1/auth/request-code', payload: { channel: 'email', destination: email } })
+  ).json();
+  const { token } = (await app.inject({ method: 'POST', url: '/v1/auth/verify', payload: { destination: email, code: devCode } })).json();
+  return token;
+}
+
+/** A real vendor with their own published venue — the "owned venue" half of the lockdown. */
+async function signUpVendorWithVenue(): Promise<{ token: string; venueId: string }> {
+  const token = await signUp(`test-lockdown-vendor-${randomUUID()}@example.com`);
+  await app.inject({ method: 'POST', url: '/v1/me/become-vendor', headers: authHeaders(token) });
+  const created = await app.inject({
+    method: 'POST',
+    url: '/v1/vendor/venues',
+    headers: authHeaders(token),
+    payload: {
+      name: 'Lockdown Test Hall',
+      city: 'bitola',
+      venueType: 'ballroom',
+      capacityMin: 80,
+      capacityMax: 300,
+      pricePerGuestMkd: 1400,
+    },
+  });
+  const venue = created.json();
+  await app.inject({ method: 'POST', url: '/v1/vendor/my-venue/publish', headers: authHeaders(token), payload: { published: true } });
+  return { token, venueId: venue.id };
+}
+
+async function bookOn(venueId: string, eventDateISO: string, extra: Record<string, unknown> = {}) {
+  return app.inject({
+    method: 'POST',
+    url: '/v1/bookings',
+    payload: {
+      deviceId: `test-lockdown-${randomUUID()}`,
+      venueId,
+      eventDateISO,
+      guestCount: 100,
+      menuTierId: 'classic',
+      contactName: 'Lockdown Couple',
+      contactPhone: '+38970005555',
+      ...extra,
+    },
+  });
+}
+
+describe('authorization lockdown (Wave 4)', () => {
+  it('403s the legacy /confirm and /kapar-received routes when the venue has a real owner', async () => {
+    const { venueId } = await signUpVendorWithVenue();
+    const booking = (await bookOn(venueId, `2027-09-${uuidDay()}`)).json();
+
+    const legacyConfirm = await app.inject({ method: 'POST', url: `/v1/bookings/${booking.id}/confirm` });
+    expect(legacyConfirm.statusCode).toBe(403);
+    expect(legacyConfirm.json().error).toBe('vendor_only');
+
+    const legacyKapar = await app.inject({ method: 'POST', url: `/v1/bookings/${booking.id}/kapar-received` });
+    expect(legacyKapar.statusCode).toBe(403);
+    expect(legacyKapar.json().error).toBe('vendor_only');
+  });
+
+  it('leaves the legacy routes open for ownerless (seeded) venues — the demo bot keeps working', async () => {
+    // Month 11 on ezerski-raj: 03–08 are claimed above in this file, 09 is
+    // claimed by auth.test.ts's device-claim test — pick a month nothing else touches.
+    const booking = (await create({ eventDateISO: `2027-11-${uuidDay()}` })).json();
+    const confirmed = await app.inject({ method: 'POST', url: `/v1/bookings/${booking.id}/confirm` });
+    expect(confirmed.statusCode).toBe(200);
+    expect(confirmed.json().status).toBe('reserved');
+  });
+
+  it('requires the owning couple’s bearer to cancel a user-owned booking (401 then 403 then 200)', async () => {
+    const token = await signUp(`test-lockdown-couple-${randomUUID()}@example.com`);
+    // Bearer present at creation time stamps userId on the new row (see POST /v1/bookings).
+    const withAuth = await app.inject({
+      method: 'POST',
+      url: '/v1/bookings',
+      headers: authHeaders(token),
+      payload: {
+        deviceId: `test-lockdown-${randomUUID()}`,
+        venueId: 'ezerski-raj',
+        eventDateISO: `2027-10-${uuidDay()}`,
+        guestCount: 100,
+        menuTierId: 'classic',
+        contactName: 'Lockdown Couple',
+        contactPhone: '+38970005556',
+      },
+    });
+    expect(withAuth.statusCode).toBe(201);
+    const owned = withAuth.json();
+
+    const noAuth = await app.inject({ method: 'POST', url: `/v1/bookings/${owned.id}/cancel` });
+    expect(noAuth.statusCode).toBe(401);
+    expect(noAuth.json().error).toBe('auth_required');
+
+    const otherToken = await signUp(`test-lockdown-other-${randomUUID()}@example.com`);
+    const wrongUser = await app.inject({
+      method: 'POST',
+      url: `/v1/bookings/${owned.id}/cancel`,
+      headers: authHeaders(otherToken),
+    });
+    expect(wrongUser.statusCode).toBe(403);
+    expect(wrongUser.json().error).toBe('not_your_booking');
+
+    const cancelled = await app.inject({
+      method: 'POST',
+      url: `/v1/bookings/${owned.id}/cancel`,
+      headers: authHeaders(token),
+    });
+    expect(cancelled.statusCode).toBe(200);
+    expect(cancelled.json().status).toBe('cancelled_by_couple');
+  });
+
+  it('venue-cancel on an owned venue requires the owner’s bearer too', async () => {
+    const { token, venueId } = await signUpVendorWithVenue();
+    const booking = (await bookOn(venueId, `2027-10-${uuidDay()}`)).json();
+
+    const noAuth = await app.inject({ method: 'POST', url: `/v1/bookings/${booking.id}/cancel`, payload: { by: 'venue' } });
+    expect(noAuth.statusCode).toBe(403);
+    expect(noAuth.json().error).toBe('vendor_only');
+
+    const withOwner = await app.inject({
+      method: 'POST',
+      url: `/v1/bookings/${booking.id}/cancel`,
+      headers: authHeaders(token),
+      payload: { by: 'venue' },
+    });
+    expect(withOwner.statusCode).toBe(200);
+    expect(withOwner.json().status).toBe('cancelled_by_venue');
+  });
+});

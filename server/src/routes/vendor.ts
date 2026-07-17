@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 
 import {
   addDaysISO,
+  kaparPayByISO,
   PLATFORM_REFUND_TIERS,
   todayISO,
   type Booking,
@@ -17,13 +18,15 @@ import { type AuthUser, userFromRequest } from '../auth.js';
 import { db } from '../db/client.js';
 import { blockedDates, bookingEvents, bookings, halls, menuTiers, venues } from '../db/schema.js';
 import { toVenue } from '../serialize.js';
+import { applyTransition, loadBooking } from './bookings.js';
 import { ACTIVE_BOOKING_STATUSES, augmentBookedDates } from './venues.js';
 
 /**
  * Vendor/extranet endpoints (Wave 3). One venue per owner in the MVP — the
  * couple-facing app never sees an unpublished venue unless the vendor who
- * owns it is asking. Confirm/decline of individual bookings stays a
- * read-only inbox this wave; that write path is Wave 4.
+ * owns it is asking. Wave 4 adds the write path (confirm/decline/kapar-received/
+ * cancel) below the read-only inbox — always through applyTransition, never
+ * a direct bookings.status write.
  */
 
 type VenueRow = typeof venues.$inferSelect;
@@ -111,6 +114,26 @@ async function requireVendor(req: FastifyRequest, reply: FastifyReply): Promise<
 
 async function getOwnerVenueRow(userId: string): Promise<VenueRow | undefined> {
   return db.select().from(venues).where(eq(venues.ownerUserId, userId)).limit(1).then((r) => r[0]);
+}
+
+/**
+ * Ownership guard for the Wave 4 per-booking actions: 404 if the booking
+ * doesn't exist, 403 if it exists but belongs to a venue this vendor doesn't
+ * own. Never trusts the client — the venue row is re-checked on every call.
+ */
+async function getOwnedBookingRow(userId: string, bookingId: string): Promise<{ row: BookingRow } | { code: number; error: string }> {
+  const row = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1).then((r) => r[0]);
+  if (!row) return { code: 404, error: 'booking_not_found' };
+  const venue = await db.select().from(venues).where(eq(venues.id, row.venueId)).limit(1).then((r) => r[0]);
+  if (!venue || venue.ownerUserId !== userId) return { code: 403, error: 'not_your_venue' };
+  return { row };
+}
+
+/** Trim, cap at 500 chars, null if empty — the contract for decline/cancel reasons. */
+function sanitizeReason(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const trimmed = v.trim();
+  return trimmed ? trimmed.slice(0, 500) : null;
 }
 
 async function loadOwnerVenueFull(
@@ -440,5 +463,74 @@ export async function vendorRoutes(app: FastifyInstance): Promise<void> {
         r.hallId ? hallRows.find((h) => h.id === r.hallId)?.name.mk : undefined,
       ),
     );
+  });
+
+  // Venue confirms the hold — the real-vendor counterpart to the legacy
+  // /v1/bookings/:id/confirm (now vendor_only-locked for owned venues).
+  app.post<{ Params: { id: string } }>('/v1/vendor/bookings/:id/confirm', async (req, reply) => {
+    const user = await requireVendor(req, reply);
+    if (!user) return;
+    const owned = await getOwnedBookingRow(user.id, req.params.id);
+    if ('error' in owned) return reply.code(owned.code).send({ error: owned.error });
+
+    const result = await applyTransition(owned.row.id, 'reserved', {
+      payBy: kaparPayByISO(new Date().toISOString(), owned.row.eventDate),
+    });
+    if (!result.ok) return reply.code(result.code).send({ error: result.error });
+    return loadBooking(owned.row.id);
+  });
+
+  // Venue declines an unanswered request. Only legal from pending_kapar —
+  // once a hold is confirmed or paid, that's a cancel, not a decline.
+  app.post<{ Params: { id: string }; Body: { reason?: string } }>('/v1/vendor/bookings/:id/decline', async (req, reply) => {
+    const user = await requireVendor(req, reply);
+    if (!user) return;
+    const owned = await getOwnedBookingRow(user.id, req.params.id);
+    if ('error' in owned) return reply.code(owned.code).send({ error: owned.error });
+
+    if (owned.row.status !== 'pending_kapar') {
+      return reply.code(409).send({ error: `illegal_transition:${owned.row.status}->cancelled_by_venue` });
+    }
+    const reason = sanitizeReason((req.body as { reason?: unknown } | undefined)?.reason);
+    // Nothing is paid at pending_kapar, so no refund patch — this is a free decline.
+    const result = await applyTransition(owned.row.id, 'cancelled_by_venue', { cancelReason: reason });
+    if (!result.ok) return reply.code(result.code).send({ error: result.error });
+    return loadBooking(owned.row.id);
+  });
+
+  // Venue marks the kapar received at the visit — the real-vendor counterpart
+  // to the legacy /v1/bookings/:id/kapar-received.
+  app.post<{ Params: { id: string } }>('/v1/vendor/bookings/:id/kapar-received', async (req, reply) => {
+    const user = await requireVendor(req, reply);
+    if (!user) return;
+    const owned = await getOwnedBookingRow(user.id, req.params.id);
+    if ('error' in owned) return reply.code(owned.code).send({ error: owned.error });
+
+    const result = await applyTransition(owned.row.id, 'confirmed', { kaparPaidAt: new Date() });
+    if (!result.ok) return reply.code(result.code).send({ error: result.error });
+    return loadBooking(owned.row.id);
+  });
+
+  // Venue cancels a reserved/confirmed booking. Venue-initiated is ALWAYS a
+  // 100% refund once the kapar was paid — platform policy, not the ladder.
+  app.post<{ Params: { id: string }; Body: { reason?: string } }>('/v1/vendor/bookings/:id/cancel', async (req, reply) => {
+    const user = await requireVendor(req, reply);
+    if (!user) return;
+    const owned = await getOwnedBookingRow(user.id, req.params.id);
+    if ('error' in owned) return reply.code(owned.code).send({ error: owned.error });
+
+    const row = owned.row;
+    if (row.status !== 'reserved' && row.status !== 'confirmed') {
+      return reply.code(409).send({ error: `illegal_transition:${row.status}->cancelled_by_venue` });
+    }
+    const reason = sanitizeReason((req.body as { reason?: unknown } | undefined)?.reason);
+    const patch: Partial<typeof bookings.$inferInsert> = { cancelReason: reason };
+    if (row.kaparPaidAt) {
+      patch.refundPercent = 100;
+      patch.refundAmountMkd = row.kaparMkd;
+    }
+    const result = await applyTransition(row.id, 'cancelled_by_venue', patch);
+    if (!result.ok) return reply.code(result.code).send({ error: result.error });
+    return loadBooking(row.id);
   });
 }

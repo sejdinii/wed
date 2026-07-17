@@ -238,10 +238,14 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
     return booking;
   });
 
-  // Venue confirms the hold — Wave 4 puts a vendor inbox in front of this.
+  // Venue confirms the hold. Wave 4 lockdown: a real vendor (owned venue)
+  // must use /v1/vendor/bookings/:id/confirm instead — this route stays open
+  // only for ownerless (seeded) venues, which the demo bot drives via SQL.
   app.post<{ Params: { id: string } }>('/v1/bookings/:id/confirm', async (req, reply) => {
     const row = await db.select().from(bookings).where(eq(bookings.id, req.params.id)).limit(1).then((r) => r[0]);
     if (!row) return reply.code(404).send({ error: 'booking_not_found' });
+    const venueRow = await db.select().from(venues).where(eq(venues.id, row.venueId)).limit(1).then((r) => r[0]);
+    if (venueRow?.ownerUserId) return reply.code(403).send({ error: 'vendor_only' });
     const result = await applyTransition(req.params.id, 'reserved', {
       payBy: kaparPayByISO(new Date().toISOString(), row.eventDate),
     });
@@ -249,8 +253,13 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
     return loadBooking(req.params.id);
   });
 
-  // Venue marks the kapar received at the visit.
+  // Venue marks the kapar received at the visit. Same Wave 4 lockdown as
+  // /confirm above — owned venues answer through /v1/vendor/bookings instead.
   app.post<{ Params: { id: string } }>('/v1/bookings/:id/kapar-received', async (req, reply) => {
+    const row = await db.select().from(bookings).where(eq(bookings.id, req.params.id)).limit(1).then((r) => r[0]);
+    if (!row) return reply.code(404).send({ error: 'booking_not_found' });
+    const venueRow = await db.select().from(venues).where(eq(venues.id, row.venueId)).limit(1).then((r) => r[0]);
+    if (venueRow?.ownerUserId) return reply.code(403).send({ error: 'vendor_only' });
     const result = await applyTransition(req.params.id, 'confirmed', { kaparPaidAt: new Date() });
     if (!result.ok) return reply.code(result.code).send({ error: result.error });
     return loadBooking(req.params.id);
@@ -260,13 +269,29 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
     const by = req.body?.by ?? 'couple';
     const row = await db.select().from(bookings).where(eq(bookings.id, req.params.id)).limit(1).then((r) => r[0]);
     if (!row) return reply.code(404).send({ error: 'booking_not_found' });
+    const venueRow = await db.select().from(venues).where(eq(venues.id, row.venueId)).limit(1).then((r) => r[0]);
+    if (!venueRow) return reply.code(500).send({ error: 'venue_missing' });
+
+    // Wave 4 lockdown: an owned venue must act through its own bearer — for
+    // 'venue' cancels that means the venue owner; for 'couple' cancels (the
+    // default) that means the booking's own user, when the booking has one.
+    // Ownerless venues and device-only bookings keep the pre-Wave-4 open
+    // behavior so nothing else breaks.
+    if (by === 'venue') {
+      if (venueRow.ownerUserId) {
+        const authUser = await userFromRequest(req);
+        if (!authUser || authUser.id !== venueRow.ownerUserId) return reply.code(403).send({ error: 'vendor_only' });
+      }
+    } else if (row.userId) {
+      const authUser = await userFromRequest(req);
+      if (!authUser) return reply.code(401).send({ error: 'auth_required' });
+      if (authUser.id !== row.userId) return reply.code(403).send({ error: 'not_your_booking' });
+    }
 
     // Refund is computed server-side at the moment of cancellation and
     // stamped permanently. Venue-initiated is ALWAYS 100% (platform policy).
     let patch: Partial<typeof bookings.$inferInsert> = {};
     if (row.kaparPaidAt) {
-      const venueRow = await db.select().from(venues).where(eq(venues.id, row.venueId)).limit(1).then((r) => r[0]);
-      if (!venueRow) return reply.code(500).send({ error: 'venue_missing' });
       const percent =
         by === 'venue'
           ? 100
