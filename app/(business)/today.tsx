@@ -25,7 +25,9 @@ import { useI18n } from '@/i18n';
 /** Hours left before an unanswered request auto-expires (server enforces the actual expiry). */
 function hoursLeftToRespond(createdAtISO: string, nowMs: number): number {
   const deadlineMs = new Date(createdAtISO).getTime() + REQUEST_TTL_HOURS * 3_600_000;
-  return (deadlineMs - nowMs) / 3_600_000;
+  // Clamp: a request stamped a beat after our nowMs snapshot must never
+  // display more than the SLA itself ("25h left" on a 24h window).
+  return Math.min(REQUEST_TTL_HOURS, (deadlineMs - nowMs) / 3_600_000);
 }
 
 type CardAction = 'confirm' | 'decline' | 'kapar';
@@ -219,7 +221,7 @@ export default function BusinessTodayScreen() {
                     size="md"
                   />
                   <Button title={t('vendor.calendarTitle')} onPress={() => router.push('/calendar')} variant="dark" size="md" />
-                  <Button title={t('vendor.bookingsTitle')} onPress={() => router.push('/bookings')} variant="outline" size="md" />
+                  <Button title={t('vendor.bookingsTitle')} onPress={() => router.push('/venue-bookings')} variant="outline" size="md" />
                   <Button title={t('vendor.viewAsCouple')} onPress={() => router.push(`/venue/${venue.id}`)} variant="ghost" size="md" />
                 </View>
               </View>

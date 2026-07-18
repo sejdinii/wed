@@ -20,8 +20,11 @@ export default function BusinessLayout() {
       <Stack.Screen name="today" />
       <Stack.Screen name="create-venue" />
       <Stack.Screen name="calendar" />
-      {/* Wave 4 orchestrator-reviewed exception: bookings dashboard route registration. */}
-      <Stack.Screen name="bookings" />
+      {/* Wave 4: vendor bookings dashboard. Named venue-bookings because a bare
+          "bookings" here SHADOWS the couple tab's /bookings URL (both groups
+          collapse out of the path) — deep links landed couples on the vendor
+          gate. Run-verified during the Wave 4 integration e2e. */}
+      <Stack.Screen name="venue-bookings" />
     </Stack>
   );
 }

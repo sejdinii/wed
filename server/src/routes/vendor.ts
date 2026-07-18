@@ -18,7 +18,7 @@ import { type AuthUser, userFromRequest } from '../auth.js';
 import { db } from '../db/client.js';
 import { blockedDates, bookingEvents, bookings, halls, menuTiers, venues } from '../db/schema.js';
 import { toVenue } from '../serialize.js';
-import { applyTransition, loadBooking } from './bookings.js';
+import { applyTransition, loadBooking, toBooking } from './bookings.js';
 import { ACTIVE_BOOKING_STATUSES, augmentBookedDates } from './venues.js';
 
 /**
@@ -219,41 +219,6 @@ function lastDayOfMonthISO(dateISO: string): string {
 // Local duplicate of bookings.ts's private toBooking — kept unexported there,
 // so this wave's read-only vendor inbox gets a small copy rather than a
 // cross-file export. Revisit if Wave 4's confirm/decline wants to share it.
-function toVendorBooking(
-  row: BookingRow,
-  events: EventRow[],
-  venue: Pick<VenueRow, 'name' | 'photos' | 'city'>,
-  hallName?: string,
-): Booking {
-  return {
-    id: row.id,
-    confirmationCode: row.confirmationCode,
-    venueId: row.venueId,
-    venueName: venue.name,
-    venuePhoto: venue.photos[0] ?? '',
-    city: venue.city as Booking['city'],
-    eventDateISO: row.eventDate,
-    guestCount: row.guestCount,
-    menuTierId: row.menuTierId,
-    estimatedTotalMkd: row.estimatedTotalMkd,
-    kaparMkd: row.kaparMkd,
-    balanceDueMkd: row.balanceDueMkd,
-    status: row.status as BookingStatus,
-    createdAtISO: row.createdAt.toISOString(),
-    ...(row.payBy ? { payByISO: row.payBy } : {}),
-    ...(row.kaparPaidAt ? { kaparPaidAtISO: row.kaparPaidAt.toISOString() } : {}),
-    ...(row.refundPercent !== null && row.refundAmountMkd !== null
-      ? { refund: { percent: row.refundPercent, amountMkd: row.refundAmountMkd } }
-      : {}),
-    timeline: events
-      .sort((a, b) => a.at.getTime() - b.at.getTime())
-      .map((e) => ({ status: e.status as BookingStatus, at: e.at.toISOString() })),
-    contactName: row.contactName,
-    contactPhone: row.contactPhone,
-    ...(row.specialRequests ? { specialRequests: row.specialRequests } : {}),
-    ...(hallName ? { hallName } : {}),
-  };
-}
 
 export async function vendorRoutes(app: FastifyInstance): Promise<void> {
   app.post('/v1/vendor/venues', async (req, reply) => {
@@ -456,7 +421,7 @@ export async function vendorRoutes(app: FastifyInstance): Promise<void> {
       db.select().from(halls).where(eq(halls.venueId, row.id)),
     ]);
     return bookingRows.map((r) =>
-      toVendorBooking(
+      toBooking(
         r,
         events.filter((e) => e.bookingId === r.id),
         row,

@@ -32,7 +32,8 @@ function isUniqueViolation(err: unknown): boolean {
   return false;
 }
 
-function toBooking(row: BookingRow, events: EventRow[], venue: Pick<VenueRow, 'name' | 'photos' | 'city'>, hallName?: string): Booking {
+/** Exported for the vendor routes — ONE serializer; field drift between copies already bit us once (cancelReason). */
+export function toBooking(row: BookingRow, events: EventRow[], venue: Pick<VenueRow, 'name' | 'photos' | 'city'>, hallName?: string): Booking {
   return {
     id: row.id,
     confirmationCode: row.confirmationCode,
