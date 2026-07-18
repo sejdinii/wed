@@ -106,10 +106,10 @@ export default function ProfileScreen() {
           <AppText variant="caption" color="tertiary" style={{ marginBottom: spacing(1) }}>
             {t('profile.account').toUpperCase()}
           </AppText>
-          {/* PLACEHOLDER — personal info opens with accounts in v0.2. No payment-
-              methods row: the MVP has no online payments (kapar is paid at the venue). */}
-          <ListItemRow icon="person-outline" title={t('profile.personalInfo')} chevron onPress={() => {}} />
-          <Divider inset={12} />
+          {/* No "Personal information" row: the editor needs a users-table
+              migration this slice can't do — a dead affordance is worse than
+              absence. Returns properly in Wave 6. No payment-methods row
+              either: the MVP has no online payments (kapar is paid at the venue). */}
           <ListItemRow
             icon="chatbubble-outline"
             title={t('profile.messages')}

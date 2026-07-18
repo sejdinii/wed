@@ -480,4 +480,35 @@ export const sq: Dict = {
   'food.kidsMenu': 'Meny për fëmijë',
   'food.lateSnack': 'Meze e vonë',
   'food.ownCakeAllowed': 'Lejohet torta e vet',
+
+  // Wave 5 — dead-button/honesty sweep (PROPOSED — orchestrator lands these).
+  'legal.draftNotice': 'Draft — në pritje të shqyrtimit ligjor',
+  'legal.termsIntro':
+    'Kapar është një platformë që lidh çiftet me sallat e dasmave në Maqedoninë e Veriut. Duke përdorur aplikacionin, pajtoheni me kushtet më poshtë.',
+  'legal.termsRole':
+    'Kapar është shërbim kërkimi dhe ndërmjetësimi — ne nuk jemi palë në marrëveshjen mes çiftit dhe sallës, as organizator i ngjarjes.',
+  'legal.termsPayment':
+    'Aplikacioni nuk pranon dhe nuk mban para. Kapari dhe pjesa tjetër e shumës paguhen personalisht në sallë, sipas marrëveshjes me sallën.',
+  'legal.termsCancellation':
+    'Anulimet ndjekin politikën e rimbursimit të treguar në aplikacion para rezervimit; çdo rimbursim kryhet nga salla, jo nga Kapar.',
+  'legal.termsData':
+    'Për ta mundësuar rezervimin, ruajmë të dhëna bazike për ju dhe korrespondencën me sallën — detaje në Politikën e Privatësisë.',
+  'legal.contactCta': 'Na kontaktoni',
+  'legal.privacyIntro':
+    'Kjo politikë përshkruan cilat të dhëna ruan Kapar dhe pse, në mënyrë që të mund të rezervoni një sallë dhe të komunikoni me të.',
+  'legal.privacyDataCollected':
+    'Ruajmë: email-in, numrin e telefonit, detajet e rezervimit (data, salla, numri i mysafirëve), dhe mesazhet në aplikacion mes jush dhe sallës.',
+  'legal.privacyDataUse':
+    'Këto të dhëna përdoren vetëm për të përpunuar rezervimin tuaj, për të komunikuar me ju dhe me sallën, dhe për të përmirësuar shërbimin.',
+  'legal.privacyNoPayment':
+    'Nuk mbledhim dhe nuk ruajmë të dhëna pagese — Kapar nuk pranon dhe nuk mban para; kapari paguhet personalisht në sallë.',
+  'legal.privacySharing':
+    'Detajet e rezervimit ndahen vetëm me sallën që keni rezervuar, aq sa është e nevojshme për të përmbushur marrëveshjen.',
+
+  'support.title': 'Ndihmë dhe mbështetje',
+  'support.body': 'Keni një pyetje apo problem? Na shkruani dhe do t’ju përgjigjemi.',
+  'support.emailCta': 'Dërgo email',
+  'support.emailFailed': 'Nuk arritëm ta hapim aplikacionin e email-it. Na kontaktoni direkt në hello@kapar.mk.',
+
+  'settings.notificationsCaption': 'Kontrollon çfarë shfaqet në njoftimet brenda aplikacionit.',
 };

@@ -480,4 +480,32 @@ export const en: Dict = {
   'food.kidsMenu': 'Kids menu',
   'food.lateSnack': 'Late-night snack',
   'food.ownCakeAllowed': 'Own cake allowed',
+
+  // Wave 5 — dead-button/honesty sweep (PROPOSED — orchestrator lands these).
+  'legal.draftNotice': 'Draft — pending legal review',
+  'legal.termsIntro':
+    'Kapar is a platform that connects couples with wedding venues across North Macedonia. By using the app, you agree to the terms below.',
+  'legal.termsRole':
+    'Kapar is a discovery and matchmaking service — we are not a party to the agreement between the couple and the venue, nor the event organiser.',
+  'legal.termsPayment':
+    'The app never receives or holds money. The kapar deposit and the remaining balance are paid in person at the venue, per your agreement with the venue.',
+  'legal.termsCancellation':
+    'Cancellations follow the refund policy shown in the app before booking; any refund is issued by the venue, not by Kapar.',
+  'legal.termsData':
+    'To make a booking possible, we store basic information about you and your correspondence with the venue — details in the Privacy Policy.',
+  'legal.contactCta': 'Contact us',
+  'legal.privacyIntro': 'This policy describes what data Kapar stores and why, so you can book a venue and communicate with it.',
+  'legal.privacyDataCollected':
+    'We store: your email, phone number, booking details (date, venue, guest count), and the in-app messages between you and the venue.',
+  'legal.privacyDataUse': 'This data is used only to process your booking, communicate with you and the venue, and improve the service.',
+  'legal.privacyNoPayment':
+    'We do not collect or store payment information — Kapar never receives or holds money; the kapar deposit is paid in person at the venue.',
+  'legal.privacySharing': 'Booking details are shared only with the venue you booked, to the extent needed to fulfil the agreement.',
+
+  'support.title': 'Help & support',
+  'support.body': 'Have a question or an issue? Write to us and we’ll get back to you.',
+  'support.emailCta': 'Send an email',
+  'support.emailFailed': 'We couldn’t open your email app. Reach us directly at hello@kapar.mk.',
+
+  'settings.notificationsCaption': 'Controls what shows up in your in-app notifications.',
 };

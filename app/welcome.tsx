@@ -194,14 +194,13 @@ export default function WelcomeScreen() {
             </AppText>
           </View>
 
-          {/* Legal */}
+          {/* Legal — static draft screens (pending real legal review). */}
           <View style={{ alignItems: 'center', gap: 2 }}>
             <AppText variant="bodySm" color="secondary" align="center">
               {t('welcome.legalPrefix')}
             </AppText>
             <View style={{ flexDirection: 'row', gap: spacing(1) }}>
-              {/* PLACEHOLDER — static legal pages once published. */}
-              <PressableScale onPress={() => {}} hapticFeedback="select" accessibilityRole="link">
+              <PressableScale onPress={() => router.push('/legal/terms')} hapticFeedback="select" accessibilityRole="link">
                 <AppText variant="bodySmStrong" color="brand">
                   {t('settings.terms')}
                 </AppText>
@@ -209,7 +208,7 @@ export default function WelcomeScreen() {
               <AppText variant="bodySm" color="secondary">
                 {t('welcome.legalAnd')}
               </AppText>
-              <PressableScale onPress={() => {}} hapticFeedback="select" accessibilityRole="link">
+              <PressableScale onPress={() => router.push('/legal/privacy')} hapticFeedback="select" accessibilityRole="link">
                 <AppText variant="bodySmStrong" color="brand">
                   {t('settings.privacy')}
                 </AppText>

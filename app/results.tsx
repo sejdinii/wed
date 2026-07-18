@@ -16,7 +16,7 @@ import { Stepper } from '@/design/components/Stepper';
 import { MonthPager } from '@/components/MonthPager';
 import { VenueCard } from '@/components/VenueCard';
 import { useTheme } from '@/design/theme';
-import { radius, shadow, spacing } from '@/design/tokens';
+import { radius, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMediumDate, todayISO } from '@/lib/dates';
 import { cheapestPerGuest, minEstimateMkd, minKaparMkd } from '@/domain/kapar';
@@ -80,7 +80,7 @@ function applySort(venues: Venue[], sort: SortKey): Venue[] {
 export default function ResultsScreen() {
   const params = useLocalSearchParams<{ city?: CityKey; type?: VenueType; date?: string; guests?: string }>();
   const city = typeof params.city === 'string' ? (params.city as CityKey) : null;
-  const { colors, mode } = useTheme();
+  const { colors } = useTheme();
   const { locale, t } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -308,35 +308,9 @@ export default function ResultsScreen() {
         </View>
       </Modal>
 
-      {/* Floating Map View pill — PLACEHOLDER until the map screen lands. */}
-      <PressableScale
-        onPress={() => haptic.select()}
-        hapticFeedback={null}
-        accessibilityRole="button"
-        accessibilityLabel={t('results.mapView')}
-        style={[
-          {
-            position: 'absolute',
-            bottom: insets.bottom + spacing(4),
-            alignSelf: 'center',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing(2),
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: radius.pill,
-            paddingHorizontal: spacing(5),
-            paddingVertical: spacing(3),
-          },
-          mode === 'light' ? shadow.raised : null,
-        ]}
-      >
-        <Ionicons name="map-outline" size={17} color={colors.primary} />
-        <AppText variant="bodyStrong" color="brand">
-          {t('results.mapView')}
-        </AppText>
-      </PressableScale>
+      {/* Map View pill removed (Wave 5 honesty sweep) — it only fired a
+          haptic and pretended to open a map. Map view lands Wave 6 with real
+          founder research behind it; see SUGGESTIONS in the wave report. */}
 
       {/* Filters sheet */}
       <Modal visible={sheetOpen} animationType="slide" onRequestClose={() => setSheetOpen(false)}>

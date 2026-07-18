@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, ScrollView, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Platform, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -13,8 +13,10 @@ import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 import { formatMkd } from '@/lib/money';
 import { formatLongDate, formatMediumDate } from '@/lib/dates';
+import { buildIcsContent, downloadIcsFile } from '@/lib/ics';
+import { haptic } from '@/lib/haptics';
 import { bookingApi } from '@/data/bookingApi';
-import { API_MODE } from '@/data/api';
+import { API_MODE, venueApi } from '@/data/api';
 import { useBookings } from '@/stores/bookings';
 import { useBookingDraft } from '@/stores/bookingDraft';
 import { useIsAuthenticated } from '@/stores/preferences';
@@ -39,6 +41,8 @@ export default function BookingStatusScreen() {
   const booking = useBookings((s) => s.bookings.find((b) => b.id === bookingId));
   const resetDraft = useBookingDraft((s) => s.reset);
   const authed = useIsAuthenticated();
+  const [icsBusy, setIcsBusy] = useState(false);
+  const [icsFailed, setIcsFailed] = useState(false);
 
   const iconScale = useRef(new Animated.Value(0)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
@@ -84,6 +88,40 @@ export default function BookingStatusScreen() {
 
   const confirmed = phase === 'confirmed';
   const payByLabel = booking.payByISO ? formatMediumDate(booking.payByISO, locale) : null;
+
+  // Real .ics download (web only — expo-calendar can't be run-verified in
+  // this wave, so the row is hidden on native rather than faked). The venue
+  // address is fetched on tap rather than stored on Booking; if that fetch
+  // fails we still produce a usable calendar entry with the city as LOCATION
+  // instead of blocking the whole download on a network hiccup.
+  const addToCalendar = async () => {
+    if (icsBusy) return;
+    haptic.select();
+    setIcsBusy(true);
+    setIcsFailed(false);
+    try {
+      let location = t(`city.${booking.city}`);
+      try {
+        const venue = await venueApi.getVenue(booking.venueId);
+        if (venue?.address) location = venue.address;
+      } catch {
+        // keep the city fallback
+      }
+      const content = buildIcsContent({
+        uid: `${booking.id}@kapar.mk`,
+        summary: booking.venueName,
+        dateISO: booking.eventDateISO,
+        location,
+        description: `${t('status.codeLabel')}: ${booking.confirmationCode}`,
+      });
+      downloadIcsFile(`kapar-${booking.confirmationCode}.ics`, content);
+    } catch {
+      haptic.error();
+      setIcsFailed(true);
+    } finally {
+      setIcsBusy(false);
+    }
+  };
 
   const ActionRow = ({
     icon,
@@ -179,11 +217,25 @@ export default function BookingStatusScreen() {
           <View>
             <ActionRow icon="ticket-outline" label={t('status.viewBooking')} onPress={() => router.replace(`/booking/${booking.id}`)} />
             <Divider />
-            {/* PLACEHOLDER — wires to expo-calendar once notifications/calendar land. */}
-            <ActionRow icon="calendar-outline" label={t('status.addCalendar')} onPress={() => {}} />
-            <Divider />
+            {/* Real .ics download on web. Hidden on native this wave — expo-calendar
+                can't be run-verified here, and a dead row is worse than absence. */}
+            {Platform.OS === 'web' ? (
+              <>
+                <ActionRow
+                  icon="calendar-outline"
+                  label={icsBusy ? `${t('status.addCalendar')}…` : t('status.addCalendar')}
+                  onPress={addToCalendar}
+                />
+                <Divider />
+              </>
+            ) : null}
             <ActionRow icon="chatbubble-outline" label={t('status.messageVenue')} onPress={() => router.push(`/messages/${booking.id}`)} />
           </View>
+          {icsFailed ? (
+            <AppText variant="bodySm" color="danger">
+              {t('error.body')}
+            </AppText>
+          ) : null}
 
           {phase !== 'sent' ? (
             <View style={{ backgroundColor: colors.mint, borderRadius: radius.md, padding: spacing(3) }}>

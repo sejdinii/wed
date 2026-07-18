@@ -109,10 +109,15 @@ export default function SettingsScreen() {
           <ListItemRow icon="cash-outline" title={t('settings.currency')} value="EUR (€)" />
         </View>
 
-        {/* Notifications — refund-window reminders are a trust feature, not spam. */}
+        {/* Notifications — these three toggles control the IN-APP notification
+            center only; they are not push alerts to the phone (honesty fix,
+            Wave 5). Refund-window reminders are a trust feature, not spam. */}
         <View style={{ gap: spacing(1) }}>
           <AppText variant="caption" color="tertiary" style={{ marginBottom: spacing(1) }}>
             {t('settings.notifications').toUpperCase()}
+          </AppText>
+          <AppText variant="bodySm" color="secondary" style={{ marginBottom: spacing(1) }}>
+            {t('settings.notificationsCaption')}
           </AppText>
           <NotifRow label={t('settings.notifConfirm')} prefKey="notifConfirm" />
           <Divider />
@@ -121,15 +126,14 @@ export default function SettingsScreen() {
           <NotifRow label={t('settings.notifRefund')} prefKey="notifRefund" />
         </View>
 
-        {/* Legal */}
+        {/* Legal — static draft screens (pending real legal review). */}
         <View style={{ gap: spacing(1) }}>
           <AppText variant="caption" color="tertiary" style={{ marginBottom: spacing(1) }}>
             {t('settings.legal').toUpperCase()}
           </AppText>
-          {/* PLACEHOLDER — static legal pages once published. */}
-          <ListItemRow icon="document-text-outline" title={t('settings.terms')} chevron onPress={() => {}} />
+          <ListItemRow icon="document-text-outline" title={t('settings.terms')} chevron onPress={() => router.push('/legal/terms')} />
           <Divider inset={12} />
-          <ListItemRow icon="lock-closed-outline" title={t('settings.privacy')} chevron onPress={() => {}} />
+          <ListItemRow icon="lock-closed-outline" title={t('settings.privacy')} chevron onPress={() => router.push('/legal/privacy')} />
         </View>
 
         <AppText variant="caption" color="tertiary" align="center">

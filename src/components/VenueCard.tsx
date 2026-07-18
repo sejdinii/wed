@@ -17,6 +17,14 @@ import type { Venue } from '@/domain/types';
 import { useFavorites } from '@/stores/favorites';
 import { useI18n } from '@/i18n';
 
+// Card chrome constants shared between the layout below and the hoisted
+// HeartButton's absolute-position math (Wave 5 hydration fix — see the
+// per-variant comments further down).
+const CARD_PADDING = spacing(2.5);
+const CARD_BORDER = 1;
+const SPLIT_IMAGE_WIDTH = 118;
+const ROW_HEART_GUTTER = spacing(7);
+
 function HeartButton({ venueId, onImage = false }: { venueId: string; onImage?: boolean }) {
   const { colors } = useTheme();
   const isFavorite = useFavorites((s) => s.venueIds.includes(venueId));
@@ -127,48 +135,113 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
 
   if (variant === 'carousel') {
     return (
-      <PressableScale
-        onPress={open}
-        scaleTo={0.98}
-        accessibilityRole="button"
-        accessibilityLabel={venue.name}
-        style={[
-          { width: 168, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
-          mode === 'light' ? shadow.card : null,
-        ]}
-      >
-        <View>
-          <BrandedImage uri={venue.photos[0]}
-            style={{ width: '100%', aspectRatio: 1 }}
-            contentFit="cover"
-            transition={200}
-          />
-          <HeartButton venueId={venue.id} onImage />
-          <View style={{ position: 'absolute', bottom: spacing(2), left: spacing(2) }}>
-            <RatingChip venue={venue} onImage />
+      // Wrapping View (Wave 5): HeartButton must be a SIBLING of the card's
+      // PressableScale, never a descendant — a Pressable nested inside
+      // another Pressable renders as <button> inside <button> on web, which
+      // react-native-web logs as a DOM nesting/hydration error on every
+      // render. The heart still visually overlays the image via absolute
+      // positioning; it just no longer participates in the card's own touch
+      // target.
+      <View style={{ width: 168 }}>
+        <PressableScale
+          onPress={open}
+          scaleTo={0.98}
+          accessibilityRole="button"
+          accessibilityLabel={venue.name}
+          style={[
+            { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+            mode === 'light' ? shadow.card : null,
+          ]}
+        >
+          <View>
+            <BrandedImage uri={venue.photos[0]}
+              style={{ width: '100%', aspectRatio: 1 }}
+              contentFit="cover"
+              transition={200}
+            />
+            <View style={{ position: 'absolute', bottom: spacing(2), left: spacing(2) }}>
+              <RatingChip venue={venue} onImage />
+            </View>
           </View>
-        </View>
-        <View style={{ padding: spacing(3), gap: spacing(1.5) }}>
-          <AppText variant="subheading" numberOfLines={1}>
-            {venue.name}
-          </AppText>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-            <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
-            <AppText variant="bodySm" color="secondary">
-              {t(`city.${venue.city}`)}
+          <View style={{ padding: spacing(3), gap: spacing(1.5) }}>
+            <AppText variant="subheading" numberOfLines={1}>
+              {venue.name}
+            </AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+              <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
+              <AppText variant="bodySm" color="secondary">
+                {t(`city.${venue.city}`)}
+              </AppText>
+            </View>
+            {chips}
+            <AppText variant="bodySmStrong" color="brand">
+              {t('common.from')} {formatMkd(minEstimateMkd(venue), locale)}
             </AppText>
           </View>
-          {chips}
-          <AppText variant="bodySmStrong" color="brand">
-            {t('common.from')} {formatMkd(minEstimateMkd(venue), locale)}
-          </AppText>
+        </PressableScale>
+        <View style={{ position: 'absolute', top: spacing(2), right: spacing(2) }}>
+          <HeartButton venueId={venue.id} onImage />
         </View>
-      </PressableScale>
+      </View>
     );
   }
 
   if (variant === 'row') {
     return (
+      // See carousel's comment above — same sibling-hoist fix. Row places
+      // the heart at the card's right edge, vertically centered, since
+      // there's no image region to overlay.
+      <View>
+        <PressableScale
+          onPress={open}
+          scaleTo={0.98}
+          accessibilityRole="button"
+          accessibilityLabel={venue.name}
+          style={[
+            {
+              flexDirection: 'row',
+              gap: spacing(3),
+              backgroundColor: colors.surface,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing(2.5),
+              alignItems: 'center',
+            },
+            mode === 'light' ? shadow.card : null,
+          ]}
+        >
+          <BrandedImage uri={venue.photos[0]}
+            style={{ width: 64, height: 64, borderRadius: radius.md }}
+            contentFit="cover"
+            transition={200}
+          />
+          <View style={{ flex: 1, gap: spacing(1), paddingRight: ROW_HEART_GUTTER }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
+              <AppText variant="subheading" numberOfLines={1} style={{ flexShrink: 1 }}>
+                {venue.name}
+              </AppText>
+              <RatingChip venue={venue} />
+            </View>
+            <AppText variant="bodySm" color="secondary">
+              {t(`city.${venue.city}`)}
+            </AppText>
+            {chips}
+          </View>
+        </PressableScale>
+        <View style={{ position: 'absolute', top: 0, bottom: 0, right: CARD_PADDING + CARD_BORDER, justifyContent: 'center' }}>
+          <HeartButton venueId={venue.id} />
+        </View>
+      </View>
+    );
+  }
+
+  // 'split' — results card. Same sibling-hoist fix; the heart still overlays
+  // the image's top-right corner (spec calls for carousel + split to keep
+  // that placement), computed from the card's own padding/border since the
+  // image sits left of the text column rather than flush with the card edge.
+  return (
+    <View>
       <PressableScale
         onPress={open}
         scaleTo={0.98}
@@ -183,114 +256,78 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
             borderWidth: 1,
             borderColor: colors.border,
             padding: spacing(2.5),
-            alignItems: 'center',
           },
           mode === 'light' ? shadow.card : null,
         ]}
       >
-        <BrandedImage uri={venue.photos[0]}
-          style={{ width: 64, height: 64, borderRadius: radius.md }}
-          contentFit="cover"
-          transition={200}
-        />
-        <View style={{ flex: 1, gap: spacing(1) }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
-            <AppText variant="subheading" numberOfLines={1} style={{ flexShrink: 1 }}>
-              {venue.name}
-            </AppText>
-            <RatingChip venue={venue} />
-          </View>
-          <AppText variant="bodySm" color="secondary">
-            {t(`city.${venue.city}`)}
-          </AppText>
-          {chips}
-        </View>
-        <HeartButton venueId={venue.id} />
-      </PressableScale>
-    );
-  }
-
-  // 'split' — results card
-  return (
-    <PressableScale
-      onPress={open}
-      scaleTo={0.98}
-      accessibilityRole="button"
-      accessibilityLabel={venue.name}
-      style={[
-        {
-          flexDirection: 'row',
-          gap: spacing(3),
-          backgroundColor: colors.surface,
-          borderRadius: radius.lg,
-          borderWidth: 1,
-          borderColor: colors.border,
-          padding: spacing(2.5),
-        },
-        mode === 'light' ? shadow.card : null,
-      ]}
-    >
-      <View>
-        <BrandedImage uri={venue.photos[0]}
-          style={{ width: 118, height: 132, borderRadius: radius.md }}
-          contentFit="cover"
-          transition={200}
-        />
-        {venue.featured ? (
-          <View
-            style={{
-              position: 'absolute',
-              top: spacing(1.5),
-              left: spacing(1.5),
-              backgroundColor: colors.primary,
-              borderRadius: radius.sm,
-              paddingHorizontal: spacing(2),
-              paddingVertical: 3,
-            }}
-          >
-            <AppText variant="caption" style={{ color: colors.onPrimary }}>
-              {t('common.popularBadge')}
-            </AppText>
-          </View>
-        ) : null}
-      </View>
-      <View style={{ flex: 1, gap: spacing(1.5) }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing(2) }}>
-          <AppText variant="subheading" numberOfLines={1} style={{ flexShrink: 1 }}>
-            {venue.name}
-          </AppText>
-          <HeartButton venueId={venue.id} />
-        </View>
-        <View style={{ alignSelf: 'flex-start' }}>
-          <ScoreBadge venue={venue} size="sm" />
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
-          <Ionicons name="business-outline" size={13} color={colors.textSecondary} />
-          <AppText variant="bodySm" color="secondary">
-            {t(`venueTypeShort.${venue.venueType}`)}
-          </AppText>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
-          <Ionicons name="people-outline" size={13} color={colors.textSecondary} />
-          <AppText variant="bodySm" color="secondary">
-            {t('venue.capacityLine', { min: venue.capacityMin, max: venue.capacityMax })}
-          </AppText>
-        </View>
-        <Divider />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <AppText variant="bodySm" color="secondary">
-            {t('common.from')}{' '}
-            <AppText variant="price" style={{ fontSize: 15 }}>
-              {formatMkd(minEstimateMkd(venue), locale)}
-            </AppText>
-          </AppText>
-          {showAvailable ? (
-            <AppText variant="bodySmStrong" color="success">
-              {t('results.available')}
-            </AppText>
+        <View>
+          <BrandedImage uri={venue.photos[0]}
+            style={{ width: SPLIT_IMAGE_WIDTH, height: 132, borderRadius: radius.md }}
+            contentFit="cover"
+            transition={200}
+          />
+          {venue.featured ? (
+            <View
+              style={{
+                position: 'absolute',
+                top: spacing(1.5),
+                left: spacing(1.5),
+                backgroundColor: colors.primary,
+                borderRadius: radius.sm,
+                paddingHorizontal: spacing(2),
+                paddingVertical: 3,
+              }}
+            >
+              <AppText variant="caption" style={{ color: colors.onPrimary }}>
+                {t('common.popularBadge')}
+              </AppText>
+            </View>
           ) : null}
         </View>
+        <View style={{ flex: 1, gap: spacing(1.5) }}>
+          <AppText variant="subheading" numberOfLines={1}>
+            {venue.name}
+          </AppText>
+          <View style={{ alignSelf: 'flex-start' }}>
+            <ScoreBadge venue={venue} size="sm" />
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
+            <Ionicons name="business-outline" size={13} color={colors.textSecondary} />
+            <AppText variant="bodySm" color="secondary">
+              {t(`venueTypeShort.${venue.venueType}`)}
+            </AppText>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
+            <Ionicons name="people-outline" size={13} color={colors.textSecondary} />
+            <AppText variant="bodySm" color="secondary">
+              {t('venue.capacityLine', { min: venue.capacityMin, max: venue.capacityMax })}
+            </AppText>
+          </View>
+          <Divider />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <AppText variant="bodySm" color="secondary">
+              {t('common.from')}{' '}
+              <AppText variant="price" style={{ fontSize: 15 }}>
+                {formatMkd(minEstimateMkd(venue), locale)}
+              </AppText>
+            </AppText>
+            {showAvailable ? (
+              <AppText variant="bodySmStrong" color="success">
+                {t('results.available')}
+              </AppText>
+            ) : null}
+          </View>
+        </View>
+      </PressableScale>
+      <View
+        style={{
+          position: 'absolute',
+          top: CARD_PADDING + CARD_BORDER + spacing(2),
+          left: CARD_PADDING + CARD_BORDER + SPLIT_IMAGE_WIDTH - spacing(2) - 30,
+        }}
+      >
+        <HeartButton venueId={venue.id} onImage />
       </View>
-    </PressableScale>
+    </View>
   );
 }
