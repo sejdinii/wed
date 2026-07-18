@@ -65,7 +65,7 @@ freely; existing ones only if the slice spec grants them), `src/lib/*` helpers
 - **Radius**: xs 6 · sm 10 · md 14 · lg 18 · xl 26 · pill 999
 - **Type scale** (all Manrope): display 800/26/32 · title 800/20/26 · heading 800/17/22 · subheading 700/15/20 · body 500/14/20 · bodyStrong 700/14/20 · bodySm 500/13/18 · bodySmStrong 700/13/18 · label 600/12/16 · caption 600/11/14 · price 800/16/20 · priceHero 800/30/36
 - **Shadows**: `shadow.card` {#3B2E6E, y3, 0.08, r10, elev3} · `shadow.raised` {#3B2E6E, y8, 0.14, r20, elev8} — light mode only; dark mode uses borders.
-- **Light palette**: background/surface #FFFFFF · surfaceElevated #F1EFF8 · text #1E1B2E · textSecondary #5A5670 · textTertiary #8D89A3 · primary #5B21B6 · onPrimary #FFF · mint #F0EDFA · onMint #4C1D95 · chip #1E1B2E · onChip #FFF · amber #D97706 / amberSoft #FBF0DC · success #16A34A / successSoft #E8F7EE · danger #DC2626 / dangerSoft #FCE9E9 · urgency #DC2626 · gold #5B21B6 · border #E7E4F0 · borderStrong #CDC8DE · skeleton #ECE9F4 · overlay rgba(30,27,46,.55)
+- **Light palette**: background/surface #FFFFFF · surfaceElevated #F1EFF8 · text #1E1B2E · textSecondary #5A5670 · textTertiary #8D89A3 · primary #5B21B6 · onPrimary #FFF · mint #F0EDFA · onMint #4C1D95 · chip #1E1B2E · onChip #FFF · amber #D97706 / amberSoft #FBF0DC · success #16A34A / successSoft #E8F7EE · danger #DC2626 / dangerSoft #FCE9E9 / onDanger #FFF (dark: #2B0B0B — label ON danger fills) · urgency #DC2626 · gold #5B21B6 · border #E7E4F0 · borderStrong #CDC8DE · skeleton #ECE9F4 · overlay rgba(30,27,46,.55)
 - **Dark palette**: background #141221 · surface #1B1830 · surfaceElevated #232040 · text #EDEBF5 · primary #8B5CF6 · mint #292344 / onMint #C4B5FD · borders #2B2748/#413C66 (full table in `src/design/theme.tsx`)
 - **Fonts**: Manrope 400/500/600/700/800 via @expo-google-fonts, loaded in root layout.
 - RULE: never hardcode a color/size in a screen — always tokens + `useTheme()`.
@@ -74,7 +74,7 @@ freely; existing ones only if the slice spec grants them), `src/lib/*` helpers
 ## Component inventory
 **Design system (`src/design/components/`)** — AppText (variant+color+align);
 Button (title/onPress; variants primary|dark|mint|outline|ghost|danger; sizes
-sm|md|lg; loading/iconLeft/fullWidth); Badge (label; tones
+sm 44|md 46|lg 54 — sm raised to the 44px touch floor 2026-07-18; loading/iconLeft/fullWidth); Badge (label; tones
 neutral|success|warning|danger|gold|urgency; dot); Chip (label/selected/icon);
 Card (padded surface + shadow); Screen (SafeArea wrapper, `edges` prop);
 Divider (inset); PressableScale (spring scale + haptic wrapper); Skeleton

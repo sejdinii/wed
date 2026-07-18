@@ -903,7 +903,11 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
   dashboard (the /v1/vendor/bookings/:id/cancel endpoint SHIPPED 2026-07-18
   with 100%-refund stamping + reason; no button calls it yet).
 
-## WAVE 5 — couple-side completeness (Booking.com-grade)
+## WAVE 5 — couple-side completeness — ✅ CORE SHIPPED 2026-07-18 (three
+## worktree slices + orchestrator batch, all reviewed and merged; exit
+## criteria met: zero dead buttons, real chat + in-app notification center
+## run-verified two-sided; map view deferred to Wave 6 WITH the reference
+## pack below)
 # CRITIC INTAKE 2026-07-17 — polish batch for the dead-button/honesty sweep:
 # home bell's hardcoded unread dot (fake signal — first to go), verify checking
 # state + mail icon + back hitSlop + "******" width, RefundTimeline today-marker
@@ -912,18 +916,22 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
 # localized a11y labels replacing "♥ ↥ 🔔", checkout title de-piping +
 # reassurance-copy dedupe (×4 → ×2) + kapar-bar skeleton instead of "€0",
 # per-section edit links on the review step.
-- [ ] P0 — map view on results (VenueMap exists; the pill is a dead end).
+- [ ] P0 MOVED → Wave 6 — map view on results, now GATED on the 2026-07-18
+  founder pack (DESIGN INTEL "RESULTS LIST↔MAP TOGGLE" + "WEB MAP
+  IMPLEMENTATION FOR EXPO": maplibre-react-native + maplibre-gl/react-map-gl,
+  OpenFreeMap tiles). The dead pill was REMOVED this wave — honesty over
+  affordance theatre.
   FOUNDER PACK FILED 2026-07-18 (this pass): see DESIGN INTEL → "RESULTS
   LIST↔MAP TOGGLE..." and "WEB MAP IMPLEMENTATION FOR EXPO..." for the
   sourced entry-affordance/pin/cluster/web-alternative research this GATES
   the Wave 6 map slice on, plus the three paired PROPOSED FEATURES rows
   (mobile UX shape, web map component + license/cost, filter persistence).
-- [ ] P0 — decline UX v2 (founder-accepted 2026-07-18): required reason
-  category + mandatory text on "other" (RtB shape), and the COUPLE-side
-  decline experience — show the reason on booking detail (currently stored
-  but never shown to the couple; see DISCOVERED GAPS 2026-07-18).
-- [ ] P0 — real couple↔vendor chat replacing the scripted bot (gaps: "one-way
-  theatre", "hardcoded Macedonian bot messages").
+- [x] P0 (couple half) SHIPPED 2026-07-18 — the couple now sees the decline
+  reason quoted on booking detail + a "Find another venue" escape.
+  Required-category upgrade (RtB shape) → Wave 6 (deliberate cut, logged).
+- [x] P0 — real chat SHIPPED 2026-07-18 (server thread, both sides, verified
+  live; bot is mock-only fiction). Report/block (founder: table-stakes)
+  → Wave 6 P1.
   CHAT SAFETY PACK FILED 2026-07-18 (this pass): build report + block INTO
   this slice (MVP-blocking per DESIGN INTEL → "CHAT SAFETY TABLE-STAKES...")
   — cheapest possible moment, before the screen ships. Explicitly do NOT add
@@ -941,15 +949,17 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
   verified delivery) stays a separate Wave 4/later line item per the
   orchestrator's framing; build the table + endpoints so push is additive
   later with zero rearchitecture (Uber Push-Inbox reference).
-- [ ] P1 — dead-button elimination: terms/privacy static pages, help/support,
-  add-to-calendar via expo-calendar; notification preferences wired to real
-  push opt-ins.
+- [x] P1 — dead-button elimination SHIPPED 2026-07-18: legal drafts ×3
+  locales (MK privacy checklist applied), /support, .ics add-to-calendar
+  (web; native hidden pending device verification), toggles wired to the
+  in-app center, map pill + personal-info row honestly removed.
   PRIVACY-NOTICE CONTENT FILED 2026-07-18 (this pass): the terms/privacy
   static page item now has a sourced content checklist — see RISKS → "MK/EU
   DATA-PRIVACY MINIMUMS..." and the paired PROPOSED FEATURES row. Framed
   explicitly as drafting input, not a substitute for counsel review before
   real users sign up.
-- [ ] P1 — full locale QA sweep (en/mk/sq) across both modes.
+- [ ] P1 MOVED → Wave 6 — full locale QA sweep rides the design-critic
+  launch pass.
 
 ## WAVE 6 — hardening & launch readiness
 - [ ] P0 — design-critic full pass (both modes, light/dark, all locales) + fix
