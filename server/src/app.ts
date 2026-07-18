@@ -4,6 +4,7 @@ import Fastify from 'fastify';
 import { authRoutes } from './routes/auth.js';
 import { bookingRoutes } from './routes/bookings.js';
 import { messageRoutes } from './routes/messages.js';
+import { notificationRoutes } from './routes/notifications.js';
 import { vendorRoutes } from './routes/vendor.js';
 import { venueRoutes } from './routes/venues.js';
 
@@ -22,6 +23,7 @@ export function buildApp() {
   app.register(authRoutes);
   app.register(vendorRoutes);
   app.register(messageRoutes);
+  app.register(notificationRoutes);
 
   return app;
 }

@@ -511,4 +511,26 @@ export const sq: Dict = {
   'support.emailFailed': 'Nuk arritëm ta hapim aplikacionin e email-it. Na kontaktoni direkt në hello@kapar.mk.',
 
   'settings.notificationsCaption': 'Kontrollon çfarë shfaqet në njoftimet brenda aplikacionit.',
+  // Wave 5: notification center + bell (PROPOSED — orchestrator merges).
+  'notif.title': 'Njoftimet',
+  'notif.emptyTitle': 'Ende pa njoftime',
+  'notif.emptyBody': 'Kërkesat, ndryshimet e rezervimit dhe mesazhet do të shfaqen këtu kur të ndodhin.',
+  'notif.justNow': 'Sapo tani',
+  'notif.minutesAgo': 'Para {count} min',
+  'notif.hoursAgo': 'Para {count} orë',
+  'notif.daysAgo': 'Para {count} ditë',
+  'notif.bookingRequestBody': '{name} kërkoi një rezervim',
+  'notif.reservedBody': '{venue} e mbajti datën — paguaj kaparin gjatë vizitës',
+  'notif.confirmedBody': '{venue} e mori kaparin — rezervimi u konfirmua',
+  'notif.cancelledByVenueBody': '{venue} e anuloi rezervimin',
+  'notif.cancelledByCoupleBody': '{name} e anuloi rezervimin',
+  'notif.expiredBody': 'Kërkesa skadoi pa përgjigje',
+  'notif.completedBody': 'Rezervimi në {venue} ka përfunduar',
+  'notif.messageBody': 'Mesazh i ri për rezervimin',
+
+  // Wave 5: vendor cancel + message entry points on venue-bookings.tsx.
+  'vendor.cancelBookingAction': 'Anulo rezervimin',
+  'vendor.cancelSend': 'Dërgo anulimin',
+  'vendor.cancelConfirmBody': '100% e kaparit i kthehet {name}.',
+  'vendor.messageAction': 'Mesazh',
 };

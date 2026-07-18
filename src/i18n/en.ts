@@ -508,4 +508,26 @@ export const en: Dict = {
   'support.emailFailed': 'We couldn’t open your email app. Reach us directly at hello@kapar.mk.',
 
   'settings.notificationsCaption': 'Controls what shows up in your in-app notifications.',
+  // Wave 5: notification center + bell (PROPOSED — orchestrator merges).
+  'notif.title': 'Notifications',
+  'notif.emptyTitle': 'No notifications yet',
+  'notif.emptyBody': 'Requests, booking updates and messages will show up here as they happen.',
+  'notif.justNow': 'Just now',
+  'notif.minutesAgo': '{count}m ago',
+  'notif.hoursAgo': '{count}h ago',
+  'notif.daysAgo': '{count}d ago',
+  'notif.bookingRequestBody': '{name} requested a booking',
+  'notif.reservedBody': '{venue} held your date — pay the kapar at your visit',
+  'notif.confirmedBody': '{venue} received the kapar — booking confirmed',
+  'notif.cancelledByVenueBody': '{venue} cancelled the booking',
+  'notif.cancelledByCoupleBody': '{name} cancelled the booking',
+  'notif.expiredBody': 'The request expired with no answer',
+  'notif.completedBody': 'Your booking at {venue} is complete',
+  'notif.messageBody': 'New message about the booking',
+
+  // Wave 5: vendor cancel + message entry points on venue-bookings.tsx.
+  'vendor.cancelBookingAction': 'Cancel booking',
+  'vendor.cancelSend': 'Send cancellation',
+  'vendor.cancelConfirmBody': '100% of the kapar returns to {name}.',
+  'vendor.messageAction': 'Message',
 };

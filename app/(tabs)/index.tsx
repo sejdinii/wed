@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/design/components/AppText';
@@ -17,9 +17,10 @@ import { VenueCard } from '@/components/VenueCard';
 import { useTheme } from '@/design/theme';
 import { radius, shadow, spacing } from '@/design/tokens';
 import { formatDowMediumDate, nextFreeSaturdays, todayISO } from '@/lib/dates';
-import { venueApi } from '@/data/api';
+import { API_MODE, venueApi } from '@/data/api';
+import { isNotificationVisible, notificationApi } from '@/data/notificationApi';
 import type { Venue } from '@/domain/types';
-import { usePreferences } from '@/stores/preferences';
+import { useIsAuthenticated, usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 /**
@@ -45,6 +46,38 @@ export default function HomeScreen() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const retry = () => setAttempt((n) => n + 1);
+
+  // The bell (Wave 5) — real server-backed unread count, never a fake dot.
+  // Mock mode has no backend to poll, so it stays absent rather than lying.
+  const authed = useIsAuthenticated();
+  const notifConfirm = usePreferences((s) => s.notifConfirm);
+  const notifMessages = usePreferences((s) => s.notifMessages);
+  const notifRefund = usePreferences((s) => s.notifRefund);
+  const [unreadBadge, setUnreadBadge] = useState(0);
+
+  const refreshBadge = useCallback(async () => {
+    if (!API_MODE || !authed) return;
+    try {
+      const { items } = await notificationApi.list();
+      const prefs = { notifConfirm, notifMessages, notifRefund };
+      setUnreadBadge(items.filter((i) => isNotificationVisible(i.kind, prefs) && !i.readAtISO).length);
+    } catch {
+      // Transient failure — keep showing the last known count rather than flashing 0.
+    }
+  }, [authed, notifConfirm, notifMessages, notifRefund]);
+
+  useEffect(() => {
+    if (!API_MODE || !authed) return;
+    refreshBadge();
+    const handle = setInterval(refreshBadge, 60_000);
+    return () => clearInterval(handle);
+  }, [refreshBadge, authed]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshBadge();
+    }, [refreshBadge]),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -119,8 +152,41 @@ export default function HomeScreen() {
             </AppText>
             <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
           </PressableScale>
-          {/* The bell returns WITH the notification center (Wave 5) — a dead
-              pressable with a hardcoded unread dot was a fake signal. */}
+          {/* The bell (Wave 5): real server-backed unread count via
+              notificationApi — the old version was a dead pressable with a
+              hardcoded dot, a fake signal. Absent in mock mode: there's no
+              backend to earn a badge from. */}
+          {API_MODE && authed ? (
+            <PressableScale
+              onPress={() => router.push('/notifications')}
+              hapticFeedback="select"
+              accessibilityRole="button"
+              accessibilityLabel={t('notif.title')}
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="notifications-outline" size={22} color={colors.text} />
+              {unreadBadge > 0 ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 6,
+                    right: 6,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: colors.danger,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 3,
+                  }}
+                >
+                  <AppText style={{ color: '#FFFFFF', fontSize: 9, lineHeight: 11 }}>
+                    {unreadBadge > 99 ? '99+' : String(unreadBadge)}
+                  </AppText>
+                </View>
+              ) : null}
+            </PressableScale>
+          ) : null}
         </View>
 
         {/* Headline: ink first line, violet second line + heart */}

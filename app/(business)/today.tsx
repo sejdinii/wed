@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { AppText } from '@/design/components/AppText';
 import { Badge } from '@/design/components/Badge';
@@ -18,8 +18,10 @@ import { haptic } from '@/lib/haptics';
 import { formatMediumDate } from '@/lib/dates';
 import { REQUEST_TTL_HOURS } from '@/domain/kapar';
 import type { Booking, Venue } from '@/domain/types';
+import { API_MODE } from '@/data/api';
+import { isNotificationVisible, notificationApi } from '@/data/notificationApi';
 import { vendorApi } from '@/data/vendorApi';
-import { usePreferences } from '@/stores/preferences';
+import { useIsAuthenticated, usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
 /** Hours left before an unanswered request auto-expires (server enforces the actual expiry). */
@@ -64,6 +66,38 @@ export default function BusinessTodayScreen() {
     const handle = setInterval(() => setNowMs(Date.now()), 60_000);
     return () => clearInterval(handle);
   }, []);
+
+  // The bell (Wave 5) — same honest, server-backed unread count as the
+  // couple-side header; absent in mock mode (no backend to poll).
+  const authed = useIsAuthenticated();
+  const notifConfirm = usePreferences((s) => s.notifConfirm);
+  const notifMessages = usePreferences((s) => s.notifMessages);
+  const notifRefund = usePreferences((s) => s.notifRefund);
+  const [unreadBadge, setUnreadBadge] = useState(0);
+
+  const refreshBadge = useCallback(async () => {
+    if (!API_MODE || !authed) return;
+    try {
+      const { items } = await notificationApi.list();
+      const prefs = { notifConfirm, notifMessages, notifRefund };
+      setUnreadBadge(items.filter((i) => isNotificationVisible(i.kind, prefs) && !i.readAtISO).length);
+    } catch {
+      // Transient failure — keep showing the last known count rather than flashing 0.
+    }
+  }, [authed, notifConfirm, notifMessages, notifRefund]);
+
+  useEffect(() => {
+    if (!API_MODE || !authed) return;
+    refreshBadge();
+    const handle = setInterval(refreshBadge, 60_000);
+    return () => clearInterval(handle);
+  }, [refreshBadge, authed]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshBadge();
+    }, [refreshBadge]),
+  );
 
   const refresh = useCallback(async () => {
     const mine = await vendorApi.myVenue();
@@ -162,6 +196,39 @@ export default function BusinessTodayScreen() {
           </AppText>
         </View>
         <Badge label={t('business.badge')} tone="gold" />
+        {/* The bell (Wave 5): real server-backed unread count. Absent in
+            mock mode — there's no backend to earn a badge from. */}
+        {API_MODE && authed ? (
+          <PressableScale
+            onPress={() => router.push('/notifications')}
+            hapticFeedback="select"
+            accessibilityRole="button"
+            accessibilityLabel={t('notif.title')}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.text} />
+            {unreadBadge > 0 ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 6,
+                  right: 6,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  backgroundColor: colors.danger,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 3,
+                }}
+              >
+                <AppText style={{ color: '#FFFFFF', fontSize: 9, lineHeight: 11 }}>
+                  {unreadBadge > 99 ? '99+' : String(unreadBadge)}
+                </AppText>
+              </View>
+            ) : null}
+          </PressableScale>
+        ) : null}
         <PressableScale
           onPress={() => router.replace('/(tabs)/profile')}
           hapticFeedback="select"

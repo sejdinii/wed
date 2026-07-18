@@ -513,6 +513,28 @@ export const mk = {
   'support.emailFailed': 'Не успеавме да ја отвориме апликацијата за е-пошта. Контактирај нè директно на hello@kapar.mk.',
 
   'settings.notificationsCaption': 'Одлучува што се појавува во известувањата во апликацијата.',
+  // Wave 5: notification center + bell (PROPOSED — orchestrator merges).
+  'notif.title': 'Известувања',
+  'notif.emptyTitle': 'Нема известувања',
+  'notif.emptyBody': 'Тука ќе се појават барањата, промените на резервации и пораките штом навистина се случат.',
+  'notif.justNow': 'Пред малку',
+  'notif.minutesAgo': 'Пред {count} мин',
+  'notif.hoursAgo': 'Пред {count} ч',
+  'notif.daysAgo': 'Пред {count} д',
+  'notif.bookingRequestBody': '{name} побара резервација',
+  'notif.reservedBody': '{venue} го задржа датумот — плати капар при посета',
+  'notif.confirmedBody': '{venue} го потврди капарот — резервацијата е потврдена',
+  'notif.cancelledByVenueBody': '{venue} ја откажа резервацијата',
+  'notif.cancelledByCoupleBody': '{name} ја откажа резервацијата',
+  'notif.expiredBody': 'Барањето истече без одговор',
+  'notif.completedBody': 'Резервацијата во {venue} е завршена',
+  'notif.messageBody': 'Нова порака за резервацијата',
+
+  // Wave 5: vendor cancel + message entry points on venue-bookings.tsx.
+  'vendor.cancelBookingAction': 'Откажи резервација',
+  'vendor.cancelSend': 'Испрати откажување',
+  'vendor.cancelConfirmBody': '100% од капарот се враќа на {name}.',
+  'vendor.messageAction': 'Порака',
 } as const;
 
 export type Dict = Record<keyof typeof mk, string>;

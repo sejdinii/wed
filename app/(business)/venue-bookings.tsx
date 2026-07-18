@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { AppText } from '@/design/components/AppText';
 import { Badge, type BadgeTone } from '@/design/components/Badge';
+import { Button } from '@/design/components/Button';
 import { EmptyState } from '@/design/components/EmptyState';
 import { ErrorState } from '@/design/components/ErrorState';
 import { PressableScale } from '@/design/components/PressableScale';
@@ -12,7 +13,8 @@ import { Screen } from '@/design/components/Screen';
 import { SegmentedControl } from '@/design/components/SegmentedControl';
 import { Skeleton } from '@/design/components/Skeleton';
 import { useTheme } from '@/design/theme';
-import { radius, spacing } from '@/design/tokens';
+import { radius, spacing, typeScale } from '@/design/tokens';
+import { haptic } from '@/lib/haptics';
 import { formatMediumDate } from '@/lib/dates';
 import { formatMkd } from '@/lib/money';
 import type { Booking, BookingStatus } from '@/domain/types';
@@ -52,6 +54,43 @@ export default function VendorBookingsScreen() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const retry = () => setAttempt((n) => n + 1);
+
+  // Vendor cancel (Wave 5 completion) — per-card busy/error/inline-reason state,
+  // same shape as today.tsx's decline flow.
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [cardErrors, setCardErrors] = useState<Record<string, boolean>>({});
+  const [cancellingIds, setCancellingIds] = useState<Record<string, boolean>>({});
+  const [cancelReasons, setCancelReasons] = useState<Record<string, string>>({});
+
+  const openCancel = (id: string) => {
+    setCardErrors((e) => ({ ...e, [id]: false }));
+    setCancellingIds((s) => ({ ...s, [id]: true }));
+  };
+  const closeCancel = (id: string) => {
+    setCancellingIds((s) => {
+      const next = { ...s };
+      delete next[id];
+      return next;
+    });
+  };
+  const onCancel = async (booking: Booking) => {
+    const reason = cancelReasons[booking.id]?.trim();
+    setBusyId(booking.id);
+    setCardErrors((e) => ({ ...e, [booking.id]: false }));
+    try {
+      const updated = await vendorApi.cancelBooking(booking.id, reason ? reason : undefined);
+      // The card moves to History on its own: it's the same `bookings` array,
+      // re-filtered by status into upcoming/history below.
+      setBookings((bs) => (bs ?? []).map((b) => (b.id === booking.id ? updated : b)));
+      closeCancel(booking.id);
+      haptic.success();
+    } catch {
+      haptic.error();
+      setCardErrors((e) => ({ ...e, [booking.id]: true }));
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -170,6 +209,68 @@ export default function VendorBookingsScreen() {
               {b.cancelReason ? (
                 <AppText variant="caption" color="secondary">
                   {t('vendor.cancelReasonLabel', { reason: b.cancelReason })}
+                </AppText>
+              ) : null}
+
+              {segment === 'upcoming' && (b.status === 'reserved' || b.status === 'confirmed') ? (
+                cancellingIds[b.id] ? (
+                  <View style={{ gap: spacing(2), marginTop: spacing(1) }}>
+                    <AppText variant="bodySm" style={{ color: colors.danger }}>
+                      {t('vendor.cancelConfirmBody', { name: b.contactName })}
+                    </AppText>
+                    <TextInput
+                      value={cancelReasons[b.id] ?? ''}
+                      onChangeText={(v) => setCancelReasons((r) => ({ ...r, [b.id]: v }))}
+                      placeholder={t('vendor.declineReasonPlaceholder')}
+                      placeholderTextColor={colors.textTertiary}
+                      accessibilityLabel={t('vendor.declineReasonPlaceholder')}
+                      style={{
+                        ...typeScale.body,
+                        color: colors.text,
+                        borderWidth: 1.5,
+                        borderColor: colors.borderStrong,
+                        borderRadius: radius.md,
+                        paddingHorizontal: spacing(3.5),
+                        height: 44,
+                      }}
+                    />
+                    <View style={{ flexDirection: 'row', gap: spacing(2.5) }}>
+                      <Button
+                        title={t('vendor.cancelSend')}
+                        onPress={() => onCancel(b)}
+                        loading={busyId === b.id}
+                        disabled={busyId !== null && busyId !== b.id}
+                        variant="danger"
+                        size="sm"
+                      />
+                      <Button title={t('common.back')} onPress={() => closeCancel(b.id)} disabled={busyId === b.id} variant="ghost" size="sm" />
+                    </View>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', gap: spacing(2.5), marginTop: spacing(1) }}>
+                    <Button title={t('vendor.cancelBookingAction')} onPress={() => openCancel(b.id)} variant="outline" size="sm" />
+                    <Button
+                      title={t('vendor.messageAction')}
+                      onPress={() => router.push(`/messages/${b.id}?as=vendor`)}
+                      variant="ghost"
+                      size="sm"
+                    />
+                  </View>
+                )
+              ) : (
+                <View style={{ marginTop: spacing(1) }}>
+                  <Button
+                    title={t('vendor.messageAction')}
+                    onPress={() => router.push(`/messages/${b.id}?as=vendor`)}
+                    variant="ghost"
+                    size="sm"
+                  />
+                </View>
+              )}
+
+              {cardErrors[b.id] ? (
+                <AppText variant="bodySm" color="danger">
+                  {t('error.body')}
                 </AppText>
               ) : null}
             </View>

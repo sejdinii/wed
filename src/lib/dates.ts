@@ -87,3 +87,20 @@ export function formatMonthTitle(date: Date, locale: Locale): string {
   return `${capitalised} ${date.getFullYear()}`;
 }
 
+/**
+ * Relative-time bucketing for a full ISO datetime (e.g. notification
+ * `createdAtISO`) — deliberately a bare {unit, count} pair, not a formatted
+ * string: the caller composes the final label via i18n (`notif.justNow` /
+ * `minutesAgo` / `hoursAgo` / `daysAgo`) so every locale supplies its own
+ * plural-agnostic template.
+ */
+export function relativeTimeParts(iso: string, nowMs: number = Date.now()): { unit: 'now' | 'minutes' | 'hours' | 'days'; count: number } {
+  const diffMs = Math.max(0, nowMs - new Date(iso).getTime());
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return { unit: 'now', count: 0 };
+  if (minutes < 60) return { unit: 'minutes', count: minutes };
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return { unit: 'hours', count: hours };
+  return { unit: 'days', count: Math.floor(hours / 24) };
+}
+
