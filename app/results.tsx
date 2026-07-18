@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, View } from 'react-native';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,9 +14,10 @@ import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
 import { Stepper } from '@/design/components/Stepper';
 import { MonthPager } from '@/components/MonthPager';
+import { ResultsMap } from '@/components/ResultsMap';
 import { VenueCard } from '@/components/VenueCard';
 import { useTheme } from '@/design/theme';
-import { radius, spacing } from '@/design/tokens';
+import { radius, shadow, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMediumDate, todayISO } from '@/lib/dates';
 import { cheapestPerGuest, minEstimateMkd, minKaparMkd } from '@/domain/kapar';
@@ -80,7 +81,7 @@ function applySort(venues: Venue[], sort: SortKey): Venue[] {
 export default function ResultsScreen() {
   const params = useLocalSearchParams<{ city?: CityKey; type?: VenueType; date?: string; guests?: string }>();
   const city = typeof params.city === 'string' ? (params.city as CityKey) : null;
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const { locale, t } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -96,6 +97,11 @@ export default function ResultsScreen() {
   const [sort, setSort] = useState<SortKey>('recommended');
   const [sortOpen, setSortOpen] = useState(false);
   const [draft, setDraft] = useState<Filters>(filters);
+
+  // List↔map toggle (Wave 6 — reinstated for real; see ResultsMap/.web).
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
 
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -135,6 +141,26 @@ export default function ResultsScreen() {
   const openSheet = () => {
     setDraft(filters);
     setSheetOpen(true);
+  };
+
+  // Filters/sort can drop the currently-selected pin out of view (same
+  // filtered array feeds both list and map — Wave 6 founder pack "filter
+  // persistence" finding) — clear a stale selection rather than show a
+  // mini-card for a venue no longer on screen.
+  useEffect(() => {
+    if (selectedVenueId && visible && !visible.some((v) => v.id === selectedVenueId)) {
+      setSelectedVenueId(null);
+    }
+  }, [visible, selectedVenueId]);
+
+  const toggleViewMode = () => {
+    haptic.select();
+    if (viewMode === 'list') {
+      setMapUnavailable(false);
+      setViewMode('map');
+    } else {
+      setViewMode('list');
+    }
   };
 
   return (
@@ -239,32 +265,122 @@ export default function ResultsScreen() {
         </PressableScale>
       </View>
 
-      <FlatList
-        data={visible ?? []}
-        keyExtractor={(v) => v.id}
-        contentContainerStyle={{ paddingHorizontal: spacing(4), paddingBottom: spacing(20), gap: spacing(3) }}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => <VenueCard venue={item} variant="split" showAvailable={filters.dateISO !== null} />}
-        ListEmptyComponent={
-          loadFailed ? (
+      {viewMode === 'list' ? (
+        <FlatList
+          data={visible ?? []}
+          keyExtractor={(v) => v.id}
+          contentContainerStyle={{ paddingHorizontal: spacing(4), paddingBottom: spacing(20), gap: spacing(3) }}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => <VenueCard venue={item} variant="split" showAvailable={filters.dateISO !== null} />}
+          ListEmptyComponent={
+            loadFailed ? (
+              <ErrorState onRetry={retry} />
+            ) : visible === null ? (
+              <View style={{ gap: spacing(3) }}>
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} height={150} radius={radius.lg} />
+                ))}
+              </View>
+            ) : (
+              <EmptyState
+                icon="calendar-clear-outline"
+                title={t('results.emptyTitle')}
+                body={t('results.emptyBody')}
+                actionLabel={hasFilters ? t('filters.clearAll') : undefined}
+                onAction={hasFilters ? () => setFilters({ ...EMPTY_FILTERS }) : undefined}
+              />
+            )
+          }
+        />
+      ) : (
+        // Map mode — same filtered `visible` array the list renders, per the
+        // founder pack's "filter persistence across the toggle" finding.
+        <View style={{ flex: 1 }}>
+          {loadFailed ? (
             <ErrorState onRetry={retry} />
           ) : visible === null ? (
-            <View style={{ gap: spacing(3) }}>
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} height={150} radius={radius.lg} />
-              ))}
+            <View style={{ flex: 1, padding: spacing(4) }}>
+              <Skeleton height={9999} style={{ flex: 1 }} radius={0} />
             </View>
           ) : (
-            <EmptyState
-              icon="calendar-clear-outline"
-              title={t('results.emptyTitle')}
-              body={t('results.emptyBody')}
-              actionLabel={hasFilters ? t('filters.clearAll') : undefined}
-              onAction={hasFilters ? () => setFilters({ ...EMPTY_FILTERS }) : undefined}
-            />
-          )
-        }
-      />
+            <View style={{ flex: 1 }}>
+              <ResultsMap
+                venues={visible}
+                selectedId={selectedVenueId}
+                onSelectVenue={setSelectedVenueId}
+                onFatalError={() => {
+                  setMapUnavailable(true);
+                  setViewMode('list');
+                }}
+              />
+              {visible.length === 0 ? (
+                <View style={[StyleSheet.absoluteFillObject, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }]}>
+                  <EmptyState
+                    icon="calendar-clear-outline"
+                    title={t('results.emptyTitle')}
+                    body={t('results.emptyBody')}
+                    actionLabel={hasFilters ? t('filters.clearAll') : undefined}
+                    onAction={hasFilters ? () => setFilters({ ...EMPTY_FILTERS }) : undefined}
+                  />
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
+      )}
+
+      {mapUnavailable ? (
+        <View
+          style={{
+            position: 'absolute',
+            left: spacing(4),
+            right: spacing(4),
+            bottom: insets.bottom + spacing(4) + 62,
+            backgroundColor: colors.dangerSoft,
+            borderRadius: radius.md,
+            paddingHorizontal: spacing(3.5),
+            paddingVertical: spacing(2.5),
+          }}
+        >
+          <AppText variant="bodySm" style={{ color: colors.danger }} align="center">
+            {t('results.mapUnavailable')}
+          </AppText>
+        </View>
+      ) : null}
+
+      {/* Floating List/Map toggle pill (Wave 6 — reinstated for real; the
+          Wave 5 honesty sweep removed the old dead placeholder that only
+          fired a haptic). Bottom-center pill matches the founder pack's
+          "Airbnb-style FAB toggle, pill shape reads friendlier" finding —
+          see BACKLOG.md DESIGN INTEL "RESULTS LIST↔MAP TOGGLE". */}
+      <PressableScale
+        onPress={toggleViewMode}
+        hapticFeedback={null}
+        accessibilityRole="button"
+        accessibilityLabel={viewMode === 'list' ? t('results.mapView') : t('results.listView')}
+        style={[
+          {
+            position: 'absolute',
+            bottom: insets.bottom + spacing(4),
+            alignSelf: 'center',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing(2),
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: radius.pill,
+            paddingHorizontal: spacing(5),
+            paddingVertical: spacing(3),
+          },
+          mode === 'light' ? shadow.raised : null,
+        ]}
+      >
+        <Ionicons name={viewMode === 'list' ? 'map-outline' : 'list-outline'} size={17} color={colors.primary} />
+        <AppText variant="bodyStrong" color="brand">
+          {viewMode === 'list' ? t('results.mapView') : t('results.listView')}
+        </AppText>
+      </PressableScale>
 
       {/* Sort options sheet */}
       <Modal visible={sortOpen} transparent animationType="slide" onRequestClose={() => setSortOpen(false)}>
@@ -307,10 +423,6 @@ export default function ResultsScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Map View pill removed (Wave 5 honesty sweep) — it only fired a
-          haptic and pretended to open a map. Map view lands Wave 6 with real
-          founder research behind it; see SUGGESTIONS in the wave report. */}
 
       {/* Filters sheet */}
       <Modal visible={sheetOpen} animationType="slide" onRequestClose={() => setSheetOpen(false)}>

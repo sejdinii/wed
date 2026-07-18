@@ -7,6 +7,7 @@ export const en: Dict = {
   'common.back': 'Back',
   'common.done': 'Done',
   'common.cancel': 'Cancel',
+  'common.close': 'Close',
   'common.retry': 'Try again',
   'common.seeAll': 'See all',
   'common.from': 'from',
@@ -394,6 +395,10 @@ export const en: Dict = {
   'results.recommended': 'Recommended',
   'results.available': 'Available',
   'results.mapView': 'Map View',
+  'results.listView': 'List',
+  'results.mapUnavailable': "Map couldn't load — showing the list instead.",
+  'results.mapNativePendingTitle': 'Map view is coming soon',
+  'results.mapNativePendingBody': '{count} venues match your filters. The app map view still needs verification on a real device — switch to List.',
 
   'availability.selectedDate': 'Selected Date',
   'availability.legendAvailable': 'Available',

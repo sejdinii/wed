@@ -9,6 +9,8 @@ export const mk = {
   'common.back': 'Назад',
   'common.done': 'Готово',
   'common.cancel': 'Откажи',
+  // Wave 6: map mini-card dismiss (results.tsx map mode — PROPOSED).
+  'common.close': 'Затвори',
   'common.retry': 'Обиди се повторно',
   'common.seeAll': 'Види сè',
   'common.from': 'од',
@@ -396,6 +398,11 @@ export const mk = {
   'results.recommended': 'Препорачано',
   'results.available': 'Слободно',
   'results.mapView': 'Мапа',
+  // Wave 6: real list↔map toggle (PROPOSED — orchestrator merges).
+  'results.listView': 'Листа',
+  'results.mapUnavailable': 'Мапата не се вчита — прикажуваме листа наместо тоа.',
+  'results.mapNativePendingTitle': 'Прегледот на мапа доаѓа наскоро',
+  'results.mapNativePendingBody': '{count} сали одговараат на филтрите. Прегледот на мапа во апликацијата сè уште чека проверка на вистински уред — префрли на „Листа“.',
 
   'availability.selectedDate': 'Избран датум',
   'availability.legendAvailable': 'Слободно',

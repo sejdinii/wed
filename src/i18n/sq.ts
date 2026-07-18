@@ -7,6 +7,7 @@ export const sq: Dict = {
   'common.back': 'Prapa',
   'common.done': 'U krye',
   'common.cancel': 'Anulo',
+  'common.close': 'Mbyll',
   'common.retry': 'Provo përsëri',
   'common.seeAll': 'Shiko të gjitha',
   'common.from': 'nga',
@@ -394,6 +395,10 @@ export const sq: Dict = {
   'results.recommended': 'Rekomanduar',
   'results.available': 'E lirë',
   'results.mapView': 'Harta',
+  'results.listView': 'Lista',
+  'results.mapUnavailable': 'Harta nuk u ngarkua — po shfaqim listën në vend të saj.',
+  'results.mapNativePendingTitle': 'Pamja e hartës vjen së shpejti',
+  'results.mapNativePendingBody': '{count} salla përputhen me filtrat. Pamja e hartës në aplikacion ende pret verifikim në një pajisje reale — kalo te "Lista".',
 
   'availability.selectedDate': 'Data e zgjedhur',
   'availability.legendAvailable': 'E lirë',
