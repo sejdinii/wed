@@ -93,12 +93,6 @@ export default function BusinessTodayScreen() {
     return () => clearInterval(handle);
   }, [refreshBadge, authed]);
 
-  useFocusEffect(
-    useCallback(() => {
-      refreshBadge();
-    }, [refreshBadge]),
-  );
-
   const refresh = useCallback(async () => {
     const mine = await vendorApi.myVenue();
     setVenue(mine ?? 'none');
@@ -119,6 +113,16 @@ export default function BusinessTodayScreen() {
       cancelled = true;
     };
   }, [refresh, attempt]);
+
+  // A request arriving while the vendor sits on Today must appear when they
+  // come back to the screen — the inbox is not a one-shot snapshot (critic).
+  // Badge + feed both refetch on focus; failures keep the last-known state.
+  useFocusEffect(
+    useCallback(() => {
+      refreshBadge();
+      refresh().catch(() => {});
+    }, [refreshBadge, refresh]),
+  );
 
   const togglePublish = async () => {
     if (!venue || venue === 'none' || publishing) return;
@@ -279,17 +283,20 @@ export default function BusinessTodayScreen() {
                     {t('vendor.draftHint')}
                   </AppText>
                 ) : null}
-                <View style={{ flexDirection: 'row', gap: spacing(2.5), marginTop: spacing(1) }}>
+                {/* flexWrap + sm: four md buttons overflowed 390px screens —
+                    two of the four actions were unreachable (critic, W4 pass;
+                    same collapsed-CTA class as b07b322). */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2.5), marginTop: spacing(1) }}>
                   <Button
                     title={venue.published ? t('vendor.unpublish') : t('vendor.publish')}
                     onPress={togglePublish}
                     loading={publishing}
                     variant={venue.published ? 'outline' : 'primary'}
-                    size="md"
+                    size="sm"
                   />
-                  <Button title={t('vendor.calendarTitle')} onPress={() => router.push('/calendar')} variant="dark" size="md" />
-                  <Button title={t('vendor.bookingsTitle')} onPress={() => router.push('/venue-bookings')} variant="outline" size="md" />
-                  <Button title={t('vendor.viewAsCouple')} onPress={() => router.push(`/venue/${venue.id}`)} variant="ghost" size="md" />
+                  <Button title={t('vendor.calendarTitle')} onPress={() => router.push('/calendar')} variant="dark" size="sm" />
+                  <Button title={t('vendor.bookingsTitle')} onPress={() => router.push('/venue-bookings')} variant="outline" size="sm" />
+                  <Button title={t('vendor.viewAsCouple')} onPress={() => router.push(`/venue/${venue.id}`)} variant="ghost" size="sm" />
                 </View>
               </View>
             </View>

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { AppText } from '@/design/components/AppText';
 import { Badge, type BadgeTone } from '@/design/components/Badge';
@@ -54,6 +54,14 @@ export default function VendorBookingsScreen() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const retry = () => setAttempt((n) => n + 1);
+
+  // Focus refetch (critic): silent — keeps the last list on failure and never
+  // flashes the skeleton for a background refresh.
+  useFocusEffect(
+    useCallback(() => {
+      vendorApi.bookings().then(setBookings).catch(() => {});
+    }, []),
+  );
 
   // Vendor cancel (Wave 5 completion) — per-card busy/error/inline-reason state,
   // same shape as today.tsx's decline flow.

@@ -21,7 +21,9 @@ export interface ButtonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const HEIGHT: Record<ButtonSize, number> = { sm: 38, md: 46, lg: 54 };
+// sm floor raised 38→44: Confirm/Decline — the highest-stakes taps in the
+// app — ship at sm and must clear the 44px touch-target floor (critic).
+const HEIGHT: Record<ButtonSize, number> = { sm: 44, md: 46, lg: 54 };
 
 /** Rounded-rectangle CTA — solid violet for primary actions (v3 design). */
 export function Button({
