@@ -542,6 +542,17 @@ export const mk = {
   'vendor.cancelSend': 'Испрати откажување',
   'vendor.cancelConfirmBody': '100% од капарот се враќа на {name}.',
   'vendor.messageAction': 'Порака',
+
+  // Wave 6 (PROPOSED): decline categories (RtB shape) — shared by the
+  // couple's decline box (booking/[id].tsx) and the vendor's decline-reason
+  // chips (today.tsx, SHARED handoff) and dashboard caption (venue-bookings.tsx,
+  // SHARED handoff).
+  'declineCat.date_unavailable': 'Датумот повеќе не е достапен',
+  'declineCat.capacity_mismatch': 'Бројот на гости не одговара',
+  'declineCat.budget_mismatch': 'Буџетот не одговара на нашите цени',
+  'declineCat.other': 'Друга причина',
+  'vendor.declineCategoryLabel': 'Причина за одбивање',
+  'vendor.declineOtherRequired': 'Додади кратко објаснување за „Друга причина“.',
 } as const;
 
 export type Dict = Record<keyof typeof mk, string>;

@@ -33,7 +33,16 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 /** Exported for the vendor routes — ONE serializer; field drift between copies already bit us once (cancelReason). */
-export function toBooking(row: BookingRow, events: EventRow[], venue: Pick<VenueRow, 'name' | 'photos' | 'city'>, hallName?: string): Booking {
+export function toBooking(
+  row: BookingRow,
+  events: EventRow[],
+  venue: Pick<VenueRow, 'name' | 'photos' | 'city'>,
+  hallName?: string,
+  // Wave 6: all 3 locales, additive — the vendor routes (Wave 4) only ever
+  // pass the legacy mk-only `hallName`; this stays undefined for them, which
+  // is fine, `hallNames` is optional on Booking.
+  hallNames?: { mk: string; en: string; sq: string },
+): Booking {
   return {
     id: row.id,
     confirmationCode: row.confirmationCode,
@@ -62,6 +71,7 @@ export function toBooking(row: BookingRow, events: EventRow[], venue: Pick<Venue
     contactPhone: row.contactPhone,
     ...(row.specialRequests ? { specialRequests: row.specialRequests } : {}),
     ...(hallName ? { hallName } : {}),
+    ...(hallNames ? { hallNames } : {}),
   };
 }
 
@@ -75,6 +85,7 @@ export async function loadBooking(id: string): Promise<Booking | undefined> {
   ]);
   if (!venue) return undefined;
   let hallName: string | undefined;
+  let hallNames: { mk: string; en: string; sq: string } | undefined;
   if (row.hallId) {
     const hall = await db
       .select()
@@ -82,10 +93,14 @@ export async function loadBooking(id: string): Promise<Booking | undefined> {
       .where(and(eq(halls.venueId, row.venueId), eq(halls.id, row.hallId)))
       .limit(1)
       .then((r) => r[0]);
-    // Wave 1 has no per-request locale; hallName is stored display copy in mk.
+    // Wave 1 had no per-request locale, so hallName stayed mk-only display
+    // copy and leaked into en/sq UIs (FEATURES.md gap, 2026-07-18). Wave 6:
+    // pass the full locale map too so the app can pick the active locale,
+    // keeping `hallName` (mk) only for back-compat with older clients.
     hallName = hall?.name.mk;
+    hallNames = hall?.name;
   }
-  return toBooking(row, events, venue, hallName);
+  return toBooking(row, events, venue, hallName, hallNames);
 }
 
 /**

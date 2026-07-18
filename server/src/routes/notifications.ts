@@ -10,6 +10,10 @@ type NotificationRow = typeof notifications.$inferSelect;
 const LIST_LIMIT = 50;
 
 interface NotificationBookingSummary {
+  // Wave 6 both-role routing fix: lets the client tell "this notification is
+  // about MY OWN venue" (vendor surfaces) from "this is about a booking I
+  // made as a couple" (couple surfaces) — a role:'both' account can be both.
+  venueId: string;
   venueName: string;
   contactName: string;
   eventDateISO: string;
@@ -56,6 +60,7 @@ async function loadBookingSummaries(rows: NotificationRow[]): Promise<Map<string
 
   for (const b of bookingRows) {
     summaries.set(b.id, {
+      venueId: b.venueId,
       venueName: venueNameById.get(b.venueId) ?? '',
       contactName: b.contactName,
       eventDateISO: b.eventDate,

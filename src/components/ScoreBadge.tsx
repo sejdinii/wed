@@ -7,6 +7,7 @@ import { radius, spacing } from '@/design/tokens';
 import { score10, scoreWordKey } from '@/domain/reviews';
 import type { Venue } from '@/domain/types';
 import { useI18n } from '@/i18n';
+import { REVIEWS_ENABLED } from '@/lib/launchGates';
 
 export interface ScoreBadgeProps {
   venue: Pick<Venue, 'rating' | 'reviewCount'>;
@@ -19,12 +20,19 @@ export interface ScoreBadgeProps {
 /**
  * 10-scale review score in a solid violet box (bottom corner squared — the
  * classic score-plaque shape), with the adjective and review count beside it.
+ *
+ * Wave 6 LAUNCH-HONESTY gate: seed reviews are generated fiction (see
+ * src/lib/launchGates.ts) — renders nothing until REVIEWS_ENABLED flips true,
+ * or when the venue genuinely has zero reviews. Callers still own their own
+ * wrapping layout so an omitted badge never leaves a dangling gap.
  */
 export function ScoreBadge({ venue, size = 'sm', withWord = true }: ScoreBadgeProps) {
   const { colors } = useTheme();
   const { t } = useI18n();
   const score = score10(venue);
   const box = size === 'md' ? 34 : 28;
+
+  if (!REVIEWS_ENABLED || venue.reviewCount === 0) return null;
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>

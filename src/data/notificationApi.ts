@@ -3,6 +3,9 @@ import { usePreferences } from '@/stores/preferences';
 import { API_MODE, API_URL } from './api';
 
 export interface NotificationBookingSummary {
+  // Wave 6 both-role routing fix: lets the client scope "is this MY venue's
+  // notification" per-item instead of a single global vendor/couple guess.
+  venueId: string;
   venueName: string;
   contactName: string;
   eventDateISO: string;

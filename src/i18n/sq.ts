@@ -538,4 +538,15 @@ export const sq: Dict = {
   'vendor.cancelSend': 'Dërgo anulimin',
   'vendor.cancelConfirmBody': '100% e kaparit i kthehet {name}.',
   'vendor.messageAction': 'Mesazh',
+
+  // Wave 6 (PROPOSED): decline categories (RtB shape) — shared by the
+  // couple's decline box (booking/[id].tsx) and the vendor's decline-reason
+  // chips (today.tsx, SHARED handoff) and dashboard caption (venue-bookings.tsx,
+  // SHARED handoff).
+  'declineCat.date_unavailable': 'Data nuk është më e disponueshme',
+  'declineCat.capacity_mismatch': 'Numri i mysafirëve nuk përshtatet',
+  'declineCat.budget_mismatch': 'Buxheti nuk përputhet me çmimet tona',
+  'declineCat.other': 'Arsye tjetër',
+  'vendor.declineCategoryLabel': 'Arsyeja e refuzimit',
+  'vendor.declineOtherRequired': 'Shto një shënim të shkurtër për „Tjetër“.',
 };

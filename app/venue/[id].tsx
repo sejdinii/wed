@@ -21,6 +21,7 @@ import { VenueMap } from '@/components/VenueMap';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
+import { REVIEWS_ENABLED } from '@/lib/launchGates';
 import { formatMkd, formatMkdBare } from '@/lib/money';
 import { hallFor, minEstimateMkd, sortedRefundTiers } from '@/domain/kapar';
 import type { AmenityKey, Review, Venue } from '@/domain/types';
@@ -247,8 +248,10 @@ export default function VenueDetailScreen() {
               <AppText variant="title" style={{ flexShrink: 1 }}>
                 {venue.name}
               </AppText>
-              {/* No fabricated "0.0 · 0 reviews" plaque on unreviewed venues. */}
-              {venue.reviewCount > 0 ? (
+              {/* Wave 6 LAUNCH-HONESTY gate: no fabricated "0.0 · 0 reviews"
+                  plaque on unreviewed venues, and no seed-fiction plaque on
+                  any venue until REVIEWS_ENABLED flips true. */}
+              {REVIEWS_ENABLED && venue.reviewCount > 0 ? (
                 <PressableScale
                   onPress={() => router.push(`/reviews/${venue.id}`)}
                   hapticFeedback="select"
@@ -532,8 +535,10 @@ export default function VenueDetailScreen() {
             />
           </View>
 
-          {/* Reviews preview + show all — absent entirely at zero reviews. */}
-          {venue.reviewCount > 0 ? (
+          {/* Reviews preview + show all — absent entirely at zero reviews,
+              and gated off entirely pre-launch (Wave 6 LAUNCH-HONESTY: the
+              seed reviews below are generated fiction). */}
+          {REVIEWS_ENABLED && venue.reviewCount > 0 ? (
           <View style={{ gap: spacing(2.5) }}>
             <AppText variant="heading">{t('reviews.title')}</AppText>
             {reviews.slice(0, 2).map((review) => (

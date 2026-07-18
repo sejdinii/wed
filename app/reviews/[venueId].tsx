@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { AppText } from '@/design/components/AppText';
 import { PressableScale } from '@/design/components/PressableScale';
@@ -16,12 +16,17 @@ import { formatMediumDate } from '@/lib/dates';
 import { SCORE_CATEGORIES } from '@/domain/reviews';
 import type { Review, Venue } from '@/domain/types';
 import { venueApi } from '@/data/api';
+import { REVIEWS_ENABLED } from '@/lib/launchGates';
 import { useI18n } from '@/i18n';
 
 /**
  * Guest reviews: overall score plaque, per-category bars, then the review
  * list — each card with author, score box, wedding details, and the
  * loved / remarks split. Display-only in MVP (seeded), per spec.
+ *
+ * Wave 6 LAUNCH-HONESTY gate: this whole screen is seed-review fiction until
+ * REVIEWS_ENABLED flips true — a direct/deep link bounces straight back to
+ * the venue rather than rendering fabricated social proof.
  */
 export default function ReviewsScreen() {
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
@@ -38,7 +43,7 @@ export default function ReviewsScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    if (typeof venueId !== 'string') return;
+    if (!REVIEWS_ENABLED || typeof venueId !== 'string') return;
     setLoadFailed(false);
     (async () => {
       try {
@@ -55,6 +60,10 @@ export default function ReviewsScreen() {
       cancelled = true;
     };
   }, [venueId, attempt]);
+
+  if (!REVIEWS_ENABLED) {
+    return <Redirect href={typeof venueId === 'string' ? `/venue/${venueId}` : '/(tabs)'} />;
+  }
 
   const header = venue ? (
     <View style={{ gap: spacing(4), paddingBottom: spacing(4) }}>

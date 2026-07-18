@@ -11,6 +11,7 @@ import { PressableScale } from '@/design/components/PressableScale';
 import { useTheme } from '@/design/theme';
 import { radius, shadow, spacing } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
+import { REVIEWS_ENABLED } from '@/lib/launchGates';
 import { formatMkd } from '@/lib/money';
 import { minEstimateMkd, priceLevel } from '@/domain/kapar';
 import type { Venue } from '@/domain/types';
@@ -65,8 +66,10 @@ function HeartButton({ venueId, onImage = false }: { venueId: string; onImage?: 
   );
 }
 
+/** Wave 6 LAUNCH-HONESTY gate — see ScoreBadge; renders nothing pre-launch or with zero reviews. Callers skip the wrapping View too, so no dangling gap. */
 function RatingChip({ venue, onImage = false }: { venue: Venue; onImage?: boolean }) {
   const { colors } = useTheme();
+  if (!REVIEWS_ENABLED || venue.reviewCount === 0) return null;
   return (
     <View
       style={{
@@ -159,9 +162,11 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
               contentFit="cover"
               transition={200}
             />
-            <View style={{ position: 'absolute', bottom: spacing(2), left: spacing(2) }}>
-              <RatingChip venue={venue} onImage />
-            </View>
+            {REVIEWS_ENABLED ? (
+              <View style={{ position: 'absolute', bottom: spacing(2), left: spacing(2) }}>
+                <RatingChip venue={venue} onImage />
+              </View>
+            ) : null}
           </View>
           <View style={{ padding: spacing(3), gap: spacing(1.5) }}>
             <AppText variant="subheading" numberOfLines={1}>
@@ -221,7 +226,7 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
               <AppText variant="subheading" numberOfLines={1} style={{ flexShrink: 1 }}>
                 {venue.name}
               </AppText>
-              <RatingChip venue={venue} />
+              {REVIEWS_ENABLED ? <RatingChip venue={venue} /> : null}
             </View>
             <AppText variant="bodySm" color="secondary">
               {t(`city.${venue.city}`)}
@@ -288,9 +293,11 @@ export function VenueCard({ venue, variant = 'split', showAvailable = false }: V
           <AppText variant="subheading" numberOfLines={1}>
             {venue.name}
           </AppText>
-          <View style={{ alignSelf: 'flex-start' }}>
-            <ScoreBadge venue={venue} size="sm" />
-          </View>
+          {REVIEWS_ENABLED ? (
+            <View style={{ alignSelf: 'flex-start' }}>
+              <ScoreBadge venue={venue} size="sm" />
+            </View>
+          ) : null}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) }}>
             <Ionicons name="business-outline" size={13} color={colors.textSecondary} />
             <AppText variant="bodySm" color="secondary">

@@ -535,4 +535,15 @@ export const en: Dict = {
   'vendor.cancelSend': 'Send cancellation',
   'vendor.cancelConfirmBody': '100% of the kapar returns to {name}.',
   'vendor.messageAction': 'Message',
+
+  // Wave 6 (PROPOSED): decline categories (RtB shape) — shared by the
+  // couple's decline box (booking/[id].tsx) and the vendor's decline-reason
+  // chips (today.tsx, SHARED handoff) and dashboard caption (venue-bookings.tsx,
+  // SHARED handoff).
+  'declineCat.date_unavailable': 'The date is no longer available',
+  'declineCat.capacity_mismatch': 'Your guest count doesn’t fit our venue',
+  'declineCat.budget_mismatch': 'Budget doesn’t match our pricing',
+  'declineCat.other': 'Other reason',
+  'vendor.declineCategoryLabel': 'Reason for declining',
+  'vendor.declineOtherRequired': 'Add a short note for “Other”.',
 };

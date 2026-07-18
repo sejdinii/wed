@@ -14,6 +14,7 @@ import { Screen } from '@/design/components/Screen';
 import { RefundTimeline } from '@/components/RefundTimeline';
 import { useTheme } from '@/design/theme';
 import { radius, spacing } from '@/design/tokens';
+import { parse as parseDeclineReason } from '@/lib/declineReason';
 import { formatMkd } from '@/lib/money';
 import { formatLongDate, formatMediumDate } from '@/lib/dates';
 import type { BookingStatus, Venue } from '@/domain/types';
@@ -88,6 +89,10 @@ export default function BookingDetailsScreen() {
   // Cancelled/expired bookings owe nothing — the payment block must stop billing.
   const isDead =
     booking.status === 'cancelled_by_couple' || booking.status === 'cancelled_by_venue' || booking.status === 'expired';
+  // Wave 6 locale fix: prefer the localized hallNames map (all 3 locales,
+  // stamped by the server since this wave) over the legacy mk-only hallName.
+  const hallLabel = booking.hallNames?.[locale] ?? booking.hallName;
+  const declinedReason = booking.cancelReason ? parseDeclineReason(booking.cancelReason) : null;
 
   const SectionRow = ({
     icon,
@@ -164,9 +169,33 @@ export default function BookingDetailsScreen() {
               <Ionicons name="information-circle-outline" size={17} color={colors.textSecondary} style={{ marginTop: 1 }} />
               <View style={{ flex: 1, gap: 2 }}>
                 <AppText variant="bodySmStrong">{t('details.declinedTitle')}</AppText>
-                <AppText variant="bodySm" color="secondary">
-                  {booking.cancelReason ? t('details.declinedReason', { reason: booking.cancelReason }) : t('details.declinedNoReason')}
-                </AppText>
+                {/* Wave 6 decline categories: a parseable reason (this wave
+                    onward) shows the localized category + optional note,
+                    replacing the raw quote. A legacy free-text reason (no
+                    pipe, pre-Wave-6) keeps the old "message from the venue"
+                    rendering unchanged. */}
+                {declinedReason ? (
+                  declinedReason.categoryKey ? (
+                    <>
+                      <AppText variant="bodySm" color="secondary">
+                        {t(`declineCat.${declinedReason.categoryKey}`)}
+                      </AppText>
+                      {declinedReason.text ? (
+                        <AppText variant="bodySm" color="secondary">
+                          {declinedReason.text}
+                        </AppText>
+                      ) : null}
+                    </>
+                  ) : (
+                    <AppText variant="bodySm" color="secondary">
+                      {t('details.declinedReason', { reason: declinedReason.text })}
+                    </AppText>
+                  )
+                ) : (
+                  <AppText variant="bodySm" color="secondary">
+                    {t('details.declinedNoReason')}
+                  </AppText>
+                )}
               </View>
             </View>
             <Button
@@ -202,7 +231,7 @@ export default function BookingDetailsScreen() {
           <SectionRow
             icon="heart-outline"
             title={t('details.yourWedding')}
-            subtitle={`${booking.venueName} · ${formatLongDate(booking.eventDateISO, locale)} · ${t('bookings.guestCount', { count: booking.guestCount })}`}
+            subtitle={`${booking.venueName} · ${formatLongDate(booking.eventDateISO, locale)} · ${t('bookings.guestCount', { count: booking.guestCount })}${hallLabel ? ` · ${hallLabel}` : ''}`}
           />
           <Divider />
           <SectionRow

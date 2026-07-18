@@ -134,6 +134,7 @@ describe('booking_request fan-out + scoping + booking join', () => {
     expect(row.bookingId).toBe(booking.id);
     expect(row.readAtISO).toBeUndefined();
     expect(row.booking).toEqual({
+      venueId,
       venueName: 'Notif Test Hall',
       contactName: 'Notif Test Couple',
       eventDateISO,

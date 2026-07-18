@@ -85,11 +85,13 @@ export default function NotificationsScreen() {
   const [attempt, setAttempt] = useState(0);
   const retry = () => setAttempt((n) => n + 1);
 
-  // Is the viewer the vendor who owns the booking these rows are about?
-  // Resolved ONCE (not per-row): booking_request and a 'message' row a vendor
-  // receives are, by construction of the server fan-out, always about their
-  // own venue — there is no other way a vendor account would get one.
-  const [isVendorViewer, setIsVendorViewer] = useState(false);
+  // Wave 6 both-role fix: a role:'both' account is a couple on every OTHER
+  // venue's bookings and a vendor only on its OWN. A single global
+  // "isVendorViewer" boolean misrouted the couple's own message/booking
+  // notifications to /today whenever the account happened to also own a
+  // venue. Resolved ONCE (myVenue() is one venue per owner), then compared
+  // per-item against that row's booking.venueId.
+  const [myVenueId, setMyVenueId] = useState<string | null>(null);
 
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
@@ -119,7 +121,7 @@ export default function NotificationsScreen() {
       vendorApi
         .myVenue()
         .then((v) => {
-          if (!cancelled) setIsVendorViewer(!!v);
+          if (!cancelled) setMyVenueId(v?.id ?? null);
         })
         .catch(() => {});
     }
@@ -151,12 +153,15 @@ export default function NotificationsScreen() {
 
   const onPressItem = (item: NotificationItem) => {
     if (!item.bookingId) return;
+    // Scoped per-item (not a global viewer flag): true only when THIS row's
+    // booking belongs to the venue the viewer owns.
+    const isOwnVenue = myVenueId !== null && item.booking?.venueId === myVenueId;
     if (item.kind === 'booking_request') {
-      router.push('/today');
+      router.push(isOwnVenue ? '/today' : `/booking/${item.bookingId}`);
       return;
     }
     if (item.kind === 'message') {
-      router.push(isVendorViewer ? '/today' : `/messages/${item.bookingId}`);
+      router.push(isOwnVenue ? `/messages/${item.bookingId}?as=vendor` : `/messages/${item.bookingId}`);
       return;
     }
     router.push(`/booking/${item.bookingId}`);
