@@ -17,6 +17,13 @@ not category-shift discoveries. Nothing appended here.
 Nothing wave-invalidating found in the 2026-07-12 pass either — all three
 items completed that run were confirmatory/refining. Nothing appended then.
 
+Nothing wave-invalidating found in the 2026-07-18 pass either (map-view UX
+pack, MK/EU privacy minimums, chat-safety quick pass). All three findings are
+gating/refining inputs for the ALREADY-SCHEDULED Wave 6 map slice and the
+in-progress Wave 5 chat/notification/dead-button work — not evidence the
+current wave is building something the market has abandoned. Filed under
+PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
+
 ## TASKED RESEARCH (orchestrator → founder, 2026-07-10 — highest priority)
 # STATUS 2026-07-12: all three items completed this run. Full findings filed
 # under DESIGN INTEL / PROPOSED FEATURES / RISKS below. Research-method note:
@@ -37,6 +44,27 @@ items completed that run were confirmatory/refining. Nothing appended then.
 - [x] Competitor scan for the Balkan wedding-venue market. Findings under
   RISKS → "BALKAN WEDDING-VENUE MARKET".
 
+## TASKED RESEARCH (orchestrator → founder, 2026-07-18 — Wave 5 gate + legal
+## draft + chat safety) — STATUS: all three items completed this run.
+# Research-method note: WebFetch was retested against BOTH a neutral control
+# (en.wikipedia.org/wiki/Booking.com) and five direct targets this pass
+# (Baymard, Secure Privacy, Schoenherr, Refworld, rm.coe.int) — ALL returned
+# HTTP 403, the SAME proxy-level signature confirmed on 2026-07-12 and
+# 2026-07-17. This is now the THIRD confirmation; see the updated RISKS →
+# "RESEARCH-PROCESS RISK" entry below. No `mcp__Mobbin__*` tools were present
+# in this session's toolset either (same as 2026-07-17) — nothing to retry
+# there. Every finding below is WebSearch-snippet synthesis with source URL +
+# retrieval date, same confidence tier as the two prior passes.
+- [x] **Results map-view UX pack (GATES the Wave 6 map slice).** Findings
+  under DESIGN INTEL → "RESULTS LIST↔MAP TOGGLE..." and "WEB MAP
+  IMPLEMENTATION FOR EXPO...".
+- [x] **MK/EU data-privacy minimums for the legal draft.** Findings under
+  RISKS → "MK/EU DATA-PRIVACY MINIMUMS...". Framed throughout as drafting
+  input, NOT a substitute for a Macedonian lawyer's review — stated explicitly
+  in the findings themselves, not just here.
+- [x] **Chat safety table-stakes quick pass.** Findings under DESIGN INTEL →
+  "CHAT SAFETY TABLE-STAKES FOR A TWO-SIDED MARKETPLACE".
+
 ## PROPOSED FEATURES
 | Feature | Evidence (source) | Impact (blocking/valuable/later) | Touches | Verdict |
 |---|---|---|---|---|
@@ -52,6 +80,12 @@ items completed that run were confirmatory/refining. Nothing appended then.
 | Vendor response-rate stat (not just a per-request countdown) reserved on the bookings dashboard from day one | Airbnb Superhost status requires a 90%+ response rate within 24h; response rate (% of inquiries/requests answered within 24h, trailing 30 days) is shown as a persistent percentage on the host's Performance/Insights dashboard and independently affects search-ranking placement, separate from the Superhost badge itself. Status is re-evaluated quarterly (Jan/Apr/Jul/Oct). Source: [Improve your response rate and response time – Airbnb Help Center](https://www.airbnb.com/help/article/430), [Airbnb Superhost Response Time Requirements (2026) – rapideyeinspections.com](https://rapideyeinspections.com/blog/airbnb-superhost-response-time-requirements/), [Airbnb Metrics: How to Read Your Host Dashboard – Hostfully](https://www.hostfully.com/blog/airbnb-metrics/), [Airbnb Superhost Requirements (June 2026) – Avantstay](https://avantstay.com/blog/airbnb-superhost-requirements/), retrieved 2026-07-17. | later (valuable, not Wave 4 P0-blocking) — but the data must start flowing NOW so a future search-ranking or "top responder" badge feature doesn't need a historical backfill | Wave 4 vendor bookings dashboard: log response timestamp per request into the existing `booking_events` audit trail (Wave 1) — cheap addition, no couple-side UI change | ACCEPTED-LATER 2026-07-18 → Wave 5/6 dashboard stat. No new logging needed: booking_events already timestamps every transition since Wave 1, so the trailing response-rate %% is computable retroactively |
 | Server-backed in-app notification center — a real `notifications` table + unread count, not the current hardcoded client-side dot | Uber's push-notification architecture persists every notification server-side via a "Persistor" component writing to a sharded, per-user "Push Inbox" database — the in-app inbox is the durable source of truth, independent of whether a push was ever delivered; push is a delivery channel layered on top, not the storage layer. Source: [The Design of Uber's Push Notification System – blog.quastor.org](https://blog.quastor.org/p/design-ubers-push-notification-system), retrieved 2026-07-17. Generic notification-center guidance is explicit that unread badges "should be earned" — an unread indicator not backed by a real event is an attention-tax anti-pattern. Source: [How to Build a Notification Center for Web & Mobile Apps – Courier](https://www.courier.com/blog/how-to-build-a-notification-center-for-web-and-mobile-apps), [In-App Notification Center for SaaS: Design Patterns and Implementation Guide – SuprSend](https://www.suprsend.com/post/in-app-notification-center), retrieved 2026-07-17. | blocking-adjacent for the Wave 5 notification story — this is the direct fix for the already-flagged FEATURES.md gap "home bell with a HARDCODED unread dot ... fake signal — remove first", AND it is scoped to exactly what Kapar can build without push infra (Wave 5's constraint: no device to verify Expo push against) | Wave 5 notification-center slice: new server table + `GET /v1/notifications` + mark-read endpoint, reading off the SAME lifecycle events Wave 1/4 already emit (booking created/confirmed/declined/kapar-received/cancelled/expired — no new event taxonomy to invent); app: couple-home + Business-Today header bell. Does not block Wave 4 — Wave 4's confirm/decline/kapar-received actions become the first event producers, consumed later | ACCEPTED 2026-07-18 — BINDING shape for the Wave 5 notification slice |
 | Notification bell nests inside the existing home header — no standalone "Notifications" tab | Airbnb's 2025 host-app redesign ships exactly 5 tabs — Today, Calendar, Listings, Messages, Menu — with no dedicated Notifications tab; the guest-side Airbnb app also nests its bell icon INSIDE the Inbox tab rather than promoting it to top-level nav. Source: [What Airbnb's new Today host tab... says about the company's priorities – Rental Scale-Up](https://www.rentalscaleup.com/what-airbnbs-new-today-host-tab-and-price-comparison-tool-with-booking-com-say-the-companys-priorities/), retrieved 2026-07-17; bell-inside-Inbox placement per Airbnb Community/forum threads ([airbnbase.com](https://airbnbase.com/unread-inbox-messages/), [community.withairbnb.com](https://community.withairbnb.com/t5/Ask-about-your-listing/Iphone-app-notification-won-t-go-away/td-p/190675)), retrieved 2026-07-17 — lower-confidence, forum-sourced, not an official spec page, flagged as such. Booking.com Pulse likewise keeps notification preferences under "More → Notifications" rather than a top-level tab. Source: [How can I set up push notifications in Pulse? – Partner Help](https://partnerhelp.booking.com/hc/en-us/articles/115003802245-How-can-I-set-up-push-notifications-in-Pulse-), retrieved 2026-07-17. | valuable — settles an IA question before Wave 5 builds the notification-center screen, consistent with the already-ACCEPTED Pulse-style "today feed" pattern (2026-07-12 pass) | Wave 5 notification-center slice only: `app/(tabs)/index.tsx` header + Business Today header (both already exist — this is a placement decision, not a new screen/tab) | ACCEPTED 2026-07-18 — bell returns to both headers WITH the center, no new tab |
+| Results list↔map toggle: floating pill button (not a tab, not a permanent split) as the entry affordance; pins show price with zoom-based clustering; tapping a pin opens a synced mini-card and scrolls/highlights the matching list row — clone Airbnb mobile + Booking.com's pattern, not a fresh invention | Airbnb mobile's results screen opens a full-screen map via a persistent bottom-area map icon/button, with filters staying editable from inside map view; clusters merge at low zoom and split into individual pins on zoom-in, with lower-ranked listings collapsing to small price-less "mini-pins" to avoid overloading the map. Booking.com reaches its map via a "Show on map" affordance from a property card / persistent map entry, with the list rendered center-screen and a bouncing pinpoint marking the hovered/selected property (zoom range 1–20). Source: [Search for Airbnb home listings – Airbnb Help Center](https://www.airbnb.com/help/article/252), [Airbnb Map Platform – Adam Shutsa](https://adamshutsa.com/map-platform/), [How Airbnb Made Map Search Smarter – techscoop.substack.com](https://techscoop.substack.com/p/how-airbnb-made-map-search-smarter), [Map Widget – Booking.com Affiliate Partner Help](https://affiliates.support.booking.com/kb/s/article/Map-Widget), [How to Show Hotel On Map in Booking.com – HardReset.info](https://www.hardreset.info/devices/apps/apps-bookingcom/show-hotel-on-map/), retrieved 2026-07-18. A "Booking.com Web Map View" screen is catalogued on Mobbin, confirming the pattern is current, but its screen detail could not be fetched directly this session (WebFetch 403 — see RISKS). Source: [Booking.com Web Map View – Mobbin](https://mobbin.com/explore/screens/1029ac77-5899-4f71-8bdb-bc441a16fbe6), retrieved 2026-07-18. | blocking (GATES the Wave 6 map slice per the orchestrator's tasking; Wave 5 already removed the dead "Map View" pill pending exactly this research) | `results.tsx` (existing pill placement + toggle state), `src/components/VenueMap` (native, already exists) — this row is the UX-shape spec; see the paired row below for the web rendering gap | |
+| Web map implementation: platform-split component (`.web.tsx` / `.native.tsx`, or a `Platform.OS` branch) — keep `react-native-maps` on native (already wired), add `react-map-gl` + `maplibre-gl` on web against a free OSM vector-tile source | `react-native-maps` dropped web support after v0.31.1 and build-errors under current Expo web (confirmed via the library's own issue tracker). Expo's own first-party `expo-maps` is ALSO native-only (Apple Maps/Google Maps, no web) — Expo's documented cross-platform pattern is exactly the `Platform.OS`/file-extension branch recommended here. The community-validated combo for Expo apps needing maps on BOTH native and web is `@maplibre/maplibre-react-native` (native) + `react-map-gl` wrapping `maplibre-gl` (web), demonstrated end-to-end including Expo config-plugin wiring as recently as January 2025. Tile source options: OpenFreeMap (free, unlimited, no API key, OSM/OpenMapTiles data, donation-funded) vs. MapTiler Cloud free tier (100k tile requests/mo + 5k sessions, but PAUSES service over quota — real risk at a demo/launch spike) vs. self-hosting (the public osm.org tile server explicitly forbids production/commercial use under the OSMF Acceptable Use Policy). Underlying map data is OSM's ODbL (requires attribution); MapLibre GL JS itself is BSD-3, fully open-source with no Mapbox proprietary lock-in. Source: [react-native-maps GitHub Issue #4735](https://github.com/react-native-maps/react-native-maps/issues/4735), [Solving React Native Maps Compatibility Issue for Web Builds in Expo – Medium](https://timchosen.medium.com/solving-react-native-maps-compatibility-issue-for-web-builds-in-expo-5bd94fae8fb1), [Maps – Expo Documentation](https://docs.expo.dev/versions/latest/sdk/maps/), [Getting MapLibre working for both native and web in Expo – GreenAsh, Jan 2025](https://greenash.net.au/thoughts/2025/01/getting-maplibre-working-for-both-native-and-web-in-expo/), [OpenFreeMap](https://openfreemap.org/), [MapTiler Cloud pricing](https://www.maptiler.com/cloud/pricing/), [Raster tile providers – OpenStreetMap Wiki](https://wiki.openstreetmap.org/wiki/Raster_tile_providers), [MapLibre React Native – GitHub](https://github.com/maplibre/maplibre-react-native), retrieved 2026-07-18. | blocking (this is the ONLY viable path to a working web map — without it, "Map view" on the web build is either impossible or requires a paid Google Maps key the project has no billing set up for) | New web-only map component parallel to the existing native `VenueMap`; `results.tsx` import switches per platform; zero change to the native code path; recommend OpenFreeMap as the default tile source (zero cost, zero quota risk) with MapTiler documented as a fallback only | |
+| Filters (city/date/hall type/price/capacity) must be a single shared state read by BOTH the list and map renderers, never two independent filter instances that can drift when the user toggles views | Inferred directly from the Airbnb/Booking architecture above — their map and list are two renderings of the SAME underlying result set and filter state, not two independently-filtered views (no separate citation found for this specific failure mode; flagged as an architectural inference, not an externally sourced claim). | valuable (prevents a real, easy-to-ship bug: switching to map view silently resetting the couple's price/date filters) | `results.tsx` filter state + whatever new map component consumes it — a state-plumbing requirement to write into the Wave 6 map slice spec, no new UI | |
+| Chat: report + block affordance, built INTO the Wave 5 real-chat slice (not retrofitted onto a shipped screen later) | Airbnb lets either party report a message/conversation with a reason and separately block the other party from messaging, booking, or accepting future reservations — blocking during an active/upcoming reservation still allows the messages needed to complete THAT reservation, tapering off ~2 weeks after it ends. Source: [Report and block a host or guest's messages – Airbnb Help Center](https://www.airbnb.com/help/article/2020), [Report a host or guest for inappropriate behavior – Airbnb Help Center](https://www.airbnb.com/help/article/3806), retrieved 2026-07-18. Booking.com's partner-side equivalent is "report guest misconduct" (type + description + an optional future-booking block), reportable from the day after check-in through 7 days post-checkout. Source: [Report guest misconduct to Booking.com – Cloudbeds help](https://myfrontdesk.cloudbeds.com/hc/en-us/articles/360053613654-Report-guest-misconduct-to-Booking-com-from-Cloudbeds-PMS), retrieved 2026-07-18. | blocking — genuinely MVP-blocking, not later: no category leader ships 1:1 marketplace chat without it, and Wave 5 is building the message thread from scratch RIGHT NOW, making this the cheapest possible moment to add it (a modal + a block-check on the existing auth/booking-guard layer) vs. retrofitting later | The NEW chat screen/component Wave 5 is building this pass; existing auth/booking-guard middleware for the block-check (a blocked counterpart cannot message or book the blocker) | |
+| Do NOT clone Airbnb/Booking.com's automatic phone/email masking or link-stripping in chat, and do NOT add an "never pay outside the app" warning banner — explicitly document both as reasoned deviations | Airbnb strips/blocks contact info from messages (regex+heuristic phone/email/link detection) and is piloting per-reservation masked phone aliases specifically to stop bookings moving off-platform (a commission-evasion problem for Airbnb); Booking.com shows partner/guest numbers as an @guest.booking.com/@partner.booking.com alias by default. Both platforms separately warn users never to pay outside the platform's own rails (Venmo/Cash App/PayPal-F&F/wire/crypto named as red flags) because their refund protections are contingent on payment happening ON-platform. Source: [Why we review messages on Airbnb](https://www.airbnb.com/help/article/1121), [Airbnb's New Temporary Phone Numbers](https://yada.ai/blog/airbnbs-new-temporary-phone-numbers-what-changed-and-how-str-owners-should-pivot), [All about our messaging security settings – Booking.com for Partners](https://partner.booking.com/en-us/help/legal-security/security/all-about-our-messaging-security-settings), [Is Booking.com Legit? Safety Guide – AVG](https://www.avg.com/en/signal/is-booking-com-legit), retrieved 2026-07-18. Kapar has NO in-app payment/commission to protect (2026-07-09 no-online-payments decision) and phone number is ALREADY a required profile field specifically because venues coordinate visits by phone (2026-07-10 decision) — masking it or warning against off-platform payment would fight Kapar's own booking model and read as confusing, contradictory copy. | later/skip (reasoned rejection candidate, not an oversight to fix) | None — a scope decision to write into the Wave 5 chat spec's rationale so a future reviewer doesn't flag its absence as a gap | |
+| Real privacy notice page (replaces the dead Terms/Privacy rows on /welcome and Settings) drafted to the MK Law on Personal Data Protection's duty-to-inform minimums (Art. 17–18 per the unofficial translation, structurally equivalent to GDPR Art. 13): controller identity + real contact, purposes + legal basis per data category, retention criteria, data-subject rights list, and the right to complain to the Agency for Personal Data Protection (AZLP) + the AZLP's own contact details | See DESIGN INTEL/RISKS → "MK/EU DATA-PRIVACY MINIMUMS" for the full sourced breakdown; framed explicitly there as drafting input, not a substitute for a Macedonian lawyer's sign-off. | blocking-adjacent (real users are the explicit Wave 6 launch target; email+phone+booking data collection already starts at account creation, and the Terms/Privacy links are ALREADY a flagged FEATURES.md dead-button gap — this row gives that gap real content to point to instead of just de-affordancing it) | `/welcome` consent line (already flagged dead), Settings Terms/Privacy rows (already flagged dead) — a content-only addition, no schema/data-model change | |
 
 ## DESIGN INTEL
 
@@ -356,6 +390,185 @@ items completed that run were confirmatory/refining. Nothing appended then.
   rearchitecture, directly resolving the FEATURES.md gap "home bell with a
   HARDCODED unread dot ... Bell dot is a fake signal — remove first."
 
+### RESULTS LIST↔MAP TOGGLE — mobile entry affordance, pin/cluster design,
+### tap-target behavior, and the web split-view degrade — retrieved 2026-07-18
+
+- **Entry affordance (mobile).** Airbnb's mobile results screen surfaces a
+  persistent map icon (bottom area of the results list) that opens a
+  full-screen map overlay; filters (price, guest capacity, amenities) remain
+  editable from within map view itself rather than requiring a return to
+  list view to change them. Source: [Search for Airbnb home listings – Airbnb Help Center](https://www.airbnb.com/help/article/252), [Here's Why Airbnb's Search by Map Feature is a Game Changer – rentalrecon.com](https://www.rentalrecon.com/airbnb-booking/why-airbnbs-search-by-map-feature-is-a-game-changer-for-travelers/), retrieved 2026-07-18. Generic UI-pattern guidance (Mobbin's own design glossary, WebSearch-snippet
+  confidence only — the glossary page itself could not be fetched directly
+  this session) calls out "hybrid map & list view apps like Airbnb &
+  Marriott Bonvoy" as the reference case for a floating-action-button
+  toggle, and specifically notes a PILL shape reads as "friendlier" than a
+  square FAB for this use case. Source: [Floating Action Button UI Design – Mobbin glossary](https://mobbin.com/glossary/floating-action-button), retrieved 2026-07-18.
+  Booking.com reaches its map via a "Show on map" affordance on a property
+  card, or a persistent map entry on results; the resulting map view shows
+  the property list rendered center-screen with a bouncing pinpoint marking
+  the hovered/selected property, zoom range 1 (out) to 20 (in). A "Booking.com
+  Web Map View" screen is catalogued on Mobbin confirming this is a current
+  pattern, but the screen's pixel-level detail could not be fetched directly
+  this session (WebFetch 403 — see RISKS). Source: [Map Widget – Booking.com Affiliate Partner Help](https://affiliates.support.booking.com/kb/s/article/Map-Widget), [How to Show Hotel On Map in Booking.com – HardReset.info](https://www.hardreset.info/devices/apps/apps-bookingcom/show-hotel-on-map/), [Booking.com Web Map View – Mobbin](https://mobbin.com/explore/screens/1029ac77-5899-4f71-8bdb-bc441a16fbe6), retrieved 2026-07-18.
+  Kapar mapping: a floating pill button ("Map" / "List" with a small icon),
+  not a segmented-control tab and not a permanent split — see the paired
+  PROPOSED FEATURES row above.
+
+- **Price-pin and cluster design.** Airbnb's search-results map uses
+  Mapbox-tinted tiles with custom brand-pink ("Rausch") markers; top-ranked
+  listings get "big" price pins showing the nightly rate directly, while
+  lower-ranked listings collapse to small price-less "mini-pin" dots so the
+  map doesn't visually overload with 200+ price bubbles at once — a
+  deliberate 2024/25 redesign choice documented in a design retrospective.
+  Clusters merge at low zoom and split into individual pins as the user
+  zooms in (standard zoom-based expansion). Source: [Airbnb Map Platform – Adam Shutsa](https://adamshutsa.com/map-platform/), [How Airbnb Made Map Search Smarter – techscoop.substack.com](https://techscoop.substack.com/p/how-airbnb-made-map-search-smarter), retrieved 2026-07-18. No Booking.com-specific clustering documentation was found this pass —
+  flagged as a gap in the reference pack, not evidence Booking.com lacks
+  clustering.
+
+- **What tapping a pin/cluster shows.** Airbnb's map and list are two
+  renderings of the SAME underlying result set, not independent data
+  sources: tapping a pin scrolls the list to and highlights the matching
+  card, and (per the same architecture) the reverse — hovering/selecting a
+  list card highlights its pin — holds on desktop web too. This supports a
+  synced mini-card (or auto-scrolled list highlight) on pin-tap rather than
+  full navigation away from the map. Source: same as pin/cluster citations
+  above, retrieved 2026-07-18.
+
+- **Filter persistence across the toggle.** Because Airbnb's list and map
+  share one filter/result state (see above), filters visibly carry across
+  the list↔map switch by construction — there is no separate "reset on
+  toggle" behavior documented or implied anywhere in the sources reviewed.
+  Kapar mapping: implement this as a single shared filter-state object read
+  by both renderers (see paired PROPOSED FEATURES row) — flagged there as
+  an architectural inference from the sources, not a separately-citable claim.
+
+- **Web degrade (Airbnb desktop split view).** Airbnb previously ran a
+  permanent left-list/right-map split by default on desktop web; it now
+  defaults to a full-width "Show listings" view with a "Show map" toggle in
+  the top-right, and only becomes a left-list/right-map split once map is
+  toggled on — hovering a list card highlights/color-shifts its
+  corresponding pin, and vice-versa. This is a lower-confidence, forum-
+  sourced finding (Airbnb Community threads and a Quora answer, not an
+  official Airbnb spec page) — flagged as such. A Baymard Institute article
+  titled "The Optimal Layout for Hotel & Property Rental Search Results & 3
+  Pitfalls to Avoid" specifically analyzes accommodation split-view design
+  and is the right further-reading reference for the Wave 6 spec, but its
+  content could not be retrieved this session (WebFetch 403, same standing
+  limitation) — only its title/existence is confirmed via search index; a
+  future pass with working WebFetch/Mobbin access should read it before the
+  Wave 6 visual lock. Source: [Airbnb Community – map alongside listings](https://community.withairbnb.com/t5/Help/what-happened-to-the-map-view-alongside-the-listings/td-p/1607586), [Quora – why did Airbnb move map right](https://www.quora.com/Why-did-Airbnb-move-its-map-from-left-to-right-on-their-search-results-page-on-desktop-web-Does-it-give-better-results-Does-it-solve-any-usability-issues-Was-it-to-optimize-the-load-time), [Baymard – accommodations split view (title/existence only, content unfetched)](https://baymard.com/blog/accommodations-split-view), retrieved 2026-07-18.
+  Kapar mapping: the pill-toggle (list OR map full-screen) is the one true
+  cross-platform baseline; on wide web viewports a side-by-side split can be
+  offered as a progressive enhancement matching Airbnb's CURRENT desktop
+  behavior (toggle-activated split, not permanent split — the permanent
+  version was tried and walked back), not a P0 requirement.
+
+### WEB MAP IMPLEMENTATION FOR EXPO (react-native-maps has no web target) —
+### retrieved 2026-07-18
+
+- `react-native-maps` dropped web support after v0.31.1 and build-errors
+  under current Expo web versions — confirmed via the library's own GitHub
+  issue tracker, which is still an open, unresolved request as of this
+  session. Source: [Please Bring Back Web Support – react-native-maps GitHub Issue #4735](https://github.com/react-native-maps/react-native-maps/issues/4735), [Solving React Native Maps Compatibility Issue for Web Builds in Expo – Medium](https://timchosen.medium.com/solving-react-native-maps-compatibility-issue-for-web-builds-in-expo-5bd94fae8fb1), retrieved 2026-07-18.
+- Expo's own first-party alternative, `expo-maps`, is ALSO native-only
+  (Apple Maps on iOS, Google Maps on Android — no web target). Expo's
+  documented cross-platform pattern for this exact situation is a
+  `Platform.OS` branch or a `.web.tsx`/`.native.tsx` file-extension split
+  rendering a different component per platform. Source: [Maps – Expo Documentation](https://docs.expo.dev/versions/latest/sdk/maps/), retrieved 2026-07-18.
+- The community-validated combo actually demonstrated for Expo apps needing
+  BOTH native and web maps: `@maplibre/maplibre-react-native` for native,
+  `react-map-gl` wrapping `maplibre-gl` for web — shown end-to-end,
+  including the Expo config-plugin wiring, as recently as January 2025.
+  Source: [Getting MapLibre working for both native and web in Expo – GreenAsh](https://greenash.net.au/thoughts/2025/01/getting-maplibre-working-for-both-native-and-web-in-expo/), [Getting Started – MapLibre React Native docs](https://maplibre.org/maplibre-react-native/docs/setup/getting-started/), retrieved 2026-07-18.
+  Kapar already has `react-native-maps` wired for native (`VenueMap`
+  component per FEATURES.md) — this finding is purely additive: keep native
+  as-is, add a web-only branch.
+- **Tile source license/cost comparison** (what the web MapLibre/Leaflet
+  layer actually renders):
+  - **OpenFreeMap** — free, unlimited map views/requests, no API key, no
+    registration, no cookies; serves OSM data via the OpenMapTiles vector
+    schema; funded by donations. Best fit for an MVP with zero map-tile
+    budget and unpredictable traffic. Source: [OpenFreeMap](https://openfreemap.org/), [Show HN: OpenFreeMap – Hacker News](https://news.ycombinator.com/item?id=41593463), retrieved 2026-07-18.
+  - **MapTiler Cloud free tier** — 100,000 tile requests/month + 5,000
+    sessions + 100MB hosting, no card required, but the FREE plan's service
+    PAUSES until the next month if the quota is exceeded — a real risk at a
+    demo or launch traffic spike. This is the tier the GreenAsh Expo
+    walkthrough above uses. Source: [MapTiler Cloud pricing](https://www.maptiler.com/cloud/pricing/), retrieved 2026-07-18.
+  - **Public osm.org tile server** — explicitly NOT for production/
+    commercial use under the OpenStreetMap Foundation's Acceptable Use
+    Policy; production use must self-host (osm2pgsql + a renderer) or use a
+    third-party provider instead. Source: [Raster tile providers – OpenStreetMap Wiki](https://wiki.openstreetmap.org/wiki/Raster_tile_providers), retrieved 2026-07-18.
+  - Underlying map DATA is OpenStreetMap's ODbL either way (requires visible
+    attribution, e.g. "© OpenStreetMap contributors"); MapLibre GL JS itself
+    is BSD-3, fully open-source, with no Mapbox proprietary lock-in (unlike
+    Mapbox GL JS, which went closed/proprietary after v1/v2). Source:
+    [OpenMapTiles](https://openmaptiles.org/), [MapLibre React Native – GitHub](https://github.com/maplibre/maplibre-react-native), retrieved 2026-07-18.
+  Recommendation: OpenFreeMap as the default web tile source (zero cost,
+  zero quota risk, global OSM coverage includes North Macedonia/the Balkans
+  at standard fidelity), with MapTiler documented as a fallback only if
+  OpenFreeMap's donation-funded public instance ever becomes unavailable.
+
+### CHAT SAFETY TABLE-STAKES FOR A TWO-SIDED MARKETPLACE — retrieved 2026-07-18
+
+- **Report + block is the near-universal minimum, and cheap to build
+  alongside Wave 5's real chat.** Airbnb lets either party report a
+  message/conversation (with a reason) and separately block the other party
+  from messaging, booking, or accepting future reservations from them;
+  blocking during an active/upcoming reservation still allows the messages
+  needed to complete THAT reservation, tapering off ~2 weeks after it ends
+  rather than cutting off mid-booking communication abruptly. Source:
+  [Report and block a host or guest's messages – Airbnb Help Center](https://www.airbnb.com/help/article/2020), [Report a host or guest for inappropriate behavior – Airbnb Help Center](https://www.airbnb.com/help/article/3806), retrieved 2026-07-18.
+  Booking.com's partner-side equivalent is "report guest misconduct" (type +
+  short description + an optional future-booking block), reportable from
+  the day after check-in through 7 days after checkout. Source: [Report guest misconduct to Booking.com – Cloudbeds help](https://myfrontdesk.cloudbeds.com/hc/en-us/articles/360053613654-Report-guest-misconduct-to-Booking-com-from-Cloudbeds-PMS), retrieved 2026-07-18.
+  Kapar mapping: genuinely MVP-blocking, not later — Wave 5 is building the
+  real chat THIS pass, and retrofitting a report/block modal onto an
+  already-shipped chat screen is far more expensive than building it into
+  the first version of the message thread plus a block-check on the
+  existing auth/booking-guard layer. No category leader ships 1:1
+  marketplace chat without this.
+
+- **Automated phone/email masking and link-stripping is real at Airbnb/
+  Booking scale, but Kapar should NOT clone it.** Airbnb strips/blocks
+  contact info (regex + heuristic detection of phone numbers, emails,
+  external links) from messages specifically to stop hosts/guests moving
+  bookings off-platform (a commission-evasion problem for Airbnb); its
+  newer "temporary phone number" system replaces real numbers with a masked
+  per-reservation alias (US/Canada pilot only as of late 2025). Booking.com
+  does the same: partner/guest numbers show as an @guest.booking.com /
+  @partner.booking.com alias by default, with a "Show phone number" reveal
+  action. Source: [Why we review messages on Airbnb](https://www.airbnb.com/help/article/1121), [Airbnb's New Temporary Phone Numbers – yada.ai](https://yada.ai/blog/airbnbs-new-temporary-phone-numbers-what-changed-and-how-str-owners-should-pivot), [All about our messaging security settings – Booking.com for Partners](https://partner.booking.com/en-us/help/legal-security/security/all-about-our-messaging-security-settings), retrieved 2026-07-18.
+  Kapar mapping: Airbnb/Booking mask contact info because their real
+  product risk is commission bypass. Kapar has NO in-app payment and NO
+  commission to protect (2026-07-09 decision, already in FEATURES.md) — the
+  venue visit and kapar payment happen in person BY DESIGN, and phone
+  number is already a required profile field specifically BECAUSE "venues
+  coordinate visits by phone" (2026-07-10 decision). Masking phone numbers
+  in chat would work against Kapar's own booking model. Recommend explicitly
+  SKIPPING contact-masking/link-stripping for MVP as a reasoned deviation,
+  written into the Wave 5 chat spec so a future reviewer doesn't flag its
+  absence as an oversight.
+
+- **Off-platform PAYMENT warnings matter far less for Kapar than for
+  Airbnb/Booking, for the same underlying reason.** Both platforms actively
+  warn users never to pay outside the platform's own rails (Venmo/Cash App/
+  PayPal-Friends&Family/wire transfers/gift cards/crypto are named red
+  flags) because their trust-and-safety and refund protections are
+  contingent on payment happening ON the platform. Source: [Is Booking.com Legit? Safety Guide – AVG](https://www.avg.com/en/signal/is-booking-com-legit), retrieved 2026-07-18.
+  Kapar's kapar payment ALREADY happens off any digital rail, in person, by
+  design (2026-07-09 decision) — there is no "on-platform payment" to steer
+  users toward protecting, so an Airbnb-style "never pay outside the app"
+  banner would be confusing, contradictory copy for Kapar's own model. The
+  one true analog worth keeping is a narrow chat-safety report scope
+  (harassment/inappropriate behavior), not a payment-instruction warning.
+
+- **Verdict: MVP-blocking = report + block only.** Contact-masking and an
+  off-platform-payment warning banner are reasoned SKIPS for Kapar, not
+  gaps — see the three paired PROPOSED FEATURES rows above. This quick pass
+  found no other category-standard chat-safety feature (no evidence of
+  AI-moderation or canned-reply templates being treated as safety-critical
+  rather than UX-nice-to-have at either reference company this session).
+
 ## RISKS
 
 ### BALKAN WEDDING-VENUE MARKET — retrieved 2026-07-12
@@ -412,6 +625,90 @@ items completed that run were confirmatory/refining. Nothing appended then.
   owners), Viber is the regionally-correct fallback channel, not SMS or
   WhatsApp — see matching PROPOSED FEATURES row.
 
+### MK/EU DATA-PRIVACY MINIMUMS — INPUT TO THE LEGAL DRAFT, NOT A SUBSTITUTE
+### FOR COUNSEL — retrieved 2026-07-18
+
+- **Framing, upfront.** North Macedonia's Law on Personal Data Protection
+  (Official Gazette 42/20, amended 294/21 and 101/2025), effective 24
+  February 2020, is GDPR-aligned/harmonized and overseen by the Agency for
+  Personal Data Protection (Агенција за заштита на личните податоци / AZLP,
+  also referred to by its older acronym DZLP). Everything below is a
+  starting checklist for drafting the privacy notice that currently exists
+  only as dead/no-op Terms/Privacy links in the app (see FEATURES.md gap) —
+  it is NOT a substitute for a Macedonian lawyer's sign-off before real
+  users' data is collected; that caveat is load-bearing, repeat it in
+  whatever spec builds this. Source: [Data protection laws in North Macedonia – DLA Piper Data Protection Laws of the World](https://www.dlapiperdataprotection.com/index.html?t=law&c=MK), [Republic of North Macedonia – DataGuidance jurisdiction overview](https://www.dataguidance.com/jurisdictions/north-macedonia), retrieved 2026-07-18.
+
+- **Privacy notice minimum content.** The law's duty-to-inform provisions
+  (Articles 17–18 per the unofficial Council of Europe translation) require
+  at minimum: the identity and contact details of the controller (and any
+  local representative, where applicable); the DPO's contact details where
+  a DPO exists; and the purposes of processing plus the legal basis for
+  each. Given the confirmed GDPR harmonization, the safe drafting baseline
+  is the full GDPR Article 13 checklist this law implements: additionally,
+  the retention period (or the criteria used to determine it), the data
+  subject's rights, and the right to lodge a complaint with the Agency
+  together with the Agency's own contact details. Source: [Unofficial translation, Law on Personal Data Protection – rm.coe.int](https://rm.coe.int/lpdp-republic-of-north-macedonia-2020/1680a9ac8a) (WebSearch-indexed synthesis only; direct WebFetch returned 403, see the updated retry note below), [Art. 13 GDPR – gdpr-info.eu](https://gdpr-info.eu/art-13-gdpr/), retrieved 2026-07-18.
+  Kapar's privacy notice draft minimally needs: (1) who Kapar is (legal
+  entity/controller identity + a real contact email — not the current dead
+  link), (2) what's collected (email, phone, booking/event details, vendor
+  listing content) and why (account creation, booking lifecycle, couple-
+  vendor coordination), (3) legal basis per purpose (contract performance
+  for bookings; consent for any future marketing), (4) how long each
+  category is retained (e.g. booking records vs. an expired/never-verified
+  auth code), (5) the data-subject rights list (access, rectification,
+  erasure, restriction, objection, portability), (6) the right to complain
+  to the AZLP + the AZLP's own contact details, (7) whether any data leaves
+  North Macedonia (Railway/Cloudflare R2/Resend hosting location — the
+  DECISIONS LOG already picks EU-region hosting, which is the right default
+  here too).
+
+- **Registration/notification duty — likely NOT triggered at Kapar's
+  current data volume, but do not assume so without counsel.** Since the
+  2020 law, North Macedonia replaced the old blanket database-registration
+  regime with a narrower "high-risk database" registry: controllers must
+  notify the Agency only for processing the controller itself assesses (via
+  a DPIA) as posing a high risk to data subjects' rights and freedoms — the
+  law does not define "high risk" numerically, leaving it to the
+  controller's own judgment, and Article 71 of the unofficial translation
+  specifically calls out "new technologies" as one high-risk trigger
+  requiring notification with prescribed content (filing-system title,
+  purpose, legal basis, categories, recipients, transfer info, security
+  measures). Ordinary email + phone + booking data, at MVP scale, does not
+  resemble the special-category/large-scale/systematic-monitoring fact
+  patterns the law and GDPR both use to define "high risk" — but this is a
+  judgment call, and the safe MVP move is a short internal DPIA-lite
+  rationale for why Kapar is NOT high-risk today, kept on file. Source:
+  [Registration in North Macedonia – DLA Piper](https://www.dlapiperdataprotection.com/index.html?t=registration&c=MK), retrieved 2026-07-18.
+
+- **DPO appointment — not required at MVP scale.** Mandatory only for (i)
+  processing by a state authority, (ii) regular/systematic large-scale
+  monitoring of data subjects, or (iii) large-scale processing of special-
+  category/criminal-offence data — none of which describe Kapar's couple/
+  vendor marketplace data at launch. Notable local wrinkle if a DPO is ever
+  appointed: the law requires the DPO to be fluent in Macedonian, and the
+  DPO's contact details must be filed with the Agency. Source: [Data Protection Guide North Macedonia – Multilaw](https://multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_North_Macedonia.aspx), retrieved 2026-07-18.
+
+- **Breach notification** exists as a GDPR-equivalent duty (notify the
+  Agency without undue delay; notify affected data subjects if the breach
+  is likely to result in high risk to them) per the law's general GDPR
+  harmonization — the exact deadline/threshold text could not be retrieved
+  this session (WebFetch blocked on the primary-source translation); flag
+  as an open item for counsel to confirm the precise window before launch
+  rather than asserting an unverified number.
+
+- **Bottom line / recommendation.** Ship a real, MK-law-shaped privacy
+  notice (replacing the current dead Terms/Privacy links — already flagged
+  in FEATURES.md) BEFORE any real (non-seed) user signs up, since email +
+  phone + booking data collection already happens at account creation. This
+  is squarely a Wave 5/6 item, not a "later" one, given real users are the
+  explicit Wave 6 launch target (see FEATURES.md STANDING OBJECTIVE). Get a
+  Macedonian-qualified lawyer to review the final copy before it ships to
+  real users — everything above is a drafting checklist synthesized from
+  public secondary sources (DLA Piper, Multilaw, a WebSearch-indexed
+  unofficial law translation), not primary-source-verified article text,
+  and not a substitute for that review.
+
 ### RESEARCH-PROCESS RISK
 - **This session's WebFetch was non-functional for every target attempted**,
   including a neutral Wikipedia control URL — all returned HTTP 403,
@@ -443,6 +740,20 @@ items completed that run were confirmatory/refining. Nothing appended then.
   Wave 6's visual lock, check first whether the environment has changed
   (Mobbin MCP tools present in the toolset, or a non-403 response on the
   Wikipedia control) before spending budget on the same retry again.
+  RETRY 2026-07-18 (THIRD confirmation, as instructed to check before
+  spending budget on a repeat): re-tested the neutral Wikipedia control
+  PLUS five direct targets this pass (Baymard's accommodations-split-view
+  article, Secure Privacy's MK-law blog post, Schoenherr's MK enforcement
+  article, Refworld's consolidated MK law text, and the rm.coe.int
+  unofficial law translation PDF) — ALL six returned HTTP 403, the identical
+  proxy-level signature seen on both prior passes. `mcp__Mobbin__*` tools
+  were STILL absent from this session's toolset. The environment has NOT
+  changed across three separate sessions/dates now — this should be treated
+  as a durable characteristic of this environment, not something worth
+  re-testing again on a routine founder pass. Do not schedule a fourth
+  identical retry; only re-test if the orchestrator has specific reason to
+  believe the proxy/MCP configuration itself changed (e.g. a session
+  environment update, not just calendar time passing).
 
 ## REJECTED (with reasons - do not re-propose without new evidence)
 - Reviews write path (was Wave 5 P1) — CUT from MVP by user 2026-07-12.
@@ -602,12 +913,25 @@ items completed that run were confirmatory/refining. Nothing appended then.
 # reassurance-copy dedupe (×4 → ×2) + kapar-bar skeleton instead of "€0",
 # per-section edit links on the review step.
 - [ ] P0 — map view on results (VenueMap exists; the pill is a dead end).
+  FOUNDER PACK FILED 2026-07-18 (this pass): see DESIGN INTEL → "RESULTS
+  LIST↔MAP TOGGLE..." and "WEB MAP IMPLEMENTATION FOR EXPO..." for the
+  sourced entry-affordance/pin/cluster/web-alternative research this GATES
+  the Wave 6 map slice on, plus the three paired PROPOSED FEATURES rows
+  (mobile UX shape, web map component + license/cost, filter persistence).
 - [ ] P0 — decline UX v2 (founder-accepted 2026-07-18): required reason
   category + mandatory text on "other" (RtB shape), and the COUPLE-side
   decline experience — show the reason on booking detail (currently stored
   but never shown to the couple; see DISCOVERED GAPS 2026-07-18).
 - [ ] P0 — real couple↔vendor chat replacing the scripted bot (gaps: "one-way
   theatre", "hardcoded Macedonian bot messages").
+  CHAT SAFETY PACK FILED 2026-07-18 (this pass): build report + block INTO
+  this slice (MVP-blocking per DESIGN INTEL → "CHAT SAFETY TABLE-STAKES...")
+  — cheapest possible moment, before the screen ships. Explicitly do NOT add
+  Airbnb/Booking-style phone/email masking or an off-platform-payment
+  warning banner (reasoned deviation, see the same DESIGN INTEL subsection
+  and the paired PROPOSED FEATURES row) — Kapar has no commission/in-app
+  payment to protect and phone number is already a required, visit-
+  coordination field.
 - [ ] P0 — NEW 2026-07-17: server-backed in-app notification center (real
   `notifications` table + unread count) to replace the hardcoded bell dot —
   directly resolves the FEATURES.md gap "Bell dot is a fake signal — remove
@@ -620,16 +944,24 @@ items completed that run were confirmatory/refining. Nothing appended then.
 - [ ] P1 — dead-button elimination: terms/privacy static pages, help/support,
   add-to-calendar via expo-calendar; notification preferences wired to real
   push opt-ins.
+  PRIVACY-NOTICE CONTENT FILED 2026-07-18 (this pass): the terms/privacy
+  static page item now has a sourced content checklist — see RISKS → "MK/EU
+  DATA-PRIVACY MINIMUMS..." and the paired PROPOSED FEATURES row. Framed
+  explicitly as drafting input, not a substitute for counsel review before
+  real users sign up.
 - [ ] P1 — full locale QA sweep (en/mk/sq) across both modes.
 
 ## WAVE 6 — hardening & launch readiness
 - [ ] P0 — design-critic full pass (both modes, light/dark, all locales) + fix
   round, incorporating the founder's verified references. Re-run a founder
   research pass with direct WebFetch/Mobbin MCP before this pass locks visual
-  detail — see RISKS → "RESEARCH-PROCESS RISK": confirmed BLOCKED on TWO
-  separate passes now (2026-07-12 and 2026-07-17) — treat as a standing
-  environment limitation, not a transient blip, and check whether the
-  environment has changed before scheduling a third identical retry.
+  detail — see RISKS → "RESEARCH-PROCESS RISK": confirmed BLOCKED on THREE
+  separate passes now (2026-07-12, 2026-07-17, 2026-07-18) — treat as a
+  standing environment limitation, not a transient blip, and check whether
+  the environment has actually changed (not just calendar time passing)
+  before scheduling a fourth identical retry. Also queue the Baymard
+  accommodations-split-view article for a direct read once WebFetch/Mobbin
+  access works, per the "RESULTS LIST↔MAP TOGGLE" DESIGN INTEL entry.
 - [ ] P0 — e2e critical-path suite (Playwright web now, native later) + server
   load smoke; CI-gated.
 - [ ] P0 — production deploy: EU region, backups, Sentry, rate limiting,
