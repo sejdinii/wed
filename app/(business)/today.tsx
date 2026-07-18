@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -13,19 +13,28 @@ import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
 import { BrandedImage } from '@/components/BrandedImage';
 import { useTheme } from '@/design/theme';
-import { radius, spacing } from '@/design/tokens';
+import { radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMediumDate } from '@/lib/dates';
+import { REQUEST_TTL_HOURS } from '@/domain/kapar';
 import type { Booking, Venue } from '@/domain/types';
 import { vendorApi } from '@/data/vendorApi';
 import { usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
+/** Hours left before an unanswered request auto-expires (server enforces the actual expiry). */
+function hoursLeftToRespond(createdAtISO: string, nowMs: number): number {
+  const deadlineMs = new Date(createdAtISO).getTime() + REQUEST_TTL_HOURS * 3_600_000;
+  return (deadlineMs - nowMs) / 3_600_000;
+}
+
+type CardAction = 'confirm' | 'decline' | 'kapar';
+
 /**
  * Business mode · Today — the vendor's landing feed (Pulse pattern: requests,
- * visits and messages in one stream, never a stats page first). Wave 3 adds
- * the listing card + publish switch; the request feed is read-only until the
- * Wave-4 inbox lands confirm/decline.
+ * visits and messages in one stream, never a stats page first). Wave 3 added
+ * the listing card + publish switch; Wave 4 makes the request feed actionable
+ * (Booking.com Pulse request-to-book pattern — confirm/decline within 24h).
  */
 export default function BusinessTodayScreen() {
   const { colors } = useTheme();
@@ -39,6 +48,20 @@ export default function BusinessTodayScreen() {
   const [publishing, setPublishing] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const retry = () => setAttempt((n) => n + 1);
+
+  // Request-inbox action state (Wave 4). Keyed by booking id so multiple
+  // cards can be mid-action independently.
+  const [busy, setBusy] = useState<{ id: string; action: CardAction } | null>(null);
+  const [cardErrors, setCardErrors] = useState<Record<string, boolean>>({});
+  const [decliningIds, setDecliningIds] = useState<Record<string, boolean>>({});
+  const [declineReasons, setDeclineReasons] = useState<Record<string, string>>({});
+
+  // Refreshes the SLA line ("Xh left to respond") without a full data reload.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const handle = setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => clearInterval(handle);
+  }, []);
 
   const refresh = useCallback(async () => {
     const mine = await vendorApi.myVenue();
@@ -75,6 +98,46 @@ export default function BusinessTodayScreen() {
   };
 
   const activeRequests = requests.filter((b) => b.status === 'pending_kapar' || b.status === 'reserved');
+
+  const runAction = async (booking: Booking, action: CardAction, call: () => Promise<Booking>) => {
+    setBusy({ id: booking.id, action });
+    setCardErrors((e) => ({ ...e, [booking.id]: false }));
+    try {
+      const updated = await call();
+      setRequests((rs) => rs.map((r) => (r.id === booking.id ? updated : r)));
+      if (action === 'decline') {
+        setDecliningIds((s) => {
+          const next = { ...s };
+          delete next[booking.id];
+          return next;
+        });
+      }
+      haptic.success();
+    } catch {
+      haptic.error();
+      setCardErrors((e) => ({ ...e, [booking.id]: true }));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onConfirm = (booking: Booking) => void runAction(booking, 'confirm', () => vendorApi.confirmBooking(booking.id));
+  const onKaparReceived = (booking: Booking) => void runAction(booking, 'kapar', () => vendorApi.markKaparReceived(booking.id));
+  const onDecline = (booking: Booking) => {
+    const reason = declineReasons[booking.id]?.trim();
+    void runAction(booking, 'decline', () => vendorApi.declineBooking(booking.id, reason ? reason : undefined));
+  };
+  const openDecline = (id: string) => {
+    setCardErrors((e) => ({ ...e, [id]: false }));
+    setDecliningIds((s) => ({ ...s, [id]: true }));
+  };
+  const closeDecline = (id: string) => {
+    setDecliningIds((s) => {
+      const next = { ...s };
+      delete next[id];
+      return next;
+    });
+  };
 
   return (
     <Screen>
@@ -156,44 +219,136 @@ export default function BusinessTodayScreen() {
                     size="md"
                   />
                   <Button title={t('vendor.calendarTitle')} onPress={() => router.push('/calendar')} variant="dark" size="md" />
+                  <Button title={t('vendor.bookingsTitle')} onPress={() => router.push('/bookings')} variant="outline" size="md" />
                   <Button title={t('vendor.viewAsCouple')} onPress={() => router.push(`/venue/${venue.id}`)} variant="ghost" size="md" />
                 </View>
               </View>
             </View>
 
-            {/* Today feed — read-only until the Wave-4 inbox */}
+            {/* Today feed — the request inbox (Wave 4: confirm/decline/kapar-received) */}
             <View style={{ gap: spacing(2.5) }}>
               <AppText variant="title">{t('business.todayTitle')}</AppText>
               {activeRequests.length === 0 ? (
                 <EmptyState icon="file-tray-outline" title={t('vendor.noRequestsTitle')} body={t('vendor.noRequestsBody')} />
               ) : (
-                activeRequests.map((b) => (
-                  <View
-                    key={b.id}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      borderRadius: radius.md,
-                      backgroundColor: colors.surface,
-                      padding: spacing(3.5),
-                      gap: spacing(1.5),
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
-                      <AppText variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
-                        {b.contactName}
+                activeRequests.map((b) => {
+                  const isBusyCard = busy?.id === b.id;
+                  const isDeclining = !!decliningIds[b.id];
+                  const hoursLeft = hoursLeftToRespond(b.createdAtISO, nowMs);
+                  const slaColor = hoursLeft < 1 ? colors.danger : hoursLeft < 6 ? colors.amber : colors.textSecondary;
+                  return (
+                    <View
+                      key={b.id}
+                      style={{
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: radius.md,
+                        backgroundColor: colors.surface,
+                        padding: spacing(3.5),
+                        gap: spacing(1.5),
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(2) }}>
+                        <AppText variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
+                          {b.contactName}
+                        </AppText>
+                        <Badge label={t(`bookingStatus.${b.status}`)} tone={b.status === 'pending_kapar' ? 'warning' : 'gold'} dot />
+                      </View>
+                      <AppText variant="bodySm" color="secondary">
+                        {formatMediumDate(b.eventDateISO, locale)} · {t('bookings.guestCount', { count: b.guestCount })} · {b.confirmationCode}
                       </AppText>
-                      <Badge label={t(`bookingStatus.${b.status}`)} tone={b.status === 'pending_kapar' ? 'warning' : 'gold'} dot />
+
+                      {b.status === 'pending_kapar' && !isDeclining && hoursLeft > 0 ? (
+                        <AppText variant="caption" style={{ color: slaColor }}>
+                          {t('vendor.slaLeft', { hours: Math.max(1, Math.ceil(hoursLeft)) })}
+                        </AppText>
+                      ) : null}
+
+                      {b.status === 'reserved' && b.payByISO ? (
+                        <AppText variant="bodySm" color="secondary">
+                          {t('vendor.payByLine', { date: formatMediumDate(b.payByISO, locale) })}
+                        </AppText>
+                      ) : null}
+
+                      {b.status === 'pending_kapar' ? (
+                        isDeclining ? (
+                          <View style={{ gap: spacing(2) }}>
+                            <TextInput
+                              value={declineReasons[b.id] ?? ''}
+                              onChangeText={(v) => setDeclineReasons((r) => ({ ...r, [b.id]: v }))}
+                              placeholder={t('vendor.declineReasonPlaceholder')}
+                              placeholderTextColor={colors.textTertiary}
+                              accessibilityLabel={t('vendor.declineReasonPlaceholder')}
+                              style={{
+                                ...typeScale.body,
+                                color: colors.text,
+                                borderWidth: 1.5,
+                                borderColor: colors.borderStrong,
+                                borderRadius: radius.md,
+                                paddingHorizontal: spacing(3.5),
+                                height: 44,
+                              }}
+                            />
+                            <View style={{ flexDirection: 'row', gap: spacing(2.5) }}>
+                              <Button
+                                title={t('vendor.declineSend')}
+                                onPress={() => onDecline(b)}
+                                loading={isBusyCard && busy?.action === 'decline'}
+                                disabled={isBusyCard && busy?.action !== 'decline'}
+                                variant="danger"
+                                size="sm"
+                              />
+                              <Button
+                                title={t('common.back')}
+                                onPress={() => closeDecline(b.id)}
+                                disabled={isBusyCard}
+                                variant="ghost"
+                                size="sm"
+                              />
+                            </View>
+                          </View>
+                        ) : (
+                          <View style={{ flexDirection: 'row', gap: spacing(2.5) }}>
+                            <Button
+                              title={t('vendor.confirmAction')}
+                              onPress={() => onConfirm(b)}
+                              loading={isBusyCard && busy?.action === 'confirm'}
+                              disabled={isBusyCard && busy?.action !== 'confirm'}
+                              variant="primary"
+                              size="sm"
+                            />
+                            <Button
+                              title={t('vendor.declineAction')}
+                              onPress={() => openDecline(b.id)}
+                              disabled={isBusyCard}
+                              variant="outline"
+                              size="sm"
+                            />
+                          </View>
+                        )
+                      ) : null}
+
+                      {b.status === 'reserved' ? (
+                        <View style={{ flexDirection: 'row', gap: spacing(2.5) }}>
+                          <Button
+                            title={t('vendor.kaparReceivedAction')}
+                            onPress={() => onKaparReceived(b)}
+                            loading={isBusyCard && busy?.action === 'kapar'}
+                            disabled={isBusyCard && busy?.action !== 'kapar'}
+                            variant="mint"
+                            size="sm"
+                          />
+                        </View>
+                      ) : null}
+
+                      {cardErrors[b.id] ? (
+                        <AppText variant="bodySm" color="danger">
+                          {t('error.body')}
+                        </AppText>
+                      ) : null}
                     </View>
-                    <AppText variant="bodySm" color="secondary">
-                      {formatMediumDate(b.eventDateISO, locale)} · {t('bookings.guestCount', { count: b.guestCount })} · {b.confirmationCode}
-                    </AppText>
-                    {/* Wave 4: confirm / decline actions land here. */}
-                    <AppText variant="caption" color="tertiary">
-                      {t('vendor.actionsSoon')}
-                    </AppText>
-                  </View>
-                ))
+                  );
+                })
               )}
             </View>
           </>

@@ -1,4 +1,18 @@
-import { PLATFORM_REFUND_TIERS, type Booking, type CityKey, type Venue, type VenueType } from '@kapar/domain';
+import {
+  PLATFORM_REFUND_TIERS,
+  addDaysISO,
+  canTransition,
+  estimateTotalMkd,
+  kaparAmountMkd,
+  kaparPayByISO,
+  makeConfirmationCode,
+  todayISO,
+  type Booking,
+  type BookingStatus,
+  type CityKey,
+  type Venue,
+  type VenueType,
+} from '@kapar/domain';
 
 import { API_MODE, API_URL } from './api';
 import { usePreferences } from '@/stores/preferences';
@@ -14,6 +28,14 @@ export class DateBookedError extends Error {
   constructor() {
     super('date_booked');
     this.name = 'DateBookedError';
+  }
+}
+
+/** Thrown when a requested status change is illegal for the booking's current status (HTTP 409). */
+export class TransitionError extends Error {
+  constructor() {
+    super('illegal_transition');
+    this.name = 'TransitionError';
   }
 }
 
@@ -55,6 +77,14 @@ export interface VendorApi {
   calendar(fromISO?: string, toISO?: string): Promise<VendorCalendar>;
   setBlocked(dateISO: string, blocked: boolean): Promise<VendorCalendar>;
   bookings(): Promise<Booking[]>;
+  /** pending_kapar → reserved; stamps payByISO (+7d, capped at the event date). 409 → TransitionError. */
+  confirmBooking(bookingId: string): Promise<Booking>;
+  /** pending_kapar → cancelled_by_venue; nothing was paid yet, so no refund is stamped. 409 → TransitionError. */
+  declineBooking(bookingId: string, reason?: string): Promise<Booking>;
+  /** reserved → confirmed; stamps kaparPaidAtISO. 409 → TransitionError. */
+  markKaparReceived(bookingId: string): Promise<Booking>;
+  /** venue-initiated cancel; always 100% refund per the state machine. 409 → TransitionError. */
+  cancelBooking(bookingId: string, reason?: string): Promise<Booking>;
 }
 
 function authHeaders(): Record<string, string> {
@@ -133,6 +163,40 @@ class HttpVendorApi implements VendorApi {
     if (status !== 200) throw new Error(`vendor bookings failed: ${status}`);
     return body;
   }
+
+  async confirmBooking(bookingId: string): Promise<Booking> {
+    const { status, body } = await this.request<Booking>(`/v1/vendor/bookings/${bookingId}/confirm`, { method: 'POST' });
+    if (status === 409) throw new TransitionError();
+    if (status !== 200) throw new Error(`confirmBooking failed: ${status}`);
+    return body;
+  }
+
+  async declineBooking(bookingId: string, reason?: string): Promise<Booking> {
+    const { status, body } = await this.request<Booking>(`/v1/vendor/bookings/${bookingId}/decline`, {
+      method: 'POST',
+      ...(reason ? { body: { reason } } : {}),
+    });
+    if (status === 409) throw new TransitionError();
+    if (status !== 200) throw new Error(`declineBooking failed: ${status}`);
+    return body;
+  }
+
+  async markKaparReceived(bookingId: string): Promise<Booking> {
+    const { status, body } = await this.request<Booking>(`/v1/vendor/bookings/${bookingId}/kapar-received`, { method: 'POST' });
+    if (status === 409) throw new TransitionError();
+    if (status !== 200) throw new Error(`markKaparReceived failed: ${status}`);
+    return body;
+  }
+
+  async cancelBooking(bookingId: string, reason?: string): Promise<Booking> {
+    const { status, body } = await this.request<Booking>(`/v1/vendor/bookings/${bookingId}/cancel`, {
+      method: 'POST',
+      ...(reason ? { body: { reason } } : {}),
+    });
+    if (status === 409) throw new TransitionError();
+    if (status !== 200) throw new Error(`cancelBooking failed: ${status}`);
+    return body;
+  }
 }
 
 /**
@@ -143,6 +207,8 @@ class HttpVendorApi implements VendorApi {
 class MockVendorApi implements VendorApi {
   private venue: Venue | undefined;
   private blocked = new Set<string>();
+  /** Mock-only fiction: a single demo request so Business mode's inbox is demonstrable offline. */
+  private demoBookings: Booking[] = [];
 
   async createVenue(input: VendorVenueInput): Promise<Venue> {
     if (this.venue) throw new VenueExistsError();
@@ -232,8 +298,82 @@ class MockVendorApi implements VendorApi {
     return this.calendar();
   }
 
+  /** Mock-only fiction: seeds one pending_kapar demo request the first time a venue exists. */
+  private seedDemoBookingIfNeeded(): void {
+    if (!this.venue || this.demoBookings.length > 0) return;
+    const tier = this.venue.menuTiers[0];
+    if (!tier) return;
+    const guestCount = Math.max(this.venue.capacityMin, Math.min(this.venue.capacityMax, 120));
+    const eventDateISO = addDaysISO(todayISO(), 45);
+    const estimatedTotalMkd = estimateTotalMkd(this.venue, tier.id, guestCount);
+    const kaparMkd = kaparAmountMkd(this.venue.kaparPolicy, estimatedTotalMkd);
+    const createdAtISO = new Date().toISOString();
+    this.demoBookings.push({
+      id: `demo-${Date.now().toString(36)}`,
+      confirmationCode: makeConfirmationCode(),
+      venueId: this.venue.id,
+      venueName: this.venue.name,
+      venuePhoto: this.venue.photos[0] ?? '',
+      city: this.venue.city,
+      eventDateISO,
+      guestCount,
+      menuTierId: tier.id,
+      estimatedTotalMkd,
+      kaparMkd,
+      balanceDueMkd: estimatedTotalMkd - kaparMkd,
+      status: 'pending_kapar',
+      createdAtISO,
+      timeline: [{ status: 'pending_kapar', at: createdAtISO }],
+      // Demo data — no real couple is attached to this request.
+      contactName: 'Ана и Стефан',
+      contactPhone: '070 000 000',
+      hallName: this.venue.halls[0]?.name.mk,
+    });
+  }
+
   async bookings(): Promise<Booking[]> {
-    return [];
+    this.seedDemoBookingIfNeeded();
+    return this.demoBookings;
+  }
+
+  private transition(bookingId: string, to: BookingStatus, extra?: Partial<Booking>): Booking {
+    const idx = this.demoBookings.findIndex((b) => b.id === bookingId);
+    const current = idx >= 0 ? this.demoBookings[idx] : undefined;
+    if (!current) throw new Error(`booking not found: ${bookingId}`);
+    if (!canTransition(current.status, to)) throw new TransitionError();
+    const nowISO = new Date().toISOString();
+    const updated = {
+      ...current,
+      ...extra,
+      status: to,
+      timeline: [...current.timeline, { status: to, at: nowISO }],
+    } as Booking;
+    this.demoBookings[idx] = updated;
+    return updated;
+  }
+
+  async confirmBooking(bookingId: string): Promise<Booking> {
+    const current = this.demoBookings.find((b) => b.id === bookingId);
+    if (!current) throw new Error(`booking not found: ${bookingId}`);
+    const nowISO = new Date().toISOString();
+    return this.transition(bookingId, 'reserved', { payByISO: kaparPayByISO(nowISO, current.eventDateISO) });
+  }
+
+  async declineBooking(bookingId: string, reason?: string): Promise<Booking> {
+    return this.transition(bookingId, 'cancelled_by_venue', { cancelReason: reason });
+  }
+
+  async markKaparReceived(bookingId: string): Promise<Booking> {
+    return this.transition(bookingId, 'confirmed', { kaparPaidAtISO: new Date().toISOString() });
+  }
+
+  async cancelBooking(bookingId: string, reason?: string): Promise<Booking> {
+    const current = this.demoBookings.find((b) => b.id === bookingId);
+    if (!current) throw new Error(`booking not found: ${bookingId}`);
+    return this.transition(bookingId, 'cancelled_by_venue', {
+      cancelReason: reason,
+      refund: { percent: 100, amountMkd: current.kaparMkd },
+    });
   }
 }
 

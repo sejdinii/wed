@@ -20,6 +20,8 @@ export default function BusinessLayout() {
       <Stack.Screen name="today" />
       <Stack.Screen name="create-venue" />
       <Stack.Screen name="calendar" />
+      {/* Wave 4 orchestrator-reviewed exception: bookings dashboard route registration. */}
+      <Stack.Screen name="bookings" />
     </Stack>
   );
 }
