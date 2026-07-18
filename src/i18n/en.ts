@@ -421,7 +421,6 @@ export const en: Dict = {
 
   'availability.selectedDate': 'Selected Date',
   'availability.legendAvailable': 'Available',
-  'availability.legendLimited': 'Limited',
   'availability.legendSelected': 'Selected',
   'availability.accommodates': 'Venue accommodates {min} – {max} guests',
   'availability.kaparTitle': 'Kapar (Reservation Deposit)',

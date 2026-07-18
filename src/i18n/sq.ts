@@ -421,7 +421,6 @@ export const sq: Dict = {
 
   'availability.selectedDate': 'Data e zgjedhur',
   'availability.legendAvailable': 'E lirë',
-  'availability.legendLimited': 'E kufizuar',
   'availability.legendSelected': 'E zgjedhur',
   'availability.accommodates': 'Salla pranon {min} – {max} mysafirë',
   'availability.kaparTitle': 'Kapar (depozitë rezervimi)',

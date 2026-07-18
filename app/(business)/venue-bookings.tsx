@@ -15,37 +15,13 @@ import { Skeleton } from '@/design/components/Skeleton';
 import { useTheme } from '@/design/theme';
 import { radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
+import { parse as parseDeclineReason } from '@/lib/declineReason';
 import { formatMediumDate } from '@/lib/dates';
 import { formatMkd } from '@/lib/money';
 import type { Booking, BookingStatus } from '@/domain/types';
-import { API_MODE, API_URL } from '@/data/api';
 import { TransitionError, vendorApi } from '@/data/vendorApi';
-import { usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
-/**
- * Response-rate stat (Wave 6, BACKLOG-accepted founder rec). A plain fetch
- * rather than a `vendorApi` method — this slice does not own the vendor
- * repository boundary file, only the two screens; promoting this to a real
- * `VendorApi.stats()` is a SHARED follow-up (see the slice report). Mirrors
- * HttpVendorApi's own auth-header pattern exactly. Absent/failed -> null,
- * which the caller simply doesn't render — no fake precision, no error noise
- * for a supplementary metric.
- */
-async function fetchResponseRate30d(): Promise<number | null> {
-  if (!API_MODE) return null;
-  try {
-    const token = usePreferences.getState().authToken;
-    const res = await fetch(`${API_URL}/v1/vendor/my-venue/stats`, {
-      headers: token ? { authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) return null;
-    const body = (await res.json()) as { responseRate30d?: number | null };
-    return typeof body.responseRate30d === 'number' ? body.responseRate30d : null;
-  } catch {
-    return null;
-  }
-}
 
 type Segment = 'upcoming' | 'history';
 
@@ -90,7 +66,7 @@ export default function VendorBookingsScreen() {
   useFocusEffect(
     useCallback(() => {
       vendorApi.bookings().then(setBookings).catch(() => {});
-      fetchResponseRate30d().then(setResponseRate);
+      vendorApi.stats().then((s) => setResponseRate(s.responseRate30d)).catch(() => {});
     }, []),
   );
 
@@ -298,11 +274,17 @@ export default function VendorBookingsScreen() {
                 </View>
               ) : null}
 
-              {b.cancelReason ? (
-                <AppText variant="caption" color="secondary">
-                  {t('vendor.cancelReasonLabel', { reason: b.cancelReason })}
-                </AppText>
-              ) : null}
+              {b.cancelReason ? (() => {
+                const parsed = parseDeclineReason(b.cancelReason);
+                const display = parsed.categoryKey
+                  ? [t(`declineCat.${parsed.categoryKey}`), parsed.text].filter(Boolean).join(' — ')
+                  : parsed.text;
+                return (
+                  <AppText variant="caption" color="secondary">
+                    {t('vendor.cancelReasonLabel', { reason: display })}
+                  </AppText>
+                );
+              })() : null}
 
               {segment === 'upcoming' && (b.status === 'reserved' || b.status === 'confirmed') ? (
                 cancellingIds[b.id] ? (

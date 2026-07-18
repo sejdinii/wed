@@ -172,7 +172,6 @@ export default function AvailabilityScreen() {
               />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing(3), flexWrap: 'wrap', gap: spacing(2) }}>
                 <Legend color={colors.success} label={t('availability.legendAvailable')} />
-                <Legend color={colors.amber} label={t('availability.legendLimited')} />
                 <Legend color={colors.danger} label={t('availability.legendBooked')} />
                 <Legend color={colors.primary} label={t('availability.legendSelected')} />
               </View>

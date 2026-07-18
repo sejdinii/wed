@@ -77,6 +77,8 @@ export interface VendorApi {
   calendar(fromISO?: string, toISO?: string): Promise<VendorCalendar>;
   setBlocked(dateISO: string, blocked: boolean): Promise<VendorCalendar>;
   bookings(): Promise<Booking[]>;
+  /** Trailing-30d response-rate %% (null = <3 requests or unavailable) — supplementary, never throws into UI. */
+  stats(): Promise<{ responseRate30d: number | null }>;
   /** pending_kapar → reserved; stamps payByISO (+7d, capped at the event date). 409 → TransitionError. */
   confirmBooking(bookingId: string): Promise<Booking>;
   /** pending_kapar → cancelled_by_venue; nothing was paid yet, so no refund is stamped. 409 → TransitionError. */
@@ -162,6 +164,12 @@ class HttpVendorApi implements VendorApi {
     const { status, body } = await this.request<Booking[]>('/v1/vendor/my-venue/bookings');
     if (status !== 200) throw new Error(`vendor bookings failed: ${status}`);
     return body;
+  }
+
+  async stats(): Promise<{ responseRate30d: number | null }> {
+    const { status, body } = await this.request<{ responseRate30d?: number | null }>('/v1/vendor/my-venue/stats');
+    if (status !== 200) return { responseRate30d: null };
+    return { responseRate30d: typeof body.responseRate30d === 'number' ? body.responseRate30d : null };
   }
 
   async confirmBooking(bookingId: string): Promise<Booking> {
@@ -334,6 +342,11 @@ class MockVendorApi implements VendorApi {
   async bookings(): Promise<Booking[]> {
     this.seedDemoBookingIfNeeded();
     return this.demoBookings;
+  }
+
+  async stats(): Promise<{ responseRate30d: number | null }> {
+    // Offline demo has no request history — honest null, caption stays hidden.
+    return { responseRate30d: null };
   }
 
   private transition(bookingId: string, to: BookingStatus, extra?: Partial<Booking>): Booking {

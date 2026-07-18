@@ -425,7 +425,6 @@ export const mk = {
 
   'availability.selectedDate': 'Избран датум',
   'availability.legendAvailable': 'Слободно',
-  'availability.legendLimited': 'Ограничено',
   'availability.legendSelected': 'Избрано',
   'availability.accommodates': 'Салата прима {min} – {max} гости',
   'availability.kaparTitle': 'Капар (резервациски депозит)',

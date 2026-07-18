@@ -8,7 +8,7 @@ import { haptic } from '@/lib/haptics';
 import { WEEKDAYS_SHORT, mondayIndex, toISODate } from '@/lib/dates';
 import type { Locale } from '@/i18n';
 
-export type DayState = 'available' | 'limited' | 'booked' | 'blocked';
+export type DayState = 'available' | 'booked' | 'blocked';
 
 export interface CalendarMonthProps {
   /** Any date inside the month to render. */
@@ -19,7 +19,7 @@ export interface CalendarMonthProps {
   minISO: string;
   /**
    * Per-day availability driving the colored dot:
-   * green = available, amber = limited, red = booked, gray = blocked by the
+   * green = available, red = booked, gray = blocked by the
    * venue (3-state vendor calendar — booked ≠ blocked, accepted deviation
    * from Booking.com's binary calendar).
    */
@@ -57,7 +57,6 @@ export function CalendarMonth({ month, locale, selectedISO, minISO, stateFor, on
 
   const dotColor: Record<DayState, string> = {
     available: colors.success,
-    limited: colors.amber,
     booked: colors.danger,
     blocked: colors.textTertiary,
   };

@@ -35,16 +35,13 @@ export function priceLevel(venue: Venue): string {
 }
 
 /**
- * Calendar day state: booked = taken outright; limited = adjacent to a
- * booked day (venues juggle setup/teardown around back-to-back weddings);
- * otherwise available.
+ * Calendar day state: booked = taken outright, otherwise available. The old
+ * 'limited' adjacency heuristic (amber next to booked days) was REMOVED
+ * 2026-07-18 — it was invented scarcity, not vendor input; vendors have a
+ * real block tool for setup days (critic finding, copy-honesty rule).
  */
-export function venueDayState(venue: Venue, iso: string): 'available' | 'limited' | 'booked' {
-  if (venue.bookedDates.includes(iso)) return 'booked';
-  if (venue.bookedDates.includes(addDaysISO(iso, -1)) || venue.bookedDates.includes(addDaysISO(iso, 1))) {
-    return 'limited';
-  }
-  return 'available';
+export function venueDayState(venue: Venue, iso: string): 'available' | 'booked' {
+  return venue.bookedDates.includes(iso) ? 'booked' : 'available';
 }
 
 export function findTier(venue: Venue, tierId: string): MenuTier | undefined {

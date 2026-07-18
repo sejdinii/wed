@@ -22,6 +22,8 @@ import type { Booking, BookingStatus, Venue } from '@/domain/types';
 import { API_MODE } from '@/data/api';
 import { isNotificationVisible, notificationApi } from '@/data/notificationApi';
 import { TransitionError, vendorApi } from '@/data/vendorApi';
+import { Chip } from '@/design/components/Chip';
+import { DECLINE_CATEGORY_KEYS, format as formatDeclineReason, type DeclineCategoryKey } from '@/lib/declineReason';
 import { useIsAuthenticated, usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
 
@@ -70,6 +72,9 @@ export default function BusinessTodayScreen() {
   const [stateChangedIds, setStateChangedIds] = useState<Record<string, boolean>>({});
   const [decliningIds, setDecliningIds] = useState<Record<string, boolean>>({});
   const [declineReasons, setDeclineReasons] = useState<Record<string, string>>({});
+  // RtB-shape decline (founder-accepted): a CATEGORY is required; free text is
+  // mandatory only for 'other' (mirrors Booking.com's NOT_COMFORTABLE rule).
+  const [declineCategories, setDeclineCategories] = useState<Record<string, DeclineCategoryKey>>({});
 
   // Refreshes the SLA line ("Xh left to respond") without a full data reload.
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -209,8 +214,10 @@ export default function BusinessTodayScreen() {
   const onConfirm = (booking: Booking) => void runAction(booking, 'confirm', () => vendorApi.confirmBooking(booking.id));
   const onKaparReceived = (booking: Booking) => void runAction(booking, 'kapar', () => vendorApi.markKaparReceived(booking.id));
   const onDecline = (booking: Booking) => {
-    const reason = declineReasons[booking.id]?.trim();
-    void runAction(booking, 'decline', () => vendorApi.declineBooking(booking.id, reason ? reason : undefined));
+    const category = declineCategories[booking.id];
+    const text = declineReasons[booking.id]?.trim() ?? '';
+    if (!category || (category === 'other' && !text)) return; // button is disabled in these states — belt and braces
+    void runAction(booking, 'decline', () => vendorApi.declineBooking(booking.id, formatDeclineReason(category, text || undefined)));
   };
   const openDecline = (id: string) => {
     setCardErrors((e) => ({ ...e, [id]: false }));
@@ -428,6 +435,18 @@ export default function BusinessTodayScreen() {
                           </AppText>
                         ) : isDeclining ? (
                           <View style={{ gap: spacing(2) }}>
+                            {/* Required category first (RtB shape); free text
+                                is optional except for 'other'. */}
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) }}>
+                              {DECLINE_CATEGORY_KEYS.map((key) => (
+                                <Chip
+                                  key={key}
+                                  label={t(`declineCat.${key}`)}
+                                  selected={declineCategories[b.id] === key}
+                                  onPress={() => setDeclineCategories((c) => ({ ...c, [b.id]: key }))}
+                                />
+                              ))}
+                            </View>
                             <TextInput
                               value={declineReasons[b.id] ?? ''}
                               onChangeText={(v) => setDeclineReasons((r) => ({ ...r, [b.id]: v }))}
@@ -449,7 +468,11 @@ export default function BusinessTodayScreen() {
                                 title={t('vendor.declineSend')}
                                 onPress={() => onDecline(b)}
                                 loading={isBusyCard && busy?.action === 'decline'}
-                                disabled={isBusyCard && busy?.action !== 'decline'}
+                                disabled={
+                                  (isBusyCard && busy?.action !== 'decline') ||
+                                  !declineCategories[b.id] ||
+                                  (declineCategories[b.id] === 'other' && !(declineReasons[b.id] ?? '').trim())
+                                }
                                 variant="danger"
                                 size="sm"
                               />
