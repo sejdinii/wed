@@ -281,6 +281,8 @@ export const mk = {
   'messages.emptyTitle': 'Немаш пораки',
   'messages.emptyBody': 'Четот со салата се отвора откако ќе испратиш барање за резервација.',
   'messages.today': 'денес',
+  'messages.threadEmptyTitle': 'Започнете разговор',
+  'messages.threadEmptyBody': 'Испрати порака до {name} за да го започнеш разговорот.',
 
   'wishlist.title': 'Листа на желби',
   'wishlist.emptyTitle': 'Немаш зачувани сали',

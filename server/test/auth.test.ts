@@ -20,6 +20,17 @@ function uniqueEmail(): string {
   return `test-${randomUUID()}@example.com`;
 }
 
+// Derived from a fresh UUID's char codes (not Date.now()%n) — Date.now()%27
+// repeats whenever two runs land in the same millisecond-modulo window (this
+// flake has bitten twice), colliding with leftover rows from a prior run.
+// Mirrors the pattern bookings.test.ts/vendor.test.ts already use.
+function uuidDay(): string {
+  const u = randomUUID();
+  let sum = 0;
+  for (let i = 0; i < 8; i++) sum += u.charCodeAt(i);
+  return String((sum % 27) + 1).padStart(2, '0');
+}
+
 async function requestCode(destination: string) {
   return app.inject({ method: 'POST', url: '/v1/auth/request-code', payload: { channel: 'email', destination } });
 }
@@ -132,7 +143,7 @@ describe('device-booking claim on verify', () => {
   it('claims device bookings into the account and they show up bearer-only', async () => {
     const deviceId = `test-${randomUUID()}`;
     const email = uniqueEmail();
-    const day = String((Date.now() % 27) + 1).padStart(2, '0');
+    const day = uuidDay();
 
     const created = await app.inject({
       method: 'POST',

@@ -14,8 +14,14 @@ const app = buildApp();
 const device = `test-${randomUUID()}`;
 const otherDevice = `test-${randomUUID()}`;
 
-// A date very unlikely to collide with seeds; unique per test run.
-const day = String((Date.now() % 27) + 1).padStart(2, '0');
+// A date very unlikely to collide with seeds; unique per test run. Derived
+// from a fresh UUID's char codes (not Date.now()%n) — Date.now()%27 repeats
+// whenever two runs land in the same millisecond-modulo window (this flake
+// has bitten twice), colliding with leftover rows from a prior run that
+// weren't wiped by a reseed. uuidDay() is declared further down this file;
+// the function declaration is hoisted, so calling it here at module scope is
+// safe.
+const day = uuidDay();
 const EVENT_DATE = `2027-03-${day}`;
 
 function createBody(overrides: Record<string, unknown> = {}) {
@@ -145,10 +151,9 @@ describe('GET /v1/bookings?deviceId=', () => {
   });
 });
 
-// Wave 4: authorization lockdown on the legacy /v1/bookings/:id/* actions.
-// Dates are derived from a fresh UUID's char codes (not Date.now()%n) so
-// reruns of this suite never collide with each other or with the 03–08
-// month range the tests above already claim.
+// Shared by every date namespace in this file (top-level EVENT_DATE plus the
+// Wave 4 authorization-lockdown dates below) — see the comment on `day`
+// above for why Date.now()%27 was retired.
 function uuidDay(): string {
   const u = randomUUID();
   let sum = 0;

@@ -279,6 +279,8 @@ export const sq: Dict = {
   'messages.emptyTitle': 'Nuk ke mesazhe',
   'messages.emptyBody': 'Biseda me sallën hapet pasi të dërgosh kërkesë rezervimi.',
   'messages.today': 'sot',
+  'messages.threadEmptyTitle': 'Nis bisedën',
+  'messages.threadEmptyBody': 'Dërgo një mesazh tek {name} për të filluar bisedën.',
 
   'wishlist.title': 'Lista e dëshirave',
   'wishlist.emptyTitle': 'Nuk ke salla të ruajtura',

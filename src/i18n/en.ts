@@ -279,6 +279,8 @@ export const en: Dict = {
   'messages.emptyTitle': 'No messages',
   'messages.emptyBody': 'Chat with the venue opens after you send a booking request.',
   'messages.today': 'today',
+  'messages.threadEmptyTitle': 'Start the conversation',
+  'messages.threadEmptyBody': 'Send a message to {name} to start the conversation.',
 
   'wishlist.title': 'Wishlist',
   'wishlist.emptyTitle': 'No saved venues',
