@@ -24,6 +24,14 @@ in-progress Wave 5 chat/notification/dead-button work — not evidence the
 current wave is building something the market has abandoned. Filed under
 PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
 
+Nothing wave-invalidating found in this 2026-07-18/19 pass either (supply-side
+soft-launch playbook, venue-photo licensing, termin.mk/weddbooking.me refresh).
+All three are launch-readiness inputs for the ALREADY-SCHEDULED Wave 6
+hardening pass — the "claim this venue" flow is new scope but additive and
+optional (concierge onboarding through the existing self-serve funnel already
+works with zero new code), not evidence Wave 6 itself is off-track. Filed
+under PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
+
 ## TASKED RESEARCH (orchestrator → founder, 2026-07-10 — highest priority)
 # STATUS 2026-07-12: all three items completed this run. Full findings filed
 # under DESIGN INTEL / PROPOSED FEATURES / RISKS below. Research-method note:
@@ -65,6 +73,26 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
 - [x] **Chat safety table-stakes quick pass.** Findings under DESIGN INTEL →
   "CHAT SAFETY TABLE-STAKES FOR A TWO-SIDED MARKETPLACE".
 
+## TASKED RESEARCH (orchestrator → founder, 2026-07-18/19 — Wave 6 hardening
+## + launch: GTM playbook, photo licensing, competitor refresh) — STATUS: all
+## three items completed this run.
+# Research-method note: WebFetch was retried against termin.mk/svadba,
+# marry.mk, and getcameracrew.com this pass — ALL returned HTTP 403, the SAME
+# proxy-level signature confirmed on 2026-07-12, 07-17, and 07-18. This is now
+# the FOURTH+ confirmation; see the updated RISKS → "RESEARCH-PROCESS RISK"
+# entry below. Every finding below is WebSearch-snippet synthesis with source
+# URL + retrieval date, same confidence tier as the three prior passes.
+- [x] **Supply-first soft-launch playbook for a two-sided marketplace in a
+  small market.** Findings under DESIGN INTEL → "SUPPLY-FIRST SOFT-LAUNCH
+  PLAYBOOKS FOR TWO-SIDED MARKETPLACES"; the one finding implying real product
+  work is filed under PROPOSED FEATURES → "claim this venue" flow.
+- [x] **Venue photo licensing for the pre-launch catalogue.** Findings under
+  DESIGN INTEL → "VENUE PHOTO LICENSING FOR THE PRE-LAUNCH CATALOGUE"; the
+  Instagram-embedding jurisdiction caveat is filed separately under RISKS →
+  "PHOTO-SOURCING LEGAL RISK: US EMBEDDING DOCTRINE DOES NOT TRAVEL TO MK/EU".
+- [x] **Termin.mk / weddbooking.me counter-positioning refresh.** Findings
+  under RISKS → "BALKAN WEDDING-VENUE MARKET" (new dated sub-entry).
+
 ## PROPOSED FEATURES
 | Feature | Evidence (source) | Impact (blocking/valuable/later) | Touches | Verdict |
 |---|---|---|---|---|
@@ -86,6 +114,9 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
 | Chat: report + block affordance, built INTO the Wave 5 real-chat slice (not retrofitted onto a shipped screen later) | Airbnb lets either party report a message/conversation with a reason and separately block the other party from messaging, booking, or accepting future reservations — blocking during an active/upcoming reservation still allows the messages needed to complete THAT reservation, tapering off ~2 weeks after it ends. Source: [Report and block a host or guest's messages – Airbnb Help Center](https://www.airbnb.com/help/article/2020), [Report a host or guest for inappropriate behavior – Airbnb Help Center](https://www.airbnb.com/help/article/3806), retrieved 2026-07-18. Booking.com's partner-side equivalent is "report guest misconduct" (type + description + an optional future-booking block), reportable from the day after check-in through 7 days post-checkout. Source: [Report guest misconduct to Booking.com – Cloudbeds help](https://myfrontdesk.cloudbeds.com/hc/en-us/articles/360053613654-Report-guest-misconduct-to-Booking-com-from-Cloudbeds-PMS), retrieved 2026-07-18. | blocking — genuinely MVP-blocking, not later: no category leader ships 1:1 marketplace chat without it, and Wave 5 is building the message thread from scratch RIGHT NOW, making this the cheapest possible moment to add it (a modal + a block-check on the existing auth/booking-guard layer) vs. retrofitting later | The NEW chat screen/component Wave 5 is building this pass; existing auth/booking-guard middleware for the block-check (a blocked counterpart cannot message or book the blocker) | |
 | Do NOT clone Airbnb/Booking.com's automatic phone/email masking or link-stripping in chat, and do NOT add an "never pay outside the app" warning banner — explicitly document both as reasoned deviations | Airbnb strips/blocks contact info from messages (regex+heuristic phone/email/link detection) and is piloting per-reservation masked phone aliases specifically to stop bookings moving off-platform (a commission-evasion problem for Airbnb); Booking.com shows partner/guest numbers as an @guest.booking.com/@partner.booking.com alias by default. Both platforms separately warn users never to pay outside the platform's own rails (Venmo/Cash App/PayPal-F&F/wire/crypto named as red flags) because their refund protections are contingent on payment happening ON-platform. Source: [Why we review messages on Airbnb](https://www.airbnb.com/help/article/1121), [Airbnb's New Temporary Phone Numbers](https://yada.ai/blog/airbnbs-new-temporary-phone-numbers-what-changed-and-how-str-owners-should-pivot), [All about our messaging security settings – Booking.com for Partners](https://partner.booking.com/en-us/help/legal-security/security/all-about-our-messaging-security-settings), [Is Booking.com Legit? Safety Guide – AVG](https://www.avg.com/en/signal/is-booking-com-legit), retrieved 2026-07-18. Kapar has NO in-app payment/commission to protect (2026-07-09 no-online-payments decision) and phone number is ALREADY a required profile field specifically because venues coordinate visits by phone (2026-07-10 decision) — masking it or warning against off-platform payment would fight Kapar's own booking model and read as confusing, contradictory copy. | later/skip (reasoned rejection candidate, not an oversight to fix) | None — a scope decision to write into the Wave 5 chat spec's rationale so a future reviewer doesn't flag its absence as a gap | |
 | Real privacy notice page (replaces the dead Terms/Privacy rows on /welcome and Settings) drafted to the MK Law on Personal Data Protection's duty-to-inform minimums (Art. 17–18 per the unofficial translation, structurally equivalent to GDPR Art. 13): controller identity + real contact, purposes + legal basis per data category, retention criteria, data-subject rights list, and the right to complain to the Agency for Personal Data Protection (AZLP) + the AZLP's own contact details | See DESIGN INTEL/RISKS → "MK/EU DATA-PRIVACY MINIMUMS" for the full sourced breakdown; framed explicitly there as drafting input, not a substitute for a Macedonian lawyer's sign-off. | blocking-adjacent (real users are the explicit Wave 6 launch target; email+phone+booking data collection already starts at account creation, and the Terms/Privacy links are ALREADY a flagged FEATURES.md dead-button gap — this row gives that gap real content to point to instead of just de-affordancing it) | `/welcome` consent line (already flagged dead), Settings Terms/Privacy rows (already flagged dead) — a content-only addition, no schema/data-model change | |
+| "Claim this venue" flow for founder/ops-pre-seeded, unpublished draft venue listings — a nullable-owner venue row + a claim/verify step attaching an authenticated vendor account to it, separate from the existing "create a new listing from scratch" funnel | Yelp bootstrapped its supply side by purchasing a database of 20+ million business locations (old, inaccurate) and publishing them as empty "claimed business location" pages inviting owners to claim + populate hours/menu/photos — the direct precedent for pre-filling FACTUAL directory data (names, addresses, capacity, price band — not copyrightable, unlike photos) before a single vendor has signed up. Claiming today is still a lightweight, free, self-serve verification step, not KYC-heavy. Source: [Building Yelp – Medium](https://medium.com/swlh/building-yelp-bc4e62c4db3b), [What is a claimed business? – Yelp Support](https://www.yelp-support.com/article/What-is-a-claimed-business?l=en_US), [How to claim your business listing on TripAdvisor – Womply](https://www.womply.com/blog/how-to-claim-your-business-listing-on-tripadvisor/), retrieved 2026-07-18. Cross-reference: Airbnb's own "go to where supply already exists" precedent (scraping Craigslist's public listing TEXT and contacting hosts directly) only ever copied text, never photos, into the new platform without the host's own upload — see the DESIGN INTEL entry below for why Kapar must follow the same line. Source: [Airbnb's Craigslist Hack – marketingbyali.com](https://marketingbyali.com/airbnbs-craigslist-hack-a-growth-tactic-for-the-books/), retrieved 2026-07-18. | valuable (not launch-blocking — concierge onboarding through the EXISTING self-serve create-listing funnel already works with zero new code, see DESIGN INTEL; this row only matters if the orchestrator wants to scale outreach beyond what the founder/ops can physically sit through with each owner) | server: `venues` table needs a nullable `owner_id` + `claimed_at`/`claimed_by`, a new `/v1/venues/:id/claim` endpoint requiring an authenticated vendor session; app: an "Is this your venue? Claim it" entry point on venue detail/search for currently-unowned rows; the existing "one venue per owner" 409 constraint (Wave 3) needs to distinguish "already claimed by someone else" from "not yet claimed" | |
+| "Founding venue" priority badge / placement for the first wave of claimed or self-onboarded listings | General marketplace cold-start guidance: fee holidays and "be a founding seller" positioning are the standard lever to reduce first-mover friction; Uber paired manual driver recruiting with minimum-earnings guarantees, and GreenPal's founders hand-delivered 100,000 door hangers to acquire first-wave lawn-care pros. Source: [Marketplace Cold Start: Which Side Do You Seed First? – internetmango.com](https://internetmango.com/insights/marketplace-cold-start-strategy/), [Two-Sided Marketplace Cold Start: 2026 Playbook – FORKOFF](https://forkoff.xyz/blog/founder-growth/two-sided-marketplace-cold-start-2026), retrieved 2026-07-18. Kapar has no vendor commission at MVP (no-online-payments decision, 2026-07-09) so a fee-holiday lever doesn't apply directly — a badge/priority-placement incentive is the adaptable equivalent. | later (marketing lever, not a launch blocker) | venue card component (small badge asset), search-ranking tie-break only — no schema change | |
+| Persist the Wave-3 photo-copyright attestation as an auditable record (attester user_id + timestamp), not just a UI checkbox with no stored trail | Booking.com's own photo-upload policy (already cited 2026-07-12, DESIGN INTEL item 5) states hosts may only upload photos they own or are licensed to use, with unlicensed photos removed on dispute — implying the platform must be able to show, after the fact, who attested to what and when. A checkbox with no persisted attester/timestamp has weak evidentiary value if a photographer later disputes a venue-uploaded photo; third-party rights-enforcement agencies (Copytrack, Pixsy, PhotoClaim) actively chase misattributed images industry-wide. Source: [Unsplash License for Commercial Use: Independent Risk Profile (2026) – picdefense.io](https://picdefense.io/resources/source-intel/unsplash/), retrieved 2026-07-18 (cited for the enforcement-agency fact; applied here by analogy to venue-uploaded photos generally, not specific to Unsplash). | valuable (cheap now, expensive to reconstruct evidence after a real dispute) | photo-upload endpoint/table (Wave 3, R2-backed) — add `attested_by`/`attested_at` columns if not already present; no new UI beyond the existing checkbox | |
 
 ## DESIGN INTEL
 
@@ -150,7 +181,10 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
    Kapar mapping: drag-to-reorder, explicit "set as cover" affordance, a
    minimum-photo-count nudge before submit-for-publish, and a copyright
    attestation checkbox at upload time — ties directly into the standing P2
-   item "real venue photo plan" in USER DECISIONS NEEDED.
+   item "real venue photo plan" in USER DECISIONS NEEDED. UPGRADE 2026-07-18/19:
+   this exact policy is now CONFIRMED as the category-standard answer for
+   Kapar's pre-launch catalogue too — see the new DESIGN INTEL subsection
+   "VENUE PHOTO LICENSING FOR THE PRE-LAUNCH CATALOGUE" below.
 
 6. **Rates/policy editor.** Property tab → Policies. Two templates: "Fully
    flexible" (guest pays only at the stay, free cancellation up to a host-
@@ -569,6 +603,175 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
   AI-moderation or canned-reply templates being treated as safety-critical
   rather than UX-nice-to-have at either reference company this session).
 
+### SUPPLY-FIRST SOFT-LAUNCH PLAYBOOKS FOR TWO-SIDED MARKETPLACES — retrieved
+### 2026-07-18/19
+
+1. **DoorDash — founders as manual ops before any tech.** Founders posted
+   PDF menus of nearby restaurants (with their own personal phone numbers)
+   around Stanford, took orders themselves, and personally performed the
+   first 100 deliveries before building infrastructure — a "do things that
+   don't scale" validation pass on delivery economics restaurant-by-
+   restaurant. Source: [DoorDash doing things that don't scale – alexanderjarvis.com](https://www.alexanderjarvis.com/doordash-doing-things-that-dont-scale/), [From Hand-Delivered Orders to a Global Food Giant – startuporiginals.in](https://startuporiginals.in/from-hand-delivered-orders-to-a-global-food-giant-the-remarkable-success-story-of-doordash/), retrieved 2026-07-18.
+   Kapar mapping: founder/ops sitting with a venue owner and filling out
+   Kapar's EXISTING one-form create-listing funnel together (Wave 3,
+   self-serve) is the exact equivalent — zero new code required, a GTM
+   motion only.
+
+2. **Airbnb — manual quality-lift on EXISTING supply, not fabricated
+   supply.** Airbnb rented a ~$5,000 camera and went door-to-door
+   photographing NYC listings professionally in 2009-2010 (2-3x more
+   bookings, city revenue doubled within a month), later formalized into a
+   Photography Program (2,000+ freelance photographers, 13,000+ properties
+   by 2012); a 2016 Carnegie Mellon study measured +$2,455/year revenue per
+   listing from professional photos. Separately, Airbnb's famous Craigslist
+   growth hack scraped Craigslist's PUBLIC LISTING TEXT/regions and let
+   Airbnb hosts one-click cross-post back to Craigslist to reach existing
+   renters — it never copied Craigslist PHOTOS into Airbnb without the
+   host's own upload. Source: [🎯 How Airbnb doubled revenue in one week – strategybreakdowns.com](https://strategybreakdowns.com/p/airbnb-photography), [Airbnb's Craigslist Hack – marketingbyali.com](https://marketingbyali.com/airbnbs-craigslist-hack-a-growth-tactic-for-the-books/), retrieved 2026-07-18.
+   Kapar mapping: a founder-funded reshoot pass for claimed/onboarded
+   venues is the direct analog — see "VENUE PHOTO LICENSING" below;
+   scraping OTHER platforms' PHOTOS into Kapar pre-claim would repeat the
+   mistake Airbnb deliberately avoided.
+
+3. **Uber — manual, city-by-city supply recruiting with a de-risking
+   guarantee.** Local ops teams recruited 20-30 drivers one-by-one before
+   any city launch (targeting existing black-car/limo drivers), paired with
+   minimum-earnings guarantees to remove the supply-side's downside risk
+   while demand ramped. Source: [How Uber Solved the Cold Start Problem – Medium](https://medium.com/@cagdasbalci0/how-uber-solved-the-cold-start-problem-a-masterclass-in-network-effects-5315d2292166), [How Uber ensured global dominance – palle.substack.com](https://palle.substack.com/p/how-uber-ensured-global-dominance-ac3), retrieved 2026-07-18.
+   Kapar mapping: no direct product implication (Kapar has no driver-style
+   earnings guarantee to offer) — filed as GTM-only context.
+
+4. **Yelp — pre-filled directory + owner-claim, the direct precedent for
+   "claim this venue."** Yelp bootstrapped its directory by purchasing a
+   database of 20+ million business locations (old, inaccurate) and
+   published them as empty "claimed business location" pages — an open
+   invitation for reviews and a target for an aggressive owner-claim/
+   populate campaign (window stickers, direct merchant outreach). Claiming
+   today is still a lightweight, free, self-serve verification process (not
+   KYC-heavy), after which the owner adds hours/menu/photos. TripAdvisor
+   runs the same free-claim pattern. Source: [Building Yelp – Medium](https://medium.com/swlh/building-yelp-bc4e62c4db3b), [What is a claimed business? – Yelp Support](https://www.yelp-support.com/article/What-is-a-claimed-business?l=en_US), [How to claim your business listing on TripAdvisor – Womply](https://www.womply.com/blog/how-to-claim-your-business-listing-on-tripadvisor/), retrieved 2026-07-18.
+   Kapar mapping: this is the ONE pattern here that implies real new
+   product work — see PROPOSED FEATURES → "claim this venue" flow. Pre-fill
+   only FACTUAL, non-copyrightable data (name, address, capacity, price
+   band, phone) sourced from termin.mk's own public directory or a founder
+   site-visit — never photos (see photo-licensing subsection).
+
+5. **Jet.com's "fake it till you make it" — explicitly a pattern to AVOID.**
+   Jet.com listed inventory it didn't actually hold and manually fulfilled
+   by buying from competitors (including Amazon) when a real order came in.
+   Source: [Bootstrapping A Marketplace: "Fake It Till You Make It" Strategy – HackerNoon](https://hackernoon.com/bootstrapping-a-marketplace-fake-it-till-you-make-it-strategy-481b3y24), retrieved 2026-07-18, which itself flags that if users discover listings aren't real, "the trust damage is hard to recover from."
+   Kapar mapping: do NOT publish a founder-pre-seeded venue as bookable/
+   available before the real owner has claimed and confirmed it — Kapar's
+   existing draft/publish split (Wave 3, self-serve) already prevents this
+   by construction as long as pre-seeded rows default to unpublished, which
+   the claim-flow spec must preserve.
+
+6. **General marketplace-strategy guidance: niche down to reach liquidity
+   fast, then subsidize the constrained side.** Standard framing across
+   multiple 2026 marketplace-strategy write-ups: identify the harder-to-
+   recruit side (usually supply) and build it by hand in a narrow
+   geography/category before expanding, rather than optimizing for broad
+   growth first. Source: [Marketplace Cold Start: Which Side Do You Seed First? – internetmango.com](https://internetmango.com/insights/marketplace-cold-start-strategy/), [Two-Sided Marketplace Cold Start: 2026 Playbook – FORKOFF](https://forkoff.xyz/blog/founder-growth/two-sided-marketplace-cold-start-2026), [Beat the cold start problem in a marketplace – Reforge](https://www.reforge.com/guides/beat-the-cold-start-problem-in-a-marketplace), retrieved 2026-07-18.
+   Kapar mapping: already the de facto plan (single small market, ~14 seed
+   venues) — this validates staying narrow rather than expanding city
+   coverage before the two-sided loop has real bookings, not a new
+   instruction.
+
+   **Bottom line: Kapar's existing self-serve onboarding + unpublished
+   drafts + admin-less publish ALREADY support concierge, founder-does-
+   sales onboarding with zero new code** (patterns 1, 3, 6 above). **The
+   one pattern that implies real product work is Yelp's pre-fill-then-claim
+   model** (pattern 4) — filed as its own PROPOSED FEATURES row — **and
+   Jet.com's failure mode (pattern 5) is the reason that row must default
+   pre-seeded rows to unpublished until claimed.**
+
+### VENUE PHOTO LICENSING FOR THE PRE-LAUNCH CATALOGUE — retrieved 2026-07-18/19
+
+- **Venue-supplied photos + an ownership attestation at claim/onboarding
+  time is CONFIRMED as the category-standard answer**, not just an
+  internally convenient one. Booking.com's own photo-manager guidance
+  (already cited 2026-07-12, DESIGN INTEL item 5) states hosts may upload
+  only photos they own or are licensed to use, with unlicensed photos
+  removed on dispute — this is the same policy Kapar's Wave 3 copyright-
+  attestation checkbox already implements. Yelp/TripAdvisor's owner-claim
+  flow likewise has the OWNER add their own photos post-claim, not the
+  platform sourcing them independently. Source: [Uploading, deleting, reordering, and editing photos – partner.booking.com](https://partner.booking.com/en-us/help/property-page/photos-extranet/how-do-i-add-change-and-update-my-property-photos) (already cited), retrieved 2026-07-12/2026-07-18 (re-confirmed).
+  **Verdict: CONFIRM — no correction needed to the existing Wave-3-designed
+  attestation checkbox; the standing gap is only that the Unsplash
+  placeholders currently in production are NOT venue-supplied photos at
+  all (see below).**
+
+- **Commissioned professional shoots are a validated, not just hopeful,
+  growth lever — not only a legal-safety measure.** Airbnb's 2009-2010 NYC
+  photography push (professional photos of EXISTING host listings, not new
+  content) produced 2-3x more bookings and doubled city revenue within a
+  month; a 2016 CMU study measured +$2,455/year average incremental revenue
+  per US listing from professional photos, which is why Airbnb scaled it
+  into a formal Photography Program (2,000+ photographers, 13,000+
+  properties by 2012). Source: [🎯 How Airbnb doubled revenue in one week – strategybreakdowns.com](https://strategybreakdowns.com/p/airbnb-photography), [Legendary Hacks: The Early Days Of AirBnB – growthhacker.tv](https://growthhacker.tv/recipes/legendary-hacks-the-early-days-of-airbnb-%F0%9F%8F%A1%F0%9F%8F%86/), retrieved 2026-07-18.
+  **Balkan cost ballpark (weak confidence, flagged as INFERRED, not
+  directly sourced):** no North Macedonia-specific "architectural/venue
+  interior photography package" rate could be found this pass. The closest
+  local proxy is North Macedonia wedding-day photographer package pricing,
+  which runs roughly $85-$150 (vs. $250-$475 in Serbia for fuller-day
+  coverage) — Source: [Top 5+ Wedding Photographers in North Macedonia – mywed.com](https://mywed.com/en/North-Macedonia-wedding-photographers/), [Cheap Wedding Photographers in Serbia – mywed.com](https://mywed.com/en/Serbia-wedding-photographers/budget/), retrieved 2026-07-18. Generic Western commercial-photography day-rate
+  benchmarks ($800-$5,000/day; $150-$250/hr freelance) are explicitly
+  flagged here as the WRONG comparable for this market. Source: [Guide to Commercial Photography Pricing – format.com](https://www.format.com/magazine/resources/photography/commercial-photography-pricing/), retrieved 2026-07-18. A single dedicated venue-only shoot (no full-day
+  wedding coverage, no guest-facing deliverables) would plausibly run at or
+  below the local wedding-day rate — call it a $100-$300/venue planning
+  assumption for the ~14-40-venue seed catalogue (roughly $1,400-$12,000
+  total) — but get 2-3 real local quotes before committing to a number;
+  this figure is a founder inference from adjacent-service pricing, not a
+  quoted rate.
+
+- **The current Unsplash hot-links are a launch-blocking risk on TWO
+  separate grounds, not one.** (1) Licensing/liability: the free Unsplash
+  License grants broad commercial rights but with ZERO indemnification and
+  a $100 total liability cap; Unsplash does not verify model releases;
+  third-party rights-enforcement agencies (Copytrack, Pixsy, PhotoClaim)
+  actively pursue claims against sites using improperly-sourced Unsplash
+  images. Source: [Unsplash License for Commercial Use: Independent Risk Profile (2026) – picdefense.io](https://picdefense.io/resources/source-intel/unsplash/), [Terms & Conditions – Unsplash](https://unsplash.com/terms), retrieved 2026-07-18. (2) A separate, arguably BIGGER practical risk specific to
+  Kapar: these are generic stock photos that do not depict the actual 14 MK
+  venues being booked — a couple who books based on an Unsplash photo and
+  then visits a venue that looks nothing like it is a consumer-protection/
+  misrepresentation problem, independent of copyright.
+  **Confirms the standing FEATURES.md/BACKLOG P2 gap: replace before any
+  real booking, not just before a design-critic pass.**
+
+- **Instagram embedding ("Instagram embed ≠ copying") is TRUE only under
+  current US Ninth Circuit doctrine — it does NOT straightforwardly extend
+  to Kapar's actual MK/EU legal exposure.** The Ninth Circuit's "server
+  test" (reaffirmed in *Hunley v. Instagram*, 2023, still standing) holds
+  that embedding content hosted on Instagram's own servers doesn't trigger
+  the embedder's US display-right liability, because no copy is made on
+  the embedder's server. BUT (a) Instagram's own developer terms explicitly
+  state they do NOT sub-license the underlying rights to whoever uses the
+  embed API — the embedder still has no license from the actual
+  photographer, only a technical shield under one specific circuit's
+  copyright doctrine; (b) that doctrine is actively contested even within
+  the US — a Fifth Circuit case (*Emmerich Newspapers v. Particle Media*)
+  was argued June 2026 on the same question; (c) North Macedonia/EU
+  copyright law does not use the US "server test" at all — the CJEU's
+  "communication to the public" framework (established in *Svensson* 2014,
+  *GS Media* 2016, *BestWater* 2014) governs embedding in an EU-law
+  context, and under GS Media specifically, embedding CAN infringe if the
+  underlying content was posted without the rightsholder's consent or the
+  embedder acted for commercial gain with knowledge of that fact. Source:
+  [Ninth Circuit Affirms Server Test in Instagram Embedding Case – Copyright Lately](https://copyrightlately.com/ninth-circuit-affirms-server-test-in-instagram-embedding-case/), [oEmbed – Instagram Platform – developers.facebook.com](https://developers.facebook.com/docs/instagram-platform/oembed/), [📽️ Instagram's Terms Allow Anyone to Embed Your Posts – inbetterwetrust.com](https://inbetterwetrust.com/%F0%9F%93%BD-instagrams-terms-allow-anyone-to-embed-your-posts/), retrieved 2026-07-18.
+  **Verdict: do not treat Instagram embedding as a legally safe bridge
+  tactic for Kapar's actual jurisdiction — see the matching RISKS entry
+  below.**
+
+- **Bottom line for the pre-launch catalogue:** (1) venue-supplied photos +
+  the existing Wave-3 attestation checkbox is the right, category-standard,
+  already-designed answer — CONFIRMED, no redesign needed; (2) a founder-
+  commissioned reshoot pass for venues with weak existing photos is a
+  validated growth lever worth budgeting (ballpark above, get real local
+  quotes); (3) do NOT bridge the gap with Instagram embeds or any other
+  platform's photos pre-claim — legally weaker than it looks outside the
+  US, and repeats the exact Craigslist-photo mistake Airbnb itself avoided
+  (see the soft-launch playbook subsection above).
+
 ## RISKS
 
 ### BALKAN WEDDING-VENUE MARKET — retrieved 2026-07-12
@@ -624,6 +827,36 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
   under-adopts the app/push notifications (plausible for older venue
   owners), Viber is the regionally-correct fallback channel, not SMS or
   WhatsApp — see matching PROPOSED FEATURES row.
+- **TERMIN.MK / WEDDBOOKING.ME REFRESH — retrieved 2026-07-18/19.** No
+  material product change found since the 2026-07-12 scan: termin.mk still
+  runs a free request-form (not a stateful booking) across 40+ venues,
+  cross-selling 50+ other wedding vendors; this pass surfaced its own
+  stated confirmation window explicitly — "верификацијата на успешната
+  резервација нема да трае повеќе од 48 часа" (verification of a successful
+  reservation takes no more than 48 hours) — SLOWER than Kapar's already-
+  built 24h vendor-response TTL, a concrete, citable differentiator for
+  positioning. Still no evidence of a deposit/kapar workflow, cancellation-
+  refund ladder, or enforced vendor SLA on either termin.mk or
+  weddbooking.me. Source: [termin.mk/svadba](https://termin.mk/svadba), [termin.mk/svadba/za-termin-svadba](https://termin.mk/svadba/za-termin-svadba), retrieved 2026-07-18 (WebSearch-snippet synthesis; direct WebFetch to termin.mk returned HTTP 403 again this pass, consistent with the standing RESEARCH-PROCESS RISK below). Two additional MK-region wedding-adjacent
+  sites surfaced this pass that were NOT catalogued 2026-07-12 — Marry.mk (a
+  directory: "curated listings" of venues/photographers/dresses across
+  Skopje, Tetovo, Gostivar, Ohrid, Bitola) and svadba.mk/kazhida-style
+  planning tools (checklists, guest lists, free wedding websites) — both
+  read as DISCOVERY/PLANNING tools, same as termin.mk/weddbooking.me, with
+  no evidence of a transactional booking or deposit feature found. Source:
+  [Marry.mk](https://marry.mk/), [Marry.mk – about](https://www.marry.mk/about), retrieved 2026-07-18 (direct WebFetch to marry.mk also returned 403).
+  **Verdict: the transactional white space (an enforced deposit/kapar
+  workflow with a refund ladder and vendor-response SLA) is UNCHANGED — if
+  anything the discovery/directory layer of this market is more crowded
+  than the 2026-07-12 pass suggested, sharpening the case that Kapar's
+  differentiation must stay the trust/transaction layer, not listing
+  breadth.** Adjacent-market note: a local booking app for a different
+  vertical, "MojTermin" (real-time sports-facility booking with in-app
+  payment), already exists on the MK Google Play store — weak validation
+  that MK consumers have at least one local precedent for a transactional
+  booking-with-payment app, lowering the "we'd be the first weird app doing
+  this" adoption risk even though it's a different category. Source:
+  [MojTermin – Google Play](https://play.google.com/store/apps/details?id=com.mojtermin.app&hl=en_US), retrieved 2026-07-18.
 
 ### MK/EU DATA-PRIVACY MINIMUMS — INPUT TO THE LEGAL DRAFT, NOT A SUBSTITUTE
 ### FOR COUNSEL — retrieved 2026-07-18
@@ -709,6 +942,21 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
   unofficial law translation), not primary-source-verified article text,
   and not a substitute for that review.
 
+### PHOTO-SOURCING LEGAL RISK: US EMBEDDING DOCTRINE DOES NOT TRAVEL TO MK/EU
+### — retrieved 2026-07-18/19
+- See DESIGN INTEL → "VENUE PHOTO LICENSING FOR THE PRE-LAUNCH CATALOGUE"
+  for the full sourced breakdown. Tight summary: the US Ninth Circuit's
+  "server test" (favorable to embedders, reaffirmed *Hunley v. Instagram*
+  2023) is the ONLY reason "Instagram embed ≠ copying" reads as safe, and
+  it is (a) contested even within the US (Fifth Circuit argument pending,
+  June 2026) and (b) not the legal test an MK/EU court would apply at all —
+  the CJEU's "communication to the public" doctrine (*Svensson*, *GS
+  Media*) permits liability for embedding non-consented content. Do not
+  rely on Instagram embedding as a legally safe bridge for the pre-launch
+  catalogue; venue-supplied photos + the existing Wave-3 attestation
+  checkbox remain the one clean path. Source: same citations as the paired
+  DESIGN INTEL entry, retrieved 2026-07-18.
+
 ### RESEARCH-PROCESS RISK
 - **This session's WebFetch was non-functional for every target attempted**,
   including a neutral Wikipedia control URL — all returned HTTP 403,
@@ -754,6 +1002,14 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
   identical retry; only re-test if the orchestrator has specific reason to
   believe the proxy/MCP configuration itself changed (e.g. a session
   environment update, not just calendar time passing).
+  RETRY 2026-07-18/19 (fourth+ confirmation): WebFetch was retried against
+  termin.mk/svadba, marry.mk, and getcameracrew.com (a Skopje photography-
+  crew directory, relevant to the photo-licensing pass) this run — all
+  three returned HTTP 403 again, the same proxy-level signature as every
+  prior pass. No further retries scheduled per the standing instruction;
+  this is now a durable, repeatedly-confirmed environment characteristic,
+  not something to keep re-testing on routine passes. All findings in this
+  pass are WebSearch-snippet synthesis, same confidence tier as before.
 
 ## REJECTED (with reasons - do not re-propose without new evidence)
 - Reviews write path (was Wave 5 P1) — CUT from MVP by user 2026-07-12.
@@ -961,23 +1217,32 @@ PROPOSED FEATURES / DESIGN INTEL / RISKS below for the next checkpoint.
 - [ ] P1 MOVED → Wave 6 — full locale QA sweep rides the design-critic
   launch pass.
 
-## WAVE 6 — hardening & launch readiness
+## WAVE 6 — hardening & launch readiness — ✅ BUILDABLE SCOPE SHIPPED
+## 2026-07-18 (map, vendor completeness, trust batch, rate limiting, deploy
+## pack; integrated e2e green; remaining items are HUMAN-BLOCKED accounts)
 - [ ] P0 — design-critic full pass (both modes, light/dark, all locales) + fix
   round, incorporating the founder's verified references. Re-run a founder
   research pass with direct WebFetch/Mobbin MCP before this pass locks visual
-  detail — see RISKS → "RESEARCH-PROCESS RISK": confirmed BLOCKED on THREE
-  separate passes now (2026-07-12, 2026-07-17, 2026-07-18) — treat as a
-  standing environment limitation, not a transient blip, and check whether
-  the environment has actually changed (not just calendar time passing)
-  before scheduling a fourth identical retry. Also queue the Baymard
-  accommodations-split-view article for a direct read once WebFetch/Mobbin
-  access works, per the "RESULTS LIST↔MAP TOGGLE" DESIGN INTEL entry.
+  detail — see RISKS → "RESEARCH-PROCESS RISK": confirmed BLOCKED on FOUR+
+  separate passes now (2026-07-12, 2026-07-17, 2026-07-18, 2026-07-18/19) —
+  treat as a standing environment limitation, not a transient blip, and check
+  whether the environment has actually changed (not just calendar time
+  passing) before scheduling yet another identical retry. Also queue the
+  Baymard accommodations-split-view article for a direct read once WebFetch/
+  Mobbin access works, per the "RESULTS LIST↔MAP TOGGLE" DESIGN INTEL entry.
 - [ ] P0 — e2e critical-path suite (Playwright web now, native later) + server
   load smoke; CI-gated.
 - [ ] P0 — production deploy: EU region, backups, Sentry, rate limiting,
   secrets; staging demo on two physical phones.
 - [ ] P1 — replace Unsplash photos (needs the photo plan); offline behavior
   of BrandedImage verified (gap: "offline behavior unverified").
+  GTM/PHOTO PACK FILED 2026-07-18/19 (this pass): see DESIGN INTEL →
+  "SUPPLY-FIRST SOFT-LAUNCH PLAYBOOKS..." and "VENUE PHOTO LICENSING FOR THE
+  PRE-LAUNCH CATALOGUE..." plus the three paired PROPOSED FEATURES rows
+  ("claim this venue" flow, founding-venue badge, persisted photo
+  attestation) and RISKS → "PHOTO-SOURCING LEGAL RISK..." (Instagram
+  embedding does not travel to MK/EU jurisdiction — do not use it as a
+  bridge tactic).
 - [ ] P2 — post-launch queue: per-venue cancellation policies; online payments
   (CaSys vs Stripe); per-venue kapar policy editor. Design-intel refinement
   (2026-07-12): key this editor by calendar date-range (seasonal), matching

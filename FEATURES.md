@@ -41,7 +41,7 @@ with zero console errors, FEATURES.md updated, one commit per slice.
 | 3 ✅ CORE SHIPPED 2026-07-17 (halls/menus editor, photos→R2, locale-tab content editor → Wave 4/6 carry-over) | Vendor extranet core (GATED: founder research pack, see BACKLOG) | listing editor (content ×3 locales, photos→R2) · halls/menus editor · availability calendar · onboarding funnel + admin publish | a vendor can create a listing a couple can find and book — MET, run-verified end-to-end 2026-07-17 |
 | 4 ✅ CORE SHIPPED 2026-07-18 (push → Wave 5 notification slice; vendor-cancel UI, response-rate stat → Wave 5) | Vendor booking ops | request inbox confirm/decline · kapar-received flow · bookings dashboard · push notifications both sides | full two-sided loop with zero bots — MET, run-verified 2026-07-18: vendor created+published a venue, couple booked it, vendor confirmed/kapar-received/declined-with-reason entirely through the UI; scoped demo bot verifiably kept out |
 | 5 ✅ CORE SHIPPED 2026-07-18 (map view → Wave 6 with the founder's reference pack; locale QA rides the Wave 6 critic pass) | Couple completeness | map view + server filters · real chat (replaces bot) · dead-button/legal sweep · locale QA (reviews write path CUT 2026-07-12) | no dead buttons — MET (zero onPress={() => {}} left; map pill and personal-info row honestly REMOVED rather than left dead); real chat + in-app notification center run-verified two-sided 2026-07-18 |
-| 6 | Hardening & launch | design-critic pass + fixes · e2e suite + load smoke · prod deploy (backups, Sentry, rate limits) · photo/content plan executed | staging demo end-to-end on two phones; prod checklist green |
+| 6 ✅ BUILDABLE SCOPE SHIPPED 2026-07-18 (deploy/photos/email = the three HUMAN-BLOCKED accounts; final device demo needs staging) | Hardening & launch | design-critic pass + fixes · e2e suite + load smoke · prod deploy (backups, Sentry, rate limits) · photo/content plan executed | map view live · fake reviews GATED OFF · decline categories (RtB) end-to-end · vendor cards show money+phone · rate limiting live · deploy pack ready-to-execute (docs/PRODUCTION.md) — integrated e2e green 2026-07-18. REMAINING = Railway/R2/Resend + counsel + on-device demo |
 
 Working agreement for waves: the loop runs via /next-wave under the
 /parallel-build protocol — frozen specs, worktree-isolated wave-implementers,
@@ -54,7 +54,7 @@ BACKLOG.md's gap queue at session end.
 ## CORE FLOWS (MVP-blocking)
 | Feature | Status | Verified how | Notes |
 |---|---|---|---|
-| Venue search + filters | PARTIAL | run-verified (web) 2026-07-10 | home → search → results built vs MockVenueApi (14 published seed venues — earlier "16" was wrong). Loading+empty+error states all present. Map-view pill REMOVED 2026-07-18 (fired only a haptic); real map lands Wave 6 with the founder reference pack |
+| Venue search + filters | PARTIAL | run-verified (web) 2026-07-10 | home → search → results built vs MockVenueApi (14 published seed venues — earlier "16" was wrong). Loading+empty+error states all present. MAP VIEW LIVE 2026-07-18: list↔map toggle, MapLibre price pins, VenueCard mini-card, same filters both modes (23 pins verified; OpenFreeMap tiles proxy-blocked HERE — interaction layer proven, tile render needs one unproxied look). Known gap: same-city venues stack at identical CITY_COORDS pins |
 | Venue detail page (gallery, pricing, availability) | DONE | run-verified (web) 2026-07-10 | Gallery, halls, reviews, map, 410-unpublished state built; `fullRefundDays` crash fixed; error state + retry added and driven in browser (recovers). Loading/empty/error all present |
 | Booking flow (date select → request/confirm) | PARTIAL | run-verified (web+server) 2026-07-12 | Pay-at-visit checkout now creates bookings ON THE SERVER (money computed server-side, availability enforced at insert — the re-check gap is closed); 409 surfaces as user copy. Remaining: draft store in-memory |
 | Double-booking prevention | DONE | run-verified 2026-07-12 | Server-enforced: partial unique index on active (venue_id,event_date) + transactional insert. Verified in tests (cross-device 409) AND in the browser (duplicate surfaced as 'date just taken' copy; cancel released the date and rebooking succeeded). Requires API mode — the offline mock keeps the old client-only filter |
@@ -73,13 +73,27 @@ BACKLOG.md's gap queue at session end.
 |---|---|---|---|
 | Empty states (all list screens) | DONE | code + browser 2026-07-10 | All list screens have EmptyState incl. new home-rails and reviews-list ones. Caveat: the two new branches are unreachable with seed data (mock always returns venues/reviews), so they are render-guards verified by code, not driven |
 | Error states + retry (all network screens) | DONE | run-verified (web) 2026-07-10 | New ErrorState design component; all 8 previously-unguarded venueApi awaits wrapped with retry wiring. Every screen driven in browser with the new dev switch `globalThis.__KAPAR_API_FAIL__` (api.ts); home/results/venue-detail also verified to RECOVER on retry |
-| Reviews/ratings | STUB | static code trace 2026-07-09 | CUT from MVP 2026-07-12 (no write path will be built). Fake generated reviews stay display-only for the demo phase — MUST be hidden or replaced before real users (see gap) |
+| Reviews/ratings | DONE (gated OFF) | run-verified (web) 2026-07-18 | The launch-honesty gate EXECUTED: REVIEWS_ENABLED=false (src/lib/launchGates.ts) hides every rating/review surface app-wide — verified zero artifacts on home/venue/map mini-card. Flips on only when real reviews exist (post-launch write path) |
 | Notifications (booking status changes) | PARTIAL | run-verified (web+server) 2026-07-18 | In-app center SHIPPED: durable notifications table fanned out from every real event (create/transitions/sweeps/messages), bearer-scoped list + mark-read, bells with EARNED badges in both headers (60s poll + focus refetch), settings toggles now actually filter kinds. Verified live both sides. PARTIAL because push delivery (the reason the row exists) still needs a device to verify against — Wave 6+ |
 | Deposits/payments | DONE | run-verified (web) 2026-07-10 | DECIDED 2026-07-09: MVP has NO online payments — kapar is paid in person at the venue visit. Card form + fake gateway deleted (PCI risk gone); all "secure payment" claims reworded in en/mk/sq; profile "Payment methods" row removed. Online rails (CaSys/Stripe) become a post-launch feature |
 | Onboarding (first-run) | DONE | run-verified (web) 2026-07-18 | welcome → verify → tabs; Terms/Privacy on the consent line now open REAL static legal screens (draft-labelled pending counsel, ×3 locales, MK privacy-law checklist applied from founder research) |
 | Profile/settings | DONE | run-verified (web) 2026-07-18 | Zero dead rows: legal screens wired, help → /support (mailto), personal-info row removed until its migration (Wave 6), sign-out works, currency honest, notification toggles genuinely filter the in-app center. Personal-info editor returns Wave 6 |
 
 ## DISCOVERED GAPS (agent appends here when it finds unstated requirements)
+- 2026-07-18 (Wave 6 close): map pins for same-city venues STACK at identical
+  CITY_COORDS (vendor-created venues get the city centroid) — overlapping
+  pins intercept each other's taps. Needs coordinate jitter or clustering +
+  a real venue-geocoding step in the claim/onboarding flow. → post-launch.
+- 2026-07-18 (Wave 6 close): dev-db hygiene — e2e driver venues (kapar.mk
+  emails) accumulate outside the test-account sweep (catalogue hit 600+
+  before the purge; a few realistic-named stragglers remain). The vitest
+  global-setup now also sweeps test-ACCOUNT venues; driver-created ones need
+  either the same marker discipline or periodic manual purges. Non-issue in
+  production (no drivers).
+- 2026-07-18: response-rate caption verified only in its honest-null state in
+  the final integrated run (<3 requests in the fresh fixture) — the non-null
+  path was live-verified in slice B's own run ("60% (last 30 days)"). Fine,
+  recorded for completeness.
 - 2026-07-18 CRITIC PASS 2 (Wave 4 surfaces, verdict FIX FIRST). Fixed same
   session: overflowing vendor action row (flexWrap+sm), WRONG no-refund
   boundary (read the wrong end of the descending sort — claimed 90 days,
@@ -243,6 +257,10 @@ BACKLOG.md's gap queue at session end.
   venue photos show the BrandedImage fallback in cloud runs.
 
 ## DECISIONS LOG (newest first)
+- 2026-07-18 EXECUTED — the fake-reviews cut is no longer pending: all rating/
+  review UI is behind REVIEWS_ENABLED=false. The consumer-protection gap
+  flagged 2026-07-12 is closed for launch; the flag flips when a real review
+  write path ships post-launch.
 - 2026-07-18 DEVIATION (agent, from founder rec) — the per-request 24h SLA
   COUNTDOWN stays. Founder found no category leader showing a ticking clock
   (Airbnb discloses a trailing response-rate %% instead) and recommended
