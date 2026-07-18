@@ -85,6 +85,9 @@ export default function BookingDetailsScreen() {
   }
 
   const tier = venue?.menuTiers.find((m) => m.id === booking.menuTierId);
+  // Cancelled/expired bookings owe nothing — the payment block must stop billing.
+  const isDead =
+    booking.status === 'cancelled_by_couple' || booking.status === 'cancelled_by_venue' || booking.status === 'expired';
 
   const SectionRow = ({
     icon,
@@ -205,7 +208,7 @@ export default function BookingDetailsScreen() {
           <SectionRow
             icon="restaurant-outline"
             title={t('details.whatsIncluded')}
-            subtitle={tier ? `${tier.name[locale]} · ${tier.description[locale]}` : '—'}
+            subtitle={tier ? [tier.name[locale], tier.description[locale]].filter(Boolean).join(' · ') : '—'}
           />
           <Divider />
           {venue ? (
@@ -237,25 +240,34 @@ export default function BookingDetailsScreen() {
             label={t('details.estimateLine', { guests: booking.guestCount })}
             value={formatMkd(booking.estimatedTotalMkd, locale)}
           />
-          <PayRow
-            label={
-              booking.kaparPaidAtISO
-                ? t('details.kaparPaidAtVenue')
-                : booking.payByISO
+          {/* Dead bookings owe NOTHING — no "kapar due"/"balance due" lines on
+              a cancelled or expired booking (critic finding: dead bookings
+              kept billing the couple). What WAS paid/returned stays visible. */}
+          {booking.kaparPaidAtISO ? (
+            <PayRow label={t('details.kaparPaidAtVenue')} value={`− ${formatMkd(booking.kaparMkd, locale)}`} gold />
+          ) : !isDead ? (
+            <PayRow
+              label={
+                booking.payByISO
                   ? t('details.kaparDueBy', { date: formatMediumDate(booking.payByISO, locale) })
                   : t('details.kaparDue')
-            }
-            value={`${booking.kaparPaidAtISO ? '− ' : ''}${formatMkd(booking.kaparMkd, locale)}`}
-            gold
-          />
+              }
+              value={formatMkd(booking.kaparMkd, locale)}
+              gold
+            />
+          ) : null}
           {booking.refund ? (
             <PayRow
               label={t('details.refundReturned', { percent: booking.refund.percent })}
               value={formatMkd(booking.refund.amountMkd, locale)}
             />
           ) : null}
-          <Divider />
-          <PayRow label={t('details.balanceVenue')} value={formatMkd(booking.balanceDueMkd, locale)} />
+          {!isDead ? (
+            <>
+              <Divider />
+              <PayRow label={t('details.balanceVenue')} value={formatMkd(booking.balanceDueMkd, locale)} />
+            </>
+          ) : null}
         </View>
 
         <PressableScale
@@ -272,9 +284,8 @@ export default function BookingDetailsScreen() {
           <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
         </PressableScale>
         <Divider />
-        {/* PLACEHOLDER — opens the support flow once it exists. */}
         <PressableScale
-          onPress={() => {}}
+          onPress={() => router.push('/support')}
           scaleTo={0.99}
           hapticFeedback="select"
           accessibilityRole="button"

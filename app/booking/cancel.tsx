@@ -105,7 +105,15 @@ export default function CancelBookingScreen() {
     booking.kaparPaidAtISO !== undefined &&
     // Would the ladder alone have given less? Then it was the grace window.
     refundPercentFor(venue.kaparPolicy, booking.eventDateISO, today, null) < 100;
-  const noRefundBoundary = venue ? sortedRefundTiers(venue.kaparPolicy).find((tier) => tier.refundPercent > 0)?.minDaysBeforeEvent : undefined;
+  // The no-refund boundary is the SMALLEST refunded tier's threshold.
+  // sortedRefundTiers is DESCENDING, so take the last refunded tier — .find()
+  // here returned the 90-day/100% tier and the copy claimed a 3×-harsher
+  // policy than the ladder beside it (critic finding, 2026-07-18).
+  const noRefundBoundary = venue
+    ? sortedRefundTiers(venue.kaparPolicy)
+        .filter((tier) => tier.refundPercent > 0)
+        .at(-1)?.minDaysBeforeEvent
+    : undefined;
 
   const confirmCancel = async () => {
     if (cancelling) return;

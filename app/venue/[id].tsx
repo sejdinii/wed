@@ -13,6 +13,7 @@ import { ExpandableSection } from '@/design/components/ExpandableSection';
 import { PressableScale } from '@/design/components/PressableScale';
 import { Screen } from '@/design/components/Screen';
 import { Skeleton } from '@/design/components/Skeleton';
+import { BrandedImage } from '@/components/BrandedImage';
 import { PhotoCarousel } from '@/components/PhotoCarousel';
 import { RefundTimeline } from '@/components/RefundTimeline';
 import { ScoreBadge } from '@/components/ScoreBadge';
@@ -226,12 +227,18 @@ export default function VenueDetailScreen() {
   return (
     <Screen edges={[]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomBarHeight + spacing(6) }}>
-        {/* Gallery: swipe + counter; tap opens full-screen at that photo */}
-        <PhotoCarousel
-          photos={venue.photos}
-          height={300}
-          onPhotoPress={(index) => router.push({ pathname: '/gallery/[venueId]', params: { venueId: venue.id, index: String(index) } })}
-        />
+        {/* Gallery: swipe + counter; tap opens full-screen at that photo.
+            Photo-less venues (every vendor-created listing until the photo
+            plan lands) get the branded full-bleed — never a "1/0" void. */}
+        {venue.photos.length > 0 ? (
+          <PhotoCarousel
+            photos={venue.photos}
+            height={300}
+            onPhotoPress={(index) => router.push({ pathname: '/gallery/[venueId]', params: { venueId: venue.id, index: String(index) } })}
+          />
+        ) : (
+          <BrandedImage uri="" style={{ width: '100%', height: 300 }} contentFit="cover" />
+        )}
 
         <View style={{ padding: spacing(4), gap: spacing(4) }}>
           {/* Name · score plaque · location */}
@@ -240,14 +247,17 @@ export default function VenueDetailScreen() {
               <AppText variant="title" style={{ flexShrink: 1 }}>
                 {venue.name}
               </AppText>
-              <PressableScale
-                onPress={() => router.push(`/reviews/${venue.id}`)}
-                hapticFeedback="select"
-                accessibilityRole="button"
-                accessibilityLabel={t('reviews.title')}
-              >
-                <ScoreBadge venue={venue} size="md" />
-              </PressableScale>
+              {/* No fabricated "0.0 · 0 reviews" plaque on unreviewed venues. */}
+              {venue.reviewCount > 0 ? (
+                <PressableScale
+                  onPress={() => router.push(`/reviews/${venue.id}`)}
+                  hapticFeedback="select"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('reviews.title')}
+                >
+                  <ScoreBadge venue={venue} size="md" />
+                </PressableScale>
+              ) : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
@@ -324,7 +334,9 @@ export default function VenueDetailScreen() {
             </View>
           ) : null}
 
-          {/* About this venue + Read more */}
+          {/* About this venue + Read more — hidden entirely while the vendor
+              hasn't written one (a heading over an empty string isn't a state). */}
+          {venue.description[locale] ? (
           <View style={{ gap: spacing(2) }}>
             <AppText variant="heading">{t('venue.aboutThis')}</AppText>
             <AppText variant="body" color="secondary" numberOfLines={aboutExpanded ? undefined : 3}>
@@ -346,6 +358,7 @@ export default function VenueDetailScreen() {
               </View>
             </PressableScale>
           </View>
+          ) : null}
 
           {/* What's included — checklist */}
           <View style={{ gap: spacing(2.5) }}>
@@ -519,7 +532,8 @@ export default function VenueDetailScreen() {
             />
           </View>
 
-          {/* Reviews preview + show all */}
+          {/* Reviews preview + show all — absent entirely at zero reviews. */}
+          {venue.reviewCount > 0 ? (
           <View style={{ gap: spacing(2.5) }}>
             <AppText variant="heading">{t('reviews.title')}</AppText>
             {reviews.slice(0, 2).map((review) => (
@@ -558,6 +572,7 @@ export default function VenueDetailScreen() {
               size="md"
             />
           </View>
+          ) : null}
         </View>
       </ScrollView>
 
