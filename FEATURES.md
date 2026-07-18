@@ -39,7 +39,7 @@ with zero console errors, FEATURES.md updated, one commit per slice.
 | 1 ✅ SHIPPED 2026-07-12 (deploy pending Railway) | Bookings on the server (trust core) + first deploy | lifecycle endpoints + audit trail + TTL worker · double-booking prevention (unique index + tx + submit re-check) · date release on cancel/expiry · app store server-backed, venueBot behind DEMO flag · Railway staging deploy | two devices cannot book the same venue+date; cancel frees the date; no client timers |
 | 2 ✅ SHIPPED 2026-07-13 (Resend + logout pending) | Real auth + mode switch | email-code auth + sessions + roles · guard all routes · Business-mode shell + switch · transactional email (en/mk/sq) | real accounts; deep links respect auth; vendor accounts exist |
 | 3 ✅ CORE SHIPPED 2026-07-17 (halls/menus editor, photos→R2, locale-tab content editor → Wave 4/6 carry-over) | Vendor extranet core (GATED: founder research pack, see BACKLOG) | listing editor (content ×3 locales, photos→R2) · halls/menus editor · availability calendar · onboarding funnel + admin publish | a vendor can create a listing a couple can find and book — MET, run-verified end-to-end 2026-07-17 |
-| 4 | Vendor booking ops | request inbox confirm/decline · kapar-received flow · bookings dashboard · push notifications both sides | full two-sided loop with zero bots |
+| 4 ✅ CORE SHIPPED 2026-07-18 (push → Wave 5 notification slice; vendor-cancel UI, response-rate stat → Wave 5) | Vendor booking ops | request inbox confirm/decline · kapar-received flow · bookings dashboard · push notifications both sides | full two-sided loop with zero bots — MET, run-verified 2026-07-18: vendor created+published a venue, couple booked it, vendor confirmed/kapar-received/declined-with-reason entirely through the UI; scoped demo bot verifiably kept out |
 | 5 | Couple completeness | map view + server filters · real chat (replaces bot) · dead-button/legal sweep · locale QA (reviews write path CUT 2026-07-12) | no dead buttons; all locales complete |
 | 6 | Hardening & launch | design-critic pass + fixes · e2e suite + load smoke · prod deploy (backups, Sentry, rate limits) · photo/content plan executed | staging demo end-to-end on two phones; prod checklist green |
 
@@ -58,11 +58,11 @@ BACKLOG.md's gap queue at session end.
 | Venue detail page (gallery, pricing, availability) | DONE | run-verified (web) 2026-07-10 | Gallery, halls, reviews, map, 410-unpublished state built; `fullRefundDays` crash fixed; error state + retry added and driven in browser (recovers). Loading/empty/error all present |
 | Booking flow (date select → request/confirm) | PARTIAL | run-verified (web+server) 2026-07-12 | Pay-at-visit checkout now creates bookings ON THE SERVER (money computed server-side, availability enforced at insert — the re-check gap is closed); 409 surfaces as user copy. Remaining: draft store in-memory |
 | Double-booking prevention | DONE | run-verified 2026-07-12 | Server-enforced: partial unique index on active (venue_id,event_date) + transactional insert. Verified in tests (cross-device 409) AND in the browser (duplicate surfaced as 'date just taken' copy; cancel released the date and rebooking succeeded). Requires API mode — the offline mock keeps the old client-only filter |
-| Booking confirmation + status screen | PARTIAL | run-verified (web+server) 2026-07-12 | 3-phase status now driven by the SERVER (demo bot + lifecycle worker are restart-safe, in Postgres); the screen polls while watched and phases flip live. App venueBot only narrates chat. "Add to calendar" still a no-op |
-| Auth (signup/login, both user types) | PARTIAL | run-verified (web+server) 2026-07-13 | REAL email-code auth in API mode: rate-limited 6-digit codes, wrong/expired rejection, 30-day sessions, roles couple/vendor/both, device-booking claim on login; ALL booking routes + chat now guarded (deep-link gap closed). Offline mock keeps any-code sign-in, honestly scoped. Remaining: no logout UI, Resend not wired (dev provider logs codes), personal-info editor |
+| Booking confirmation + status screen | DONE | run-verified (web+server) 2026-07-18 | The 3-phase status is now driven by REAL vendor actions on vendor-owned venues (bot only animates ownerless seed venues in DEMO mode): couple's screen flipped to confirmed after the vendor tapped Kapar received in the live e2e. "Add to calendar" still a no-op (Wave 5 dead-button sweep) |
+| Auth (signup/login, both user types) | PARTIAL | run-verified (web+server) 2026-07-13 | REAL email-code auth in API mode: rate-limited 6-digit codes, wrong/expired rejection, 30-day sessions, roles couple/vendor/both, device-booking claim on login; ALL booking routes + chat now guarded (deep-link gap closed). Offline mock keeps any-code sign-in, honestly scoped. Sign-out row SHIPPED 2026-07-17 (works in both modes). Remaining: Resend not wired (dev provider logs codes), personal-info editor |
 | Vendor: venue listing creation/edit | PARTIAL | run-verified (web+server) 2026-07-17 | One-form create funnel (name/city/type/capacity/price) → UNPUBLISHED draft → explicit publish toggle on Today. Verified end-to-end in browser: draft hidden from public search, published venue found AND BOOKED by a couple account. Server: one venue per owner (409), PATCH edit endpoint exists. Remaining: edit UI, halls/menus editor, photo upload (needs R2), locale-tab content editing |
 | Vendor: calendar/availability management | DONE | run-verified (web+server) 2026-07-17 | 3-state calendar (open / blocked-by-vendor / booked-by-couple — the accepted Booking.com deviation). Verified in browser: block persisted + visible on PUBLIC couple calendars, unblock reopened; booked dates show the booking and cannot be reopened; server rejects bookings on blocked dates and blocking already-booked dates (409). Public bookedDates = union of seed + active bookings + vendor blocks (batched, no N+1) |
-| Vendor: incoming booking requests | PARTIAL | run-verified (web+server) 2026-07-17 | Read-only request feed on Business Today (Pulse IA): couple's real booking appeared with name/date/guests/code + status chip. Confirm/decline actions are Wave 4 (labelled honestly in UI). venueBot demo fiction still fills the couple-side status in DEMO mode |
+| Vendor: incoming booking requests | DONE | run-verified (web+server) 2026-07-18 | Actionable inbox on Business Today: Confirm (sets payBy), Decline with optional reason (required-category upgrade ACCEPTED → Wave 5), Kapar received; 24h SLA countdown (clamped, honest — TTL is a real enforced expiry); per-card busy/error states. Server: /v1/vendor/bookings/* behind vendor-ownership checks; legacy open endpoints locked (403 vendor_only on owned venues); demo bot scoped to ownerless seed venues — no-bot verified live. Vendor bookings dashboard (upcoming/history, refund-owed callout, decline-reason caption) at /venue-bookings |
 | Backend API + PostgreSQL (bookings/venues/auth server-side) | PARTIAL | run-verified 2026-07-12 | Waves 0+1 SHIPPED: catalogue AND the full booking lifecycle live on the server (create w/ server-side pricing, confirm w/ payBy, kapar-received, cancel w/ stamped refunds, audit trail, TTL worker, demo bot; 38 tests, CI). Device-scoped until auth. Remaining: auth (Wave 2), deploy (Railway pending) |
 | Couple ⇄ Business mode switch | PARTIAL | run-verified (web+server) 2026-07-13 | 'Become a partner' grants the vendor role server-side and opens Business mode; (business) route group role-gated; Today feed shell per the accepted Pulse IA. Listing management (Wave 3) fills it |
 | Real couple↔vendor chat | STUB | code trace 2026-07-10 | Wave 5. Scripted one-way bot messages, hardcoded Macedonian |
@@ -74,12 +74,30 @@ BACKLOG.md's gap queue at session end.
 | Empty states (all list screens) | DONE | code + browser 2026-07-10 | All list screens have EmptyState incl. new home-rails and reviews-list ones. Caveat: the two new branches are unreachable with seed data (mock always returns venues/reviews), so they are render-guards verified by code, not driven |
 | Error states + retry (all network screens) | DONE | run-verified (web) 2026-07-10 | New ErrorState design component; all 8 previously-unguarded venueApi awaits wrapped with retry wiring. Every screen driven in browser with the new dev switch `globalThis.__KAPAR_API_FAIL__` (api.ts); home/results/venue-detail also verified to RECOVER on retry |
 | Reviews/ratings | STUB | static code trace 2026-07-09 | CUT from MVP 2026-07-12 (no write path will be built). Fake generated reviews stay display-only for the demo phase — MUST be hidden or replaced before real users (see gap) |
-| Notifications (booking status changes) | MISSING | static code trace 2026-07-09 | Home notification bell is a no-op ((tabs)/index.tsx:112) |
+| Notifications (booking status changes) | MISSING | code trace 2026-07-17 | Fake bell (dead pressable + hardcoded unread dot) REMOVED 2026-07-17. Wave 5 builds the server-backed in-app notification center (notifications table + unread count off existing lifecycle events — founder pattern ACCEPTED 2026-07-18); Expo push layers on when a device is available to verify against |
 | Deposits/payments | DONE | run-verified (web) 2026-07-10 | DECIDED 2026-07-09: MVP has NO online payments — kapar is paid in person at the venue visit. Card form + fake gateway deleted (PCI risk gone); all "secure payment" claims reworded in en/mk/sq; profile "Payment methods" row removed. Online rails (CaSys/Stripe) become a post-launch feature |
 | Onboarding (first-run) | PARTIAL | static code trace 2026-07-09 | welcome → verify → tabs flow with redirect gate ((tabs)/_layout.tsx:26). Terms/Privacy links are no-ops |
 | Profile/settings | PARTIAL | code trace 2026-07-10 | Profile tab + settings (language en/mk/sq, theme) work. Payment-methods row REMOVED (no online payments in MVP). Remaining dead buttons: personal info, terms/privacy, help, become-a-partner |
 
 ## DISCOVERED GAPS (agent appends here when it finds unstated requirements)
+- 2026-07-18 (Wave 4 integration): the couple NEVER sees the vendor's decline
+  reason — it's stored, returned by the API, and shown on the vendor dashboard,
+  but booking/[id].tsx renders no cancelReason and no "suggest another venue"
+  escape after a decline. For a trust product the couple-side decline
+  experience is one dead status chip. → Wave 5 (pairs with the required-reason
+  upgrade).
+- 2026-07-18 (route lesson, cost one e2e round): expo-router group segments
+  collapse out of URLs — (business)/bookings.tsx SHADOWED (tabs)/bookings.tsx
+  on the /bookings deep link (alphabetical win). Renamed to venue-bookings.
+  RULE for future screens: never reuse a leaf name that exists in another
+  group.
+- 2026-07-18 (slice-A finding, FIXED same session): root `typecheck:all`
+  silently skipped the server workspace — server type errors could not fail
+  CI locally. Now runs all three workspaces.
+- 2026-07-18 (recurring, 4 flaky failures this session): bookings/auth tests
+  still derive event dates from Date.now()%27 on the shared dev db — stale
+  rows collide (birthday paradox). Slice-A's new tests use uuid-derived dates;
+  migrate the old ones + add a bookings wipe to test setup. → Wave 6 hygiene.
 - 2026-07-17 CRITIC PASS (design-critic, Waves 1–3 surfaces, verdict FIX FIRST).
   The 3 demo-breaking findings were FIXED same session (resend brick, collapsed
   flex CTAs via PressableScale, create-venue error below the fold — commit
@@ -193,6 +211,23 @@ BACKLOG.md's gap queue at session end.
   venue photos show the BrandedImage fallback in cloud runs.
 
 ## DECISIONS LOG (newest first)
+- 2026-07-18 DEVIATION (agent, from founder rec) — the per-request 24h SLA
+  COUNTDOWN stays. Founder found no category leader showing a ticking clock
+  (Airbnb discloses a trailing response-rate %% instead) and recommended
+  dropping it; kept because Kapar's 24h TTL is a HARD enforced expiry (the
+  request dies), not Airbnb's soft aggregate — hiding a real deadline from
+  the vendor would be dishonest. Founder's trailing response-rate stat is
+  ACCEPTED for the dashboard (Wave 5/6); the booking_events audit trail
+  already contains the data, no new logging needed.
+- 2026-07-18 ACCEPTED (founder) — decline reasons upgrade in Wave 5 to
+  Booking.com RtB shape: required category + mandatory free text on "other",
+  ALWAYS shown to the couple (stricter than Airbnb — cold-start trust vs the
+  personal-"no"-over-Viber incumbent). Wave 4 ships optional free text.
+- 2026-07-18 ACCEPTED (founder) — Wave 5 notification story: server-backed
+  in-app center (notifications table as durable source of truth, unread
+  badges only from real events, bell nested in existing headers — no new
+  tab); push is a later delivery channel on top, once a device exists to
+  verify against.
 - 2026-07-17 DEVIATION (agent, reversible) — venue publishing is SELF-SERVE
   for now (draft → publish toggle on Business Today), not admin-approved as
   the Wave 3 roadmap line said. Reason: no admin surface exists yet and none
