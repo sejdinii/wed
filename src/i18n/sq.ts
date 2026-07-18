@@ -243,6 +243,25 @@ export const sq: Dict = {
   'bookingStatus.cancelled_by_venue': 'Anuluar nga salla',
   'bookingStatus.expired': 'Skaduar',
 
+  // Wave 6: the vendor's OWN surfaces (Today + dashboard) stop wearing couple
+  // copy ("Awaiting venue confirmation" makes no sense in the vendor's own
+  // inbox) — critic finding #6. `expired` deliberately covers BOTH real causes
+  // (24h unanswered request, or kapar not paid within the window) with one
+  // honest label rather than guessing which applies.
+  'vendorBookingStatus.pending_kapar': 'Kërkesë e re',
+  'vendorBookingStatus.reserved': 'Pret kaparin në vizitë',
+  'vendorBookingStatus.confirmed': 'Kapari u mor',
+  'vendorBookingStatus.cancelled_by_couple': 'Anuluar nga çifti',
+  'vendorBookingStatus.cancelled_by_venue': 'Refuzuar/anuluar nga ti',
+  'vendorBookingStatus.expired': 'Skaduar — afati u kalua',
+  'vendorBookingStatus.completed': 'Mbajtur',
+
+  'vendor.activityTitle': 'Aktiviteti sot',
+  'vendor.actionFailed': 'Veprimi nuk kaloi. Kontrollo lidhjen dhe provo përsëri.',
+  'vendor.stateChanged': 'Kërkesa e ndryshoi statusin ndërkohë — u përditësua.',
+  'vendor.responseRateCaption': 'U përgjigj brenda 24 orësh: {percent}% (30 ditët e fundit)',
+  'vendor.callAction': 'Telefono {phone}',
+
   'details.title': 'Rezervimi {code}',
   'details.yourWedding': 'Dasma jote',
   'details.whatsIncluded': 'Çfarë përfshin kuverti',

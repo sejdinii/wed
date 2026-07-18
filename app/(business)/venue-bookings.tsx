@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { Linking, ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
@@ -18,8 +18,34 @@ import { haptic } from '@/lib/haptics';
 import { formatMediumDate } from '@/lib/dates';
 import { formatMkd } from '@/lib/money';
 import type { Booking, BookingStatus } from '@/domain/types';
-import { vendorApi } from '@/data/vendorApi';
+import { API_MODE, API_URL } from '@/data/api';
+import { TransitionError, vendorApi } from '@/data/vendorApi';
+import { usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
+
+/**
+ * Response-rate stat (Wave 6, BACKLOG-accepted founder rec). A plain fetch
+ * rather than a `vendorApi` method — this slice does not own the vendor
+ * repository boundary file, only the two screens; promoting this to a real
+ * `VendorApi.stats()` is a SHARED follow-up (see the slice report). Mirrors
+ * HttpVendorApi's own auth-header pattern exactly. Absent/failed -> null,
+ * which the caller simply doesn't render — no fake precision, no error noise
+ * for a supplementary metric.
+ */
+async function fetchResponseRate30d(): Promise<number | null> {
+  if (!API_MODE) return null;
+  try {
+    const token = usePreferences.getState().authToken;
+    const res = await fetch(`${API_URL}/v1/vendor/my-venue/stats`, {
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { responseRate30d?: number | null };
+    return typeof body.responseRate30d === 'number' ? body.responseRate30d : null;
+  } catch {
+    return null;
+  }
+}
 
 type Segment = 'upcoming' | 'history';
 
@@ -55,11 +81,16 @@ export default function VendorBookingsScreen() {
   const [attempt, setAttempt] = useState(0);
   const retry = () => setAttempt((n) => n + 1);
 
+  // Response-rate stat (critic BACKLOG item) — null until a successful fetch
+  // resolves a real number; the caption only renders on a non-null value.
+  const [responseRate, setResponseRate] = useState<number | null>(null);
+
   // Focus refetch (critic): silent — keeps the last list on failure and never
   // flashes the skeleton for a background refresh.
   useFocusEffect(
     useCallback(() => {
       vendorApi.bookings().then(setBookings).catch(() => {});
+      fetchResponseRate30d().then(setResponseRate);
     }, []),
   );
 
@@ -67,6 +98,9 @@ export default function VendorBookingsScreen() {
   // same shape as today.tsx's decline flow.
   const [busyId, setBusyId] = useState<string | null>(null);
   const [cardErrors, setCardErrors] = useState<Record<string, boolean>>({});
+  // Critic #10, same honesty fix as Today: a 409 means the booking moved
+  // under us (TTL sweep, or another tab), not a broken connection.
+  const [stateChangedIds, setStateChangedIds] = useState<Record<string, boolean>>({});
   const [cancellingIds, setCancellingIds] = useState<Record<string, boolean>>({});
   const [cancelReasons, setCancelReasons] = useState<Record<string, string>>({});
 
@@ -85,6 +119,12 @@ export default function VendorBookingsScreen() {
     const reason = cancelReasons[booking.id]?.trim();
     setBusyId(booking.id);
     setCardErrors((e) => ({ ...e, [booking.id]: false }));
+    setStateChangedIds((s) => {
+      if (!(booking.id in s)) return s;
+      const next = { ...s };
+      delete next[booking.id];
+      return next;
+    });
     try {
       const updated = await vendorApi.cancelBooking(booking.id, reason ? reason : undefined);
       // The card moves to History on its own: it's the same `bookings` array,
@@ -92,9 +132,24 @@ export default function VendorBookingsScreen() {
       setBookings((bs) => (bs ?? []).map((b) => (b.id === booking.id ? updated : b)));
       closeCancel(booking.id);
       haptic.success();
-    } catch {
+    } catch (err) {
       haptic.error();
-      setCardErrors((e) => ({ ...e, [booking.id]: true }));
+      if (err instanceof TransitionError) {
+        setStateChangedIds((s) => ({ ...s, [booking.id]: true }));
+        vendorApi.bookings().then(setBookings).catch(() => {});
+        setTimeout(
+          () =>
+            setStateChangedIds((s) => {
+              if (!(booking.id in s)) return s;
+              const next = { ...s };
+              delete next[booking.id];
+              return next;
+            }),
+          6_000,
+        );
+      } else {
+        setCardErrors((e) => ({ ...e, [booking.id]: true }));
+      }
     } finally {
       setBusyId(null);
     }
@@ -149,6 +204,16 @@ export default function VendorBookingsScreen() {
         <View style={{ width: 22 }} />
       </View>
 
+      {/* Response-rate stat (critic BACKLOG item) — only ever a caption, and
+          only once ≥3 trailing-30-day requests give it real precision. */}
+      {responseRate !== null ? (
+        <View style={{ paddingHorizontal: spacing(4), paddingTop: spacing(2) }}>
+          <AppText variant="caption" color="secondary">
+            {t('vendor.responseRateCaption', { percent: responseRate })}
+          </AppText>
+        </View>
+      ) : null}
+
       <View style={{ paddingHorizontal: spacing(4), paddingTop: spacing(3) }}>
         <SegmentedControl
           options={[
@@ -179,6 +244,7 @@ export default function VendorBookingsScreen() {
           visible.map((b) => (
             <View
               key={b.id}
+              testID={`vendor-dashboard-row-${b.id}`}
               style={{
                 borderWidth: 1,
                 borderColor: colors.border,
@@ -192,15 +258,33 @@ export default function VendorBookingsScreen() {
                 <AppText variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
                   {b.contactName}
                 </AppText>
-                <Badge label={t(`bookingStatus.${b.status}`)} tone={STATUS_TONE[b.status]} dot />
+                <Badge label={t(`vendorBookingStatus.${b.status}`)} tone={STATUS_TONE[b.status]} dot />
               </View>
-              <AppText variant="bodySm" color="secondary">
-                {formatMediumDate(b.eventDateISO, locale)} · {t('bookings.guestCount', { count: b.guestCount })}
-                {b.hallName ? ` · ${b.hallName}` : ''}
-              </AppText>
+              {/* Critic #5: a value column — the vendor sees what a row is
+                  worth without opening it. */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing(2) }}>
+                <AppText variant="bodySm" color="secondary" style={{ flex: 1 }}>
+                  {formatMediumDate(b.eventDateISO, locale)} · {t('bookings.guestCount', { count: b.guestCount })}
+                  {b.hallName ? ` · ${b.hallName}` : ''}
+                </AppText>
+                <AppText variant="bodySmStrong">{formatMkd(b.estimatedTotalMkd, locale)}</AppText>
+              </View>
               <AppText variant="caption" color="tertiary">
                 {b.confirmationCode}
               </AppText>
+              {/* Critic #5: the same tappable phone row as Today's cards. */}
+              <PressableScale
+                onPress={() => Linking.openURL(`tel:${b.contactPhone}`).catch(() => {})}
+                hapticFeedback="select"
+                accessibilityRole="button"
+                accessibilityLabel={t('vendor.callAction', { phone: b.contactPhone })}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), minHeight: 44 }}
+              >
+                <Ionicons name="call-outline" size={16} color={colors.primary} />
+                <AppText variant="bodySmStrong" style={{ color: colors.primary }}>
+                  {b.contactPhone}
+                </AppText>
+              </PressableScale>
 
               {b.refund ? (
                 <View style={{ backgroundColor: colors.dangerSoft, borderRadius: radius.sm, padding: spacing(2.5) }}>
@@ -276,9 +360,13 @@ export default function VendorBookingsScreen() {
                 </View>
               )}
 
-              {cardErrors[b.id] ? (
+              {stateChangedIds[b.id] ? (
+                <AppText variant="bodySm" color="secondary">
+                  {t('vendor.stateChanged')}
+                </AppText>
+              ) : cardErrors[b.id] ? (
                 <AppText variant="bodySm" color="danger">
-                  {t('error.body')}
+                  {t('vendor.actionFailed')}
                 </AppText>
               ) : null}
             </View>

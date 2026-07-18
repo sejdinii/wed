@@ -430,6 +430,41 @@ export async function vendorRoutes(app: FastifyInstance): Promise<void> {
     );
   });
 
+  // Response-rate stat (Wave 6, BACKLOG-accepted — founder rec, trailing %
+  // instead of a leaderboard). Denominator = every request CREATED on this
+  // venue in the trailing 30 days, regardless of how it ended (an unanswered
+  // or still-pending request counts AGAINST the rate — no gaming by stalling).
+  // Numerator = those whose first vendor answer (reserved or cancelled_by_venue
+  // event) landed within 24h of the pending_kapar event. Null under 3 samples —
+  // no fake precision ("100%" off one lucky request) on a brand-new listing.
+  app.get('/v1/vendor/my-venue/stats', async (req, reply) => {
+    const user = await requireVendor(req, reply);
+    if (!user) return;
+    const row = await getOwnerVenueRow(user.id);
+    if (!row) return reply.code(404).send({ error: 'no_venue' });
+
+    const cutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+    const recent = await db
+      .select({ id: bookings.id, createdAt: bookings.createdAt })
+      .from(bookings)
+      .where(and(eq(bookings.venueId, row.id), gte(bookings.createdAt, cutoff)));
+
+    if (recent.length < 3) return { responseRate30d: null };
+
+    const ids = recent.map((r) => r.id);
+    const events = await db.select().from(bookingEvents).where(inArray(bookingEvents.bookingId, ids));
+
+    let answeredFast = 0;
+    for (const booking of recent) {
+      const evs = events.filter((e) => e.bookingId === booking.id).sort((a, b) => a.at.getTime() - b.at.getTime());
+      const created = evs.find((e) => e.status === 'pending_kapar') ?? { at: booking.createdAt };
+      const firstAnswer = evs.find((e) => e.status === 'reserved' || e.status === 'cancelled_by_venue');
+      if (firstAnswer && (firstAnswer.at.getTime() - created.at.getTime()) / 3_600_000 <= 24) answeredFast++;
+    }
+    const responseRate30d = Math.round((answeredFast / recent.length) * 100);
+    return { responseRate30d };
+  });
+
   // Venue confirms the hold — the real-vendor counterpart to the legacy
   // /v1/bookings/:id/confirm (now vendor_only-locked for owned venues).
   app.post<{ Params: { id: string } }>('/v1/vendor/bookings/:id/confirm', async (req, reply) => {

@@ -243,6 +243,25 @@ export const en: Dict = {
   'bookingStatus.cancelled_by_venue': 'Cancelled by venue',
   'bookingStatus.expired': 'Expired',
 
+  // Wave 6: the vendor's OWN surfaces (Today + dashboard) stop wearing couple
+  // copy ("Awaiting venue confirmation" makes no sense in the vendor's own
+  // inbox) — critic finding #6. `expired` deliberately covers BOTH real causes
+  // (24h unanswered request, or kapar not paid within the window) with one
+  // honest label rather than guessing which applies.
+  'vendorBookingStatus.pending_kapar': 'New request',
+  'vendorBookingStatus.reserved': 'Awaiting kapar visit',
+  'vendorBookingStatus.confirmed': 'Kapar received',
+  'vendorBookingStatus.cancelled_by_couple': 'Cancelled by couple',
+  'vendorBookingStatus.cancelled_by_venue': 'Declined/cancelled by you',
+  'vendorBookingStatus.expired': 'Expired — the deadline was missed',
+  'vendorBookingStatus.completed': 'Completed',
+
+  'vendor.activityTitle': "Today's activity",
+  'vendor.actionFailed': "The action didn't go through. Check the connection and try again.",
+  'vendor.stateChanged': 'This request changed state in the meantime — updated.',
+  'vendor.responseRateCaption': 'Responded within 24h: {percent}% (last 30 days)',
+  'vendor.callAction': 'Call {phone}',
+
   'details.title': 'Booking {code}',
   'details.yourWedding': 'Your wedding',
   'details.whatsIncluded': 'What the menu includes',

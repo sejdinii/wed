@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
+import { and, eq } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { buildApp } from '../src/app.js';
-import { pool } from '../src/db/client.js';
+import { db, pool } from '../src/db/client.js';
+import { bookingEvents } from '../src/db/schema.js';
 
 /**
  * Vendor/extranet endpoints against the REAL (migrated + seeded) database.
@@ -407,5 +409,62 @@ describe('vendor booking actions (Wave 4)', () => {
     });
     expect(unknownBooking.statusCode).toBe(404);
     expect(unknownBooking.json().error).toBe('booking_not_found');
+  });
+});
+
+// Wave 6: response-rate stat (critic pass 2, BACKLOG-accepted founder rec).
+// Own venue + own year range (2028) per test so intra-test bookings on the
+// SAME venue can't collide with each other via uuidDay()'s 1-in-27 odds —
+// every booking below gets a distinct month.
+describe('GET /v1/vendor/my-venue/stats (Wave 6)', () => {
+  it('401s with no token, 403s a couple-role account', async () => {
+    const noAuth = await app.inject({ method: 'GET', url: '/v1/vendor/my-venue/stats' });
+    expect(noAuth.statusCode).toBe(401);
+    expect(noAuth.json().error).toBe('unauthorized');
+
+    const coupleToken = await signUp(uniqueEmail());
+    const forbidden = await app.inject({ method: 'GET', url: '/v1/vendor/my-venue/stats', headers: authHeaders(coupleToken) });
+    expect(forbidden.statusCode).toBe(403);
+    expect(forbidden.json().error).toBe('vendor_role_required');
+  });
+
+  it('returns null on zero and on fewer-than-3 trailing-30-day requests (no fake precision)', async () => {
+    const { token, venueId } = await signUpVendorWithPublishedVenue();
+
+    const zero = await app.inject({ method: 'GET', url: '/v1/vendor/my-venue/stats', headers: authHeaders(token) });
+    expect(zero.statusCode).toBe(200);
+    expect(zero.json()).toEqual({ responseRate30d: null });
+
+    await bookVenue(venueId, `2028-01-${uuidDay()}`);
+    await bookVenue(venueId, `2028-02-${uuidDay()}`);
+    const two = await app.inject({ method: 'GET', url: '/v1/vendor/my-venue/stats', headers: authHeaders(token) });
+    expect(two.statusCode).toBe(200);
+    expect(two.json()).toEqual({ responseRate30d: null });
+  });
+
+  it('computes % answered within 24h across fast/slow/unanswered requests', async () => {
+    const { token, venueId } = await signUpVendorWithPublishedVenue();
+
+    // Fast: confirmed within the same test run — a seconds-wide gap, well under 24h.
+    const fast = (await bookVenue(venueId, `2028-03-${uuidDay()}`)).json();
+    const fastConfirm = await app.inject({ method: 'POST', url: `/v1/vendor/bookings/${fast.id}/confirm`, headers: authHeaders(token) });
+    expect(fastConfirm.statusCode).toBe(200);
+
+    // Slow: confirmed, then the pending_kapar event is backdated 25h so the
+    // answer gap exceeds the 24h threshold (no clock mocking needed).
+    const slow = (await bookVenue(venueId, `2028-04-${uuidDay()}`)).json();
+    const slowConfirm = await app.inject({ method: 'POST', url: `/v1/vendor/bookings/${slow.id}/confirm`, headers: authHeaders(token) });
+    expect(slowConfirm.statusCode).toBe(200);
+    await db
+      .update(bookingEvents)
+      .set({ at: new Date(Date.now() - 25 * 3_600_000) })
+      .where(and(eq(bookingEvents.bookingId, slow.id), eq(bookingEvents.status, 'pending_kapar')));
+
+    // Unanswered: still pending_kapar — no reserved/cancelled_by_venue event at all.
+    await bookVenue(venueId, `2028-05-${uuidDay()}`);
+
+    const res = await app.inject({ method: 'GET', url: '/v1/vendor/my-venue/stats', headers: authHeaders(token) });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ responseRate30d: 33 }); // 1 of 3 answered within 24h
   });
 });

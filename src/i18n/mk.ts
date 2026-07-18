@@ -246,6 +246,25 @@ export const mk = {
   'bookingStatus.cancelled_by_venue': 'Откажано од салата',
   'bookingStatus.expired': 'Истечено',
 
+  // Wave 6: the vendor's OWN surfaces (Today + dashboard) stop wearing couple
+  // copy ("Awaiting venue confirmation" makes no sense in the vendor's own
+  // inbox) — critic finding #6. `expired` deliberately covers BOTH real causes
+  // (24h unanswered request, or kapar not paid within the window) with one
+  // honest label rather than guessing which applies.
+  'vendorBookingStatus.pending_kapar': 'Ново барање',
+  'vendorBookingStatus.reserved': 'Чека капар при посета',
+  'vendorBookingStatus.confirmed': 'Капар примен',
+  'vendorBookingStatus.cancelled_by_couple': 'Откажано од парот',
+  'vendorBookingStatus.cancelled_by_venue': 'Одбиено/откажано од тебе',
+  'vendorBookingStatus.expired': 'Истечено — рокот е пропуштен',
+  'vendorBookingStatus.completed': 'Одржано',
+
+  'vendor.activityTitle': 'Активност денес',
+  'vendor.actionFailed': 'Дејството не помина. Провери ја врската и обиди се повторно.',
+  'vendor.stateChanged': 'Барањето го смени статусот во меѓувреме — ажурирано.',
+  'vendor.responseRateCaption': 'Одговорено во 24ч: {percent}% (последни 30 дена)',
+  'vendor.callAction': 'Јави се на {phone}',
+
   'details.title': 'Резервација {code}',
   'details.yourWedding': 'Твојата свадба',
   'details.whatsIncluded': 'Што вклучува кувертот',

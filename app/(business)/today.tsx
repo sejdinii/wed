@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { Linking, ScrollView, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
@@ -16,13 +16,20 @@ import { useTheme } from '@/design/theme';
 import { radius, spacing, typeScale } from '@/design/tokens';
 import { haptic } from '@/lib/haptics';
 import { formatMediumDate } from '@/lib/dates';
-import { REQUEST_TTL_HOURS } from '@/domain/kapar';
-import type { Booking, Venue } from '@/domain/types';
+import { formatMkd } from '@/lib/money';
+import { REQUEST_TTL_HOURS, todayISO, toISODate } from '@/domain/kapar';
+import type { Booking, BookingStatus, Venue } from '@/domain/types';
 import { API_MODE } from '@/data/api';
 import { isNotificationVisible, notificationApi } from '@/data/notificationApi';
-import { vendorApi } from '@/data/vendorApi';
+import { TransitionError, vendorApi } from '@/data/vendorApi';
 import { useIsAuthenticated, usePreferences } from '@/stores/preferences';
 import { useI18n } from '@/i18n';
+
+/** Statuses worth surfacing in "today's activity" (critic #9) — terminal or
+ * hold-confirmed transitions, derived from the already-loaded bookings'
+ * timeline. `expired` is deliberately excluded: it's a lapse, not an event
+ * worth celebrating or drawing the eye to in an activity strip. */
+const ACTIVITY_STATUSES: BookingStatus[] = ['confirmed', 'reserved', 'cancelled_by_couple', 'cancelled_by_venue'];
 
 /** Hours left before an unanswered request auto-expires (server enforces the actual expiry). */
 function hoursLeftToRespond(createdAtISO: string, nowMs: number): number {
@@ -57,6 +64,10 @@ export default function BusinessTodayScreen() {
   // cards can be mid-action independently.
   const [busy, setBusy] = useState<{ id: string; action: CardAction } | null>(null);
   const [cardErrors, setCardErrors] = useState<Record<string, boolean>>({});
+  // Critic #10: a 409 (someone else already transitioned this booking) is NOT
+  // a generic failure — it means our view was stale. Tracked separately so the
+  // card shows "this changed — updated" rather than blaming the connection.
+  const [stateChangedIds, setStateChangedIds] = useState<Record<string, boolean>>({});
   const [decliningIds, setDecliningIds] = useState<Record<string, boolean>>({});
   const [declineReasons, setDeclineReasons] = useState<Record<string, string>>({});
 
@@ -139,9 +150,33 @@ export default function BusinessTodayScreen() {
 
   const activeRequests = requests.filter((b) => b.status === 'pending_kapar' || b.status === 'reserved');
 
+  // Today's activity (critic #9): after Kapar received the booking leaves the
+  // actionable feed above, but the vendor's biggest win shouldn't make Today
+  // collapse straight to an empty state. Derived from the same already-loaded
+  // `requests` — no new endpoint. "Today" = the LAST timeline event's local
+  // calendar day matches now, not the event date.
+  const todayActivity = requests
+    .map((b) => {
+      const last = b.timeline[b.timeline.length - 1];
+      if (!last || !ACTIVITY_STATUSES.includes(last.status)) return null;
+      if (toISODate(new Date(last.at)) !== todayISO()) return null;
+      return { booking: b, status: last.status, at: last.at };
+    })
+    .filter((x): x is { booking: Booking; status: BookingStatus; at: string } => x !== null)
+    .sort((a, b) => (a.at < b.at ? 1 : -1));
+
+  const clearStateChanged = (id: string) =>
+    setStateChangedIds((s) => {
+      if (!(id in s)) return s;
+      const next = { ...s };
+      delete next[id];
+      return next;
+    });
+
   const runAction = async (booking: Booking, action: CardAction, call: () => Promise<Booking>) => {
     setBusy({ id: booking.id, action });
     setCardErrors((e) => ({ ...e, [booking.id]: false }));
+    clearStateChanged(booking.id);
     try {
       const updated = await call();
       setRequests((rs) => rs.map((r) => (r.id === booking.id ? updated : r)));
@@ -153,9 +188,19 @@ export default function BusinessTodayScreen() {
         });
       }
       haptic.success();
-    } catch {
-      haptic.error();
-      setCardErrors((e) => ({ ...e, [booking.id]: true }));
+    } catch (err) {
+      if (err instanceof TransitionError) {
+        // Someone else already moved this booking (a second tab, or the TTL
+        // sweep) — our card was stale, not broken. Refetch so it re-renders
+        // its true state instead of showing a generic connection error.
+        haptic.error();
+        setStateChangedIds((s) => ({ ...s, [booking.id]: true }));
+        refresh().catch(() => {});
+        setTimeout(() => clearStateChanged(booking.id), 6_000);
+      } else {
+        haptic.error();
+        setCardErrors((e) => ({ ...e, [booking.id]: true }));
+      }
     } finally {
       setBusy(null);
     }
@@ -311,10 +356,14 @@ export default function BusinessTodayScreen() {
                   const isBusyCard = busy?.id === b.id;
                   const isDeclining = !!decliningIds[b.id];
                   const hoursLeft = hoursLeftToRespond(b.createdAtISO, nowMs);
-                  const slaColor = hoursLeft < 1 ? colors.danger : hoursLeft < 6 ? colors.amber : colors.textSecondary;
+                  const isExpiredUnanswered = b.status === 'pending_kapar' && hoursLeft <= 0;
+                  // Critic #17: this is the card's most urgent fact — bumped
+                  // from a caption to bodySmStrong, amber inside 12h, danger inside 1h.
+                  const slaColor = hoursLeft < 1 ? colors.danger : hoursLeft < 12 ? colors.amber : colors.textSecondary;
                   return (
                     <View
                       key={b.id}
+                      testID={`vendor-request-${b.id}`}
                       style={{
                         borderWidth: 1,
                         borderColor: colors.border,
@@ -328,14 +377,37 @@ export default function BusinessTodayScreen() {
                         <AppText variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
                           {b.contactName}
                         </AppText>
-                        <Badge label={t(`bookingStatus.${b.status}`)} tone={b.status === 'pending_kapar' ? 'warning' : 'gold'} dot />
+                        <Badge label={t(`vendorBookingStatus.${b.status}`)} tone={b.status === 'pending_kapar' ? 'warning' : 'gold'} dot />
                       </View>
                       <AppText variant="bodySm" color="secondary">
                         {formatMediumDate(b.eventDateISO, locale)} · {t('bookings.guestCount', { count: b.guestCount })} · {b.confirmationCode}
                       </AppText>
 
+                      {/* Critic #5: the vendor decides blind — no estimate/kapar
+                          value on the card at all. Money is server-computed;
+                          this just displays it. */}
+                      <AppText variant="bodySm" color="secondary">
+                        {t('details.estimateLine', { guests: b.guestCount })}: {formatMkd(b.estimatedTotalMkd, locale)} ·{' '}
+                        {t('details.kaparDue')}: {formatMkd(b.kaparMkd, locale)}
+                      </AppText>
+
+                      {/* Critic #5: Viber-first market — a tappable phone row,
+                          not just printed digits, at the 44px touch floor. */}
+                      <PressableScale
+                        onPress={() => Linking.openURL(`tel:${b.contactPhone}`).catch(() => {})}
+                        hapticFeedback="select"
+                        accessibilityRole="button"
+                        accessibilityLabel={t('vendor.callAction', { phone: b.contactPhone })}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing(1.5), minHeight: 44 }}
+                      >
+                        <Ionicons name="call-outline" size={16} color={colors.primary} />
+                        <AppText variant="bodySmStrong" style={{ color: colors.primary }}>
+                          {b.contactPhone}
+                        </AppText>
+                      </PressableScale>
+
                       {b.status === 'pending_kapar' && !isDeclining && hoursLeft > 0 ? (
-                        <AppText variant="caption" style={{ color: slaColor }}>
+                        <AppText variant="bodySmStrong" style={{ color: slaColor }}>
                           {t('vendor.slaLeft', { hours: Math.max(1, Math.ceil(hoursLeft)) })}
                         </AppText>
                       ) : null}
@@ -347,7 +419,14 @@ export default function BusinessTodayScreen() {
                       ) : null}
 
                       {b.status === 'pending_kapar' ? (
-                        isDeclining ? (
+                        isExpiredUnanswered ? (
+                          // Critic #10 edge case: a 24h-lapsed request would
+                          // just 409 on Confirm/Decline — replace the dead
+                          // buttons with an honest inert note instead.
+                          <AppText variant="bodySm" color="secondary">
+                            {t('vendorBookingStatus.expired')}
+                          </AppText>
+                        ) : isDeclining ? (
                           <View style={{ gap: spacing(2) }}>
                             <TextInput
                               value={declineReasons[b.id] ?? ''}
@@ -417,9 +496,13 @@ export default function BusinessTodayScreen() {
                         </View>
                       ) : null}
 
-                      {cardErrors[b.id] ? (
+                      {stateChangedIds[b.id] ? (
+                        <AppText variant="bodySm" color="secondary">
+                          {t('vendor.stateChanged')}
+                        </AppText>
+                      ) : cardErrors[b.id] ? (
                         <AppText variant="bodySm" color="danger">
-                          {t('error.body')}
+                          {t('vendor.actionFailed')}
                         </AppText>
                       ) : null}
                     </View>
@@ -427,6 +510,32 @@ export default function BusinessTodayScreen() {
                 })
               )}
             </View>
+
+            {/* Today's activity (critic #9) — a lightweight, read-only strip
+                so a Kapar-received win (or any same-day transition) doesn't
+                make Today collapse straight to "No new requests". */}
+            {todayActivity.length > 0 ? (
+              <View style={{ gap: spacing(2) }}>
+                <AppText variant="subheading">{t('vendor.activityTitle')}</AppText>
+                {todayActivity.map(({ booking: b, status }) => {
+                  const icon = status === 'cancelled_by_couple' || status === 'cancelled_by_venue' ? '✕' : '✓';
+                  return (
+                    <PressableScale
+                      key={`${b.id}-${status}`}
+                      testID={`vendor-activity-${b.id}`}
+                      onPress={() => router.push('/venue-bookings')}
+                      hapticFeedback="select"
+                      accessibilityRole="button"
+                      style={{ minHeight: 44, justifyContent: 'center' }}
+                    >
+                      <AppText variant="bodySm" color="secondary">
+                        {icon} {t(`vendorBookingStatus.${status}`)} — {b.contactName}, {formatMediumDate(b.eventDateISO, locale)}
+                      </AppText>
+                    </PressableScale>
+                  );
+                })}
+              </View>
+            ) : null}
           </>
         )}
       </ScrollView>
