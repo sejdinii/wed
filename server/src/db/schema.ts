@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, date, integer, jsonb, pgTable, primaryKey, real, serial, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, date, index, integer, jsonb, pgTable, primaryKey, real, serial, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 import type {
   AmenityKey,
@@ -199,6 +199,45 @@ export const bookingEvents = pgTable('booking_events', {
   status: text('status').notNull(),
   at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Wave 5: real couple↔vendor chat. One thread per booking; sender is a role,
+ * not a user id — each booking has exactly one couple and one venue side.
+ */
+export const messages = pgTable(
+  'messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    bookingId: text('booking_id')
+      .notNull()
+      .references(() => bookings.id, { onDelete: 'cascade' }),
+    senderRole: text('sender_role').notNull(), // 'couple' | 'vendor'
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('messages_booking_idx').on(t.bookingId, t.createdAt)],
+);
+
+/**
+ * Wave 5: durable in-app notification inbox (the Uber "push inbox" pattern —
+ * this table is the source of truth; push channels layer on later). Rows are
+ * only ever created from REAL events; an unread badge must be earned.
+ * kind: 'booking_request' | 'booking_<status>' | 'message'.
+ */
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    bookingId: text('booking_id').references(() => bookings.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('notifications_user_idx').on(t.userId, t.createdAt)],
+);
 
 function sqlActiveStatuses() {
   return sql`status IN ('pending_kapar', 'reserved', 'confirmed')`;

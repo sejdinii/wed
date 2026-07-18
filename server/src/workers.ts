@@ -2,7 +2,7 @@ import { kaparPayByISO } from '@kapar/domain';
 import { and, eq, isNull, lt, sql } from 'drizzle-orm';
 
 import { db } from './db/client.js';
-import { bookingEvents, bookings, venues } from './db/schema.js';
+import { bookingEvents, bookings, notifications, venues } from './db/schema.js';
 
 /**
  * Lifecycle worker — the server-side replacement for the app's on-launch
@@ -20,9 +20,23 @@ export function startLifecycleWorker(intervalMs = 30_000): NodeJS.Timeout {
       { where: and(eq(bookings.status, 'confirmed'), lt(bookings.eventDate, sql`CURRENT_DATE`)), to: 'completed' },
     ];
     for (const { where, to } of sweeps) {
-      const moved = await db.update(bookings).set({ status: to }).where(where).returning({ id: bookings.id });
+      const moved = await db
+        .update(bookings)
+        .set({ status: to })
+        .where(where)
+        .returning({ id: bookings.id, userId: bookings.userId });
       if (moved.length) {
         await db.insert(bookingEvents).values(moved.map((m) => ({ bookingId: m.id, status: to })));
+        // Wave 5: these sweeps bypass applyTransition (bulk SQL), so they fan
+        // out their own couple-side notifications. Vendor side is skipped here
+        // deliberately — expiry of an unanswered request is the vendor's own
+        // inaction, and completion is just the event date passing.
+        const notifiable = moved.filter((m) => m.userId);
+        if (notifiable.length) {
+          await db.insert(notifications).values(
+            notifiable.map((m) => ({ userId: m.userId as string, bookingId: m.id, kind: `booking_${to}` })),
+          );
+        }
       }
     }
   };

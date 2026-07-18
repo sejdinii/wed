@@ -13,7 +13,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { userFromRequest } from '../auth.js';
 import { db } from '../db/client.js';
-import { blockedDates, bookingEvents, bookings, halls, menuTiers, venues } from '../db/schema.js';
+import { blockedDates, bookingEvents, bookings, halls, menuTiers, notifications, venues } from '../db/schema.js';
 
 type BookingRow = typeof bookings.$inferSelect;
 type EventRow = typeof bookingEvents.$inferSelect;
@@ -89,10 +89,25 @@ export async function loadBooking(id: string): Promise<Booking | undefined> {
 }
 
 /**
+ * Which side(s) get an in-app notification for each transition. The actor
+ * never gets notified about their own action — only the counterpart (plus
+ * both on system expiries). Device-only couples (no userId) and ownerless
+ * seed venues simply produce no row.
+ */
+const TRANSITION_NOTIFY: Partial<Record<BookingStatus, ('couple' | 'vendor')[]>> = {
+  reserved: ['couple'],
+  confirmed: ['couple'],
+  cancelled_by_venue: ['couple'],
+  cancelled_by_couple: ['vendor'],
+  expired: ['couple', 'vendor'],
+  completed: ['couple'],
+};
+
+/**
  * The transition writer — THE only way a booking changes state. Enforces the
- * domain state machine and appends the audit event in one transaction.
- * Exported for the vendor routes (Wave 4); route modules NEVER update
- * bookings.status directly.
+ * domain state machine, appends the audit event, and fans out notification
+ * rows (Wave 5) in one transaction. Exported for the vendor routes (Wave 4);
+ * route modules NEVER update bookings.status directly.
  */
 export async function applyTransition(
   id: string,
@@ -107,6 +122,24 @@ export async function applyTransition(
     }
     await tx.update(bookings).set({ ...patch, status: to }).where(eq(bookings.id, id));
     await tx.insert(bookingEvents).values({ bookingId: id, status: to });
+
+    const targets = TRANSITION_NOTIFY[to];
+    if (targets) {
+      const rows: (typeof notifications.$inferInsert)[] = [];
+      if (targets.includes('couple') && row.userId) {
+        rows.push({ userId: row.userId, bookingId: id, kind: `booking_${to}` });
+      }
+      if (targets.includes('vendor')) {
+        const venueRow = await tx
+          .select({ ownerUserId: venues.ownerUserId })
+          .from(venues)
+          .where(eq(venues.id, row.venueId))
+          .limit(1)
+          .then((r) => r[0]);
+        if (venueRow?.ownerUserId) rows.push({ userId: venueRow.ownerUserId, bookingId: id, kind: `booking_${to}` });
+      }
+      if (rows.length) await tx.insert(notifications).values(rows);
+    }
     return { ok: true as const };
   });
 }
@@ -190,6 +223,11 @@ export async function bookingRoutes(app: FastifyInstance): Promise<void> {
           specialRequests: b.specialRequests ?? null,
         });
         await tx.insert(bookingEvents).values({ bookingId: id, status: 'pending_kapar' });
+        // Wave 5: the vendor's inbox bell — a new request is the one event
+        // the create path must announce (transitions fan out in applyTransition).
+        if (venueRow.ownerUserId) {
+          await tx.insert(notifications).values({ userId: venueRow.ownerUserId, bookingId: id, kind: 'booking_request' });
+        }
       });
     } catch (err) {
       // The partial unique index IS the double-booking guard: a concurrent
