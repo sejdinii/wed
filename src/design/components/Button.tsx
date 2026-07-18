@@ -43,7 +43,9 @@ export function Button({
     mint: { bg: colors.mint, fg: colors.onMint },
     outline: { bg: 'transparent', fg: colors.text, borderColor: colors.borderStrong },
     ghost: { bg: 'transparent', fg: colors.primary },
-    danger: { bg: colors.danger, fg: '#FFFFFF' },
+    // onDanger, not white: dark mode's lighter danger red left a white
+    // label at ~2.2:1 — the destructive CTA read as disabled (critic).
+    danger: { bg: colors.danger, fg: colors.onDanger },
   };
 
   const { bg, fg, borderColor } = palette[variant];

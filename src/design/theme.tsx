@@ -31,6 +31,8 @@ export interface ThemeColors {
   success: string;
   successSoft: string;
   danger: string;
+  /** Label color that keeps contrast ON a danger-filled surface in both modes. */
+  onDanger: string;
   dangerSoft: string;
   overlay: string;
   skeleton: string;
@@ -68,6 +70,7 @@ const lightColors: ThemeColors = {
   success: brand.green,
   successSoft: brand.greenSoft,
   danger: brand.red,
+  onDanger: '#FFFFFF',
   dangerSoft: brand.redSoft,
   overlay: 'rgba(30, 27, 46, 0.55)',
   skeleton: '#ECE9F4',
@@ -100,6 +103,7 @@ const darkColors: ThemeColors = {
   success: '#4ADE80',
   successSoft: '#17301F',
   danger: '#F07373',
+  onDanger: '#2B0B0B',
   dangerSoft: '#3A2030',
   overlay: 'rgba(0, 0, 0, 0.6)',
   skeleton: '#252142',

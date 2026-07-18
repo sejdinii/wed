@@ -20,7 +20,9 @@ export function Badge({ label, tone = 'neutral', dot = false, style }: BadgeProp
 
   const tones: Record<BadgeTone, { bg: string; fg: string }> = {
     neutral: { bg: colors.surfaceElevated, fg: colors.textSecondary },
-    success: { bg: colors.mint, fg: colors.onMint },
+    // Real green, not violet mint — "Confirmed" must READ as success (critic
+    // flagged the mint/green mismatch twice: Wave 3 #14, Wave 4 #18).
+    success: { bg: colors.successSoft, fg: colors.success },
     warning: { bg: colors.amberSoft, fg: colors.amber },
     danger: { bg: colors.dangerSoft, fg: colors.danger },
     gold: { bg: colors.goldSoft, fg: colors.gold },
