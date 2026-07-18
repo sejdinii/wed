@@ -246,8 +246,11 @@ export interface Booking {
   contactName: string;
   contactPhone: string;
   specialRequests?: string;
-  /** Display name of the booked hall (multi-hall venues). */
+  /** Display name of the booked hall (multi-hall venues). Stamped mk at
+   * Wave 1 — kept for compatibility; prefer hallNames (Wave 6). */
   hallName?: string;
+  /** All three locales of the hall name — the app picks the active one. */
+  hallNames?: { mk: string; en: string; sq: string };
 }
 
 /** One message in the couple ↔ venue thread attached to a booking. */
