@@ -142,6 +142,40 @@ export default function BookingDetailsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing(4), gap: spacing(3), paddingBottom: spacing(10) }}>
         <Badge label={t(`bookingStatus.${booking.status}`)} tone={STATUS_TONE[booking.status]} dot />
 
+        {/* The couple-side decline experience (Wave 5): the vendor's reason —
+            stored since Wave 4 but never shown to the couple until now — plus
+            an immediate escape to other venues (Airbnb post-decline pattern:
+            the guest is "free to book another place"). Kapar is deliberately
+            stricter than Airbnb about SHOWING the reason: an unexplained "no"
+            reads worse than the personal Viber decline it replaces. */}
+        {booking.status === 'cancelled_by_venue' ? (
+          <View
+            style={{
+              backgroundColor: colors.surfaceElevated,
+              borderRadius: radius.md,
+              padding: spacing(3.5),
+              gap: spacing(2.5),
+            }}
+          >
+            <View style={{ flexDirection: 'row', gap: spacing(2.5), alignItems: 'flex-start' }}>
+              <Ionicons name="information-circle-outline" size={17} color={colors.textSecondary} style={{ marginTop: 1 }} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText variant="bodySmStrong">{t('details.declinedTitle')}</AppText>
+                <AppText variant="bodySm" color="secondary">
+                  {booking.cancelReason ? t('details.declinedReason', { reason: booking.cancelReason }) : t('details.declinedNoReason')}
+                </AppText>
+              </View>
+            </View>
+            <Button
+              title={t('details.findAnother')}
+              onPress={() => router.push({ pathname: '/results', params: { city: booking.city } })}
+              variant="mint"
+              size="md"
+              fullWidth
+            />
+          </View>
+        ) : null}
+
         {/* Action-required banner while the hold waits for the kapar */}
         {booking.status === 'reserved' && booking.payByISO ? (
           <View
